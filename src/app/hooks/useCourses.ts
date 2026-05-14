@@ -43,9 +43,14 @@ export function useCourses(options: UseCoursesOptions = {}): UseCoursesResult {
 
       const { data, error: fetchError } = await query;
 
-      if (fetchError) throw fetchError;
-
-      setCourses(data || []);
+      if (fetchError) {
+        if (import.meta.env.DEV) {
+          console.debug('[useCourses] RLS or permission error, using fallback');
+        }
+        setCourses([]);
+      } else {
+        setCourses(data || []);
+      }
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Failed to fetch courses'));
       setCourses([]);

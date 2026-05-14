@@ -30,11 +30,12 @@ export function CourseCard({ course }: CourseCardProps) {
   };
 
   return (
-    <Card className="overflow-hidden hover:shadow-lg transition-all hover:-translate-y-1 border-slate-100">
+    <Link to={`/courses/${course.id}`} className="block">
+    <Card className="overflow-hidden hover:shadow-lg transition-all hover:-translate-y-1 border-slate-100 h-full">
       <div className="aspect-video relative bg-gradient-to-br from-indigo-50 to-purple-50">
-        {course.thumbnail_url ? (
+        {course.image_url ? (
           <img
-            src={course.thumbnail_url}
+            src={course.image_url}
             alt={name}
             className="object-cover w-full h-full"
           />
@@ -66,29 +67,32 @@ export function CourseCard({ course }: CourseCardProps) {
         <div className="flex items-center gap-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-1">
             <Clock className="w-4 h-4" />
-            <span>4 ชม.</span>
+            <span>{course.min_modules || 1} บท</span>
           </div>
-          <div className="flex items-center gap-1">
-            <Users className="w-4 h-4" />
-            <span>120+</span>
-          </div>
+          {course.review_count !== null && course.review_count > 0 && (
+            <div className="flex items-center gap-1">
+              <Users className="w-4 h-4" />
+              <span>{course.review_count}+</span>
+            </div>
+          )}
         </div>
-        {course.price_per_module > 0 && (
+        {course.minutes_per_lesson ? (
           <div className="text-lg font-bold text-indigo-600">
-            {course.price_per_module} ฿
-            <span className="text-sm font-normal text-muted-foreground ml-1">/โมดูล</span>
+            {course.minutes_per_lesson} นาที
+            <span className="text-sm font-normal text-muted-foreground ml-1">/บท</span>
           </div>
+        ) : (
+          <div className="text-lg font-bold text-green-600">ฟรี</div>
         )}
       </CardContent>
 
       <CardFooter>
-        <Button asChild className="w-full group bg-indigo-600 hover:bg-indigo-700">
-          <Link to={`/courses/${course.id}`}>
-            {t.courses.details}
-            <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
-          </Link>
-        </Button>
+        <span className="w-full flex items-center justify-center gap-1 text-sm font-medium text-indigo-600">
+          {t.courses.details}
+          <ChevronRight className="w-4 h-4" />
+        </span>
       </CardFooter>
     </Card>
+    </Link>
   );
 }

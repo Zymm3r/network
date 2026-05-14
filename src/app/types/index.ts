@@ -11,12 +11,18 @@ export interface Course {
   description_th: string | null;
   description_en: string | null;
   level: CourseLevel;
-  price_per_module: number;
+  minutes_per_lesson: number | null;
   min_modules: number;
   availability: AvailabilityStatus;
   includes: string[] | null;
   highlights: string[] | null;
-  thumbnail_url: string | null;
+  image_url: string | null;
+  rating: number | null;
+  review_count: number | null;
+  tags: string[] | null;
+  modules_left: number | null;
+  estimated_hours: number | null;
+  prerequisites: string[] | null;
   created_at: string;
   updated_at: string;
 }
@@ -50,11 +56,16 @@ export interface Enrollment {
 export interface UserProgress {
   id: string;
   user_id: string;
-  lesson_id: string;
-  completed: boolean;
+  course_id: string | null;
+  path_id: string | null;
+  exercise_id: string | null;
+  status: 'not_started' | 'in_progress' | 'completed';
+  progress_percentage: number;
   completed_at: string | null;
-  time_spent_seconds: number;
   last_accessed_at: string;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface LearningPath {
@@ -63,8 +74,17 @@ export interface LearningPath {
   name_en: string;
   description_th: string | null;
   description_en: string | null;
+  from_level: string | null;
+  to_level: string | null;
+  duration: string | null;
+  estimated_hours: number | null;
   path_type: PathType;
-  course_ids: string[];
+  price: number | null;
+  availability: string | null;
+  seats_left: number | null;
+  modules: string[];
+  operator: string | null;
+  frequency: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -76,12 +96,16 @@ export interface Resource {
   description_th: string | null;
   description_en: string | null;
   resource_type: ResourceType;
-  url: string | null;
-  location_lat: number | null;
-  location_lng: number | null;
-  address_th: string | null;
-  address_en: string | null;
-  thumbnail_url: string | null;
+  location: string | null;
+  category: string | null;
+  distance: string | null;
+  walk_time: string | null;
+  hours: string | null;
+  rating: number | null;
+  price_range: string | null;
+  tags: string[] | null;
+  phone: string | null;
+  image_url: string | null;
   created_at: string;
 }
 

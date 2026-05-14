@@ -1,0 +1,224 @@
+import { useParams, Link, useNavigate } from 'react-router';
+import { useI18n } from '../i18n';
+import { useCourses } from '../hooks/useCourses';
+import { useLessons } from '../hooks/useLessons';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Badge } from '../components/ui/badge';
+import { Button } from '../components/ui/button';
+import { Skeleton } from '../components/ui/skeleton';
+import { ArrowLeft, Clock, BookOpen, Users, ChevronRight, Play, FileText, HelpCircle } from 'lucide-react';
+
+const lessonTypeIcons: Record<string, typeof Play> = {
+  video: Play,
+  reading: FileText,
+  quiz: HelpCircle,
+  exercise: HelpCircle,
+};
+
+const levelColors: Record<string, string> = {
+  beginner: 'bg-green-100 text-green-700 border-green-200',
+  intermediate: 'bg-amber-100 text-amber-700 border-amber-200',
+  advanced: 'bg-red-100 text-red-700 border-red-200',
+};
+
+export function CourseDetail() {
+  const { courseId } = useParams();
+  const { language, t } = useI18n();
+  const navigate = useNavigate();
+
+  const { courses, loading: coursesLoading } = useCourses({ limit: 100 });
+  const { lessons, loading: lessonsLoading } = useLessons({ courseId, limit: 50 });
+
+  const course = courses.find(c => c.id === courseId);
+
+  if (coursesLoading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-8 w-32" />
+        <Skeleton className="h-64 w-full rounded-xl" />
+        <div className="grid gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-24 w-full" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (!course) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <div className="text-6xl mb-4">🔍</div>
+        <h2 className="text-xl font-semibold mb-2">ไม่พบหลักสูตร</h2>
+        <p className="text-muted-foreground mb-4">หลักสูตรที่คุณกำลังค้นหาอาจถูกลบหรือย้ายไปแล้ว</p>
+        <Button onClick={() => navigate('/courses')}>
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          กลับไปหน้าหลักสูตร
+        </Button>
+      </div>
+    );
+  }
+
+  const name = language === 'th' ? course.name_th : course.name_en;
+  const description = language === 'th' ? course.description_th : course.description_en;
+  const includes = course.includes || [];
+  const highlights = course.highlights || [];
+
+  return (
+    <div className="space-y-6">
+      {/* Back button */}
+      <Link
+        to="/courses"
+        className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        {t.common.back || 'กลับ'}
+      </Link>
+
+      {/* Course Header */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 via-purple-600 to-indigo-700 p-6 md:p-8 text-white">
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIgZmlsbD0id2hpdGUiIGZpbGwtb3BhY2l0eT0iMC4xIi8+PC9zdmc+')] opacity-20" />
+        <div className="relative z-10">
+          <Badge className={`${levelColors[course.level]} border mb-4`}>
+            {t.levels[course.level]}
+          </Badge>
+          <h1 className="text-2xl md:text-3xl font-bold mb-2">{name}</h1>
+          {description && (
+            <p className="text-indigo-100 mb-4 max-w-2xl">{description}</p>
+          )}
+
+          <div className="flex flex-wrap items-center gap-4 text-sm">
+            <div className="flex items-center gap-1.5">
+              <BookOpen className="w-4 h-4" />
+              <span>{course.min_modules || 1} บท</span>
+            </div>
+            {course.review_count !== null && course.review_count > 0 && (
+              <div className="flex items-center gap-1.5">
+                <Users className="w-4 h-4" />
+                <span>{course.review_count}+ รีวิว</span>
+              </div>
+            )}
+            {course.rating !== null && (
+              <div className="flex items-center gap-1.5">
+                <span>⭐ {course.rating.toFixed(1)}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Duration & CTA */}
+      <Card className="border-slate-100">
+        <CardContent className="pt-6 flex items-center justify-between">
+          <div>
+            <div className="text-sm text-muted-foreground">เวลาต่อบท</div>
+            <div className="text-3xl font-bold text-indigo-600">
+              {course.minutes_per_lesson ? `${course.minutes_per_lesson} นาที` : 'ฟรี'}
+              {course.minutes_per_lesson && (
+                <span className="text-sm font-normal text-muted-foreground">/บท</span>
+              )}
+            </div>
+          </div>
+          <Button size="lg" className="bg-indigo-600 hover:bg-indigo-700">
+            เริ่มเรียน
+            <ChevronRight className="w-4 h-4 ml-1" />
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* What You'll Learn */}
+      {highlights.length > 0 && (
+        <Card className="border-slate-100">
+          <CardHeader>
+            <CardTitle>สิ่งที่คุณจะได้เรียนรู้</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="grid gap-3 md:grid-cols-2">
+              {highlights.map((item, i) => (
+                <li key={i} className="flex items-start gap-2 text-sm">
+                  <span className="text-green-500 mt-0.5">✓</span>
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* What's Included */}
+      {includes.length > 0 && (
+        <Card className="border-slate-100">
+          <CardHeader>
+            <CardTitle>มีอะไรบ้าง</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+              {includes.map((item, i) => (
+                <div key={i} className="flex items-center gap-2 text-sm">
+                  <div className="w-2 h-2 rounded-full bg-indigo-500" />
+                  <span>{item}</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Lessons List */}
+      <div>
+        <h2 className="text-lg font-semibold mb-4">บทเรียน ({lessons.length})</h2>
+        {lessonsLoading ? (
+          <div className="space-y-3">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-20 w-full" />
+            ))}
+          </div>
+        ) : lessons.length === 0 ? (
+          <Card className="border-dashed">
+            <CardContent className="py-12 text-center">
+              <BookOpen className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+              <p className="text-muted-foreground">ยังไม่มีบทเรียน</p>
+              <p className="text-sm text-muted-foreground mt-1">บทเรียนจะแสดงเมื่อหลักสูตรพร้อม</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-3">
+            {lessons.map((lesson, index) => {
+              const lessonName = language === 'th' ? lesson.title_th : lesson.title_en;
+              const Icon = lessonTypeIcons[lesson.lesson_type] || BookOpen;
+
+              return (
+                <Link
+                  key={lesson.id}
+                  to={`/lessons/${lesson.id}`}
+                  className="block"
+                >
+                  <Card className="hover:shadow-md transition-shadow cursor-pointer border-slate-100">
+                    <CardContent className="pt-4 flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center">
+                        <Icon className="w-5 h-5" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium">{lessonName}</div>
+                        <div className="text-sm text-muted-foreground flex items-center gap-2">
+                          <span className="capitalize">{lesson.lesson_type}</span>
+                          {lesson.duration_minutes && (
+                            <>
+                              <span>•</span>
+                              <span>{lesson.duration_minutes} นาที</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                    </CardContent>
+                  </Card>
+                </Link>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

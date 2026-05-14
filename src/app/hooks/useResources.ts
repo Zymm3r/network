@@ -38,9 +38,12 @@ export function useResources(options: UseResourcesOptions = {}): UseResourcesRes
 
       const { data, error: fetchError } = await query;
 
-      if (fetchError) throw fetchError;
-
-      setResources(data || []);
+      if (fetchError) {
+        console.debug('[useResources] Permission denied or table not available');
+        setResources([]);
+      } else {
+        setResources(data || []);
+      }
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Failed to fetch resources'));
       setResources([]);
