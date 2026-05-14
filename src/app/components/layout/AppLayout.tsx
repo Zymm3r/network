@@ -1,15 +1,17 @@
 import { useState } from 'react';
 import { Outlet } from 'react-router';
-import { Menu, X, Bell, RefreshCw } from 'lucide-react';
+import { Menu, Bell, RefreshCw, BookMarked, Trophy } from 'lucide-react';
 import { Sidebar } from './Sidebar';
 import { GlobalSearch } from '../GlobalSearch';
 import { Toaster } from 'sonner';
+import { useAuth } from '../../hooks/useAuth';
 
 export function AppLayout() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const { user } = useAuth();
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#F2F5F9]">
+    <div className="flex h-screen overflow-hidden bg-[#F8FAFC]">
       {/* Desktop Sidebar */}
       <div className="hidden lg:flex w-56 flex-shrink-0 flex-col h-full">
         <Sidebar />
@@ -54,16 +56,19 @@ export function AppLayout() {
             </button>
             <button className="relative p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
               <Bell size={16} />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500 border border-white" />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-indigo-500 border border-white" />
             </button>
-            <div className="w-8 h-8 rounded-full bg-[#1E5FA8] flex items-center justify-center ml-1">
-              <span className="text-white text-xs font-semibold">AD</span>
+            <button className="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
+              <Trophy size={16} className="text-amber-500" />
+            </button>
+            <div className="w-8 h-8 rounded-full bg-[#6366F1] flex items-center justify-center ml-1">
+              <span className="text-white text-xs font-semibold">{user?.email?.slice(0,2).toUpperCase() || 'G'}</span>
             </div>
           </div>
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto p-4 lg:p-6">
           <Outlet />
         </main>
       </div>
