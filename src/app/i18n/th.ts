@@ -103,6 +103,11 @@ export const th = {
     intermediate: 'ระดับกลาง',
     advanced: 'ระดับสูง',
   },
+  difficulty: {
+    easy: 'ง่าย',
+    moderate: 'ปานกลาง',
+    challenging: 'ท้าทาย',
+  },
 };
 
 export type TranslationKeys = typeof th;

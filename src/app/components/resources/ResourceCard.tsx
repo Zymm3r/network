@@ -50,9 +50,9 @@ export function ResourceCard({ resource }: ResourceCardProps) {
   return (
     <Card className="overflow-hidden hover:shadow-lg transition-all hover:-translate-y-1 border-slate-100">
       <div className="aspect-video relative bg-gradient-to-br from-teal-50 to-cyan-50">
-        {resource.thumbnail_url ? (
+        {resource.image_url ? (
           <img
-            src={resource.thumbnail_url}
+            src={resource.image_url}
             alt={name}
             className="object-cover w-full h-full"
           />
@@ -89,9 +89,9 @@ export function ResourceCard({ resource }: ResourceCardProps) {
       </CardContent>
 
       <CardFooter>
-        {resource.url ? (
+        {resource.location ? (
           <Button asChild className="w-full group">
-            <a href={resource.url} target="_blank" rel="noopener noreferrer">
+            <a href={resource.location} target="_blank" rel="noopener noreferrer">
               เปิด
               <ExternalLink className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
             </a>

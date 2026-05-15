@@ -4,7 +4,7 @@ import { useCourses } from '../hooks/useCourses';
 import { CourseCard } from '../components/course/CourseCard';
 import { CourseFilters } from '../components/course/CourseFilters';
 import { Skeleton } from '../components/ui/skeleton';
-import { Card, CardContent } from '../ui/card';
+import { Card, CardContent } from '../components/ui/card';
 import { BookOpen, Users, Award, ArrowRight } from 'lucide-react';
 import type { CourseLevel } from '../types';
 

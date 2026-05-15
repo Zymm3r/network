@@ -111,7 +111,7 @@ export function CourseDetail() {
       <Card className="border-slate-100">
         <CardContent className="pt-6 flex items-center justify-between">
           <div>
-            <div className="text-sm text-muted-foreground">เวลาต่อบท</div>
+            <div className="text-sm text-muted-foreground">บทเรียน</div>
             <div className="text-3xl font-bold text-indigo-600">
               {course.minutes_per_lesson ? `${course.minutes_per_lesson} นาที` : 'ฟรี'}
               {course.minutes_per_lesson && (

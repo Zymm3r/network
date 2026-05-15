@@ -1,8 +1,11 @@
 import { createBrowserRouter } from 'react-router';
 import { AppLayout } from './components/layout/AppLayout';
 import { Courses } from './pages/Courses';
+import { CourseDetail } from './pages/CourseDetail';
 import { Lessons } from './pages/Lessons';
+import { LessonDetail } from './pages/LessonDetail';
 import { Paths } from './pages/Paths';
+import { PathDetail } from './pages/PathDetail';
 import { Resources } from './pages/Resources';
 import { Profile } from './pages/Profile';
 import { Auth } from './pages/Auth';
@@ -28,8 +31,11 @@ export const router = createBrowserRouter([
     children: [
       { index: true, Component: Courses },
       { path: 'courses', Component: Courses },
+      { path: 'courses/:courseId', Component: CourseDetail },
       { path: 'lessons', Component: Lessons },
+      { path: 'lessons/:lessonId', Component: LessonDetail },
       { path: 'paths', Component: Paths },
+      { path: 'paths/:pathId', Component: PathDetail },
       { path: 'resources', Component: Resources },
       { path: 'profile', Component: Profile },
       { path: '*', Component: NotFound },

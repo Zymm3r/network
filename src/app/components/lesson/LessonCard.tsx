@@ -87,7 +87,7 @@ export function LessonCard({ lesson }: LessonCardProps) {
           )}
           {lesson.difficulty && (
             <Badge variant="outline" className="text-xs">
-              {t.levels[lesson.difficulty]}
+              {t.difficulty[lesson.difficulty]}
             </Badge>
           )}
         </div>

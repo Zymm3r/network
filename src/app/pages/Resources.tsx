@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { ResourceCard } from '../components/resources/ResourceCard';
 import { Skeleton } from '../components/ui/skeleton';
-import { Card, CardContent } from '../ui/card';
+import { Card, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Wrench, BookMarked, FileText, Video, Link2, MapPin, Coffee } from 'lucide-react';
 import type { Resource, ResourceType } from '../types';

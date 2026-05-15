@@ -105,4 +105,9 @@ export const en: TranslationKeys = {
     intermediate: 'Intermediate',
     advanced: 'Advanced',
   },
+  difficulty: {
+    easy: 'Easy',
+    moderate: 'Moderate',
+    challenging: 'Challenging',
+  },
 };

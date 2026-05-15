@@ -19,6 +19,7 @@ const navItems = [
   { to: '/lessons', labelKey: 'nav.lessons', icon: FlaskConical, end: false },
   { to: '/paths', labelKey: 'nav.paths', icon: Route, end: false },
   { to: '/resources', labelKey: 'nav.resources', icon: MapPin, end: false },
+  { to: '/profile', labelKey: 'nav.profile', icon: Settings, end: false },
 ];
 
 const levelColors: Record<string, string> = {

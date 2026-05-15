@@ -3,7 +3,7 @@ import { useI18n } from '../i18n';
 import { useLessons } from '../hooks/useLessons';
 import { LessonCard } from '../components/lesson/LessonCard';
 import { Skeleton } from '../components/ui/skeleton';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { FlaskConical, Video, FileQuestion, PenTool, BookOpen, CheckCircle2, Clock } from 'lucide-react';
 

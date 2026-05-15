@@ -1,11 +1,11 @@
 import { useI18n } from '../i18n';
 import { useAuth } from '../hooks/useAuth';
 import { useEnrollments } from '../hooks/useProgress';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { Avatar, AvatarFallback } from '../ui/avatar';
-import { Button } from '../ui/button';
-import { Progress } from '../ui/progress';
-import { Badge } from '../ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Avatar, AvatarFallback } from '../components/ui/avatar';
+import { Button } from '../components/ui/button';
+import { Progress } from '../components/ui/progress';
+import { Badge } from '../components/ui/badge';
 import { User, BookOpen, Award, LogOut, Clock, Trophy, Target, Zap } from 'lucide-react';
 
 export function Profile() {

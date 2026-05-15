@@ -84,9 +84,9 @@ export function Paths() {
                   )}
                 </div>
 
-                {path.price !== null && path.price > 0 && (
+                {path.price != null && (
                   <div className="text-lg font-bold text-indigo-600">
-                    {path.price} ฿
+                    {path.price === 0 ? 'ฟรี' : `${path.price} ฿`}
                   </div>
                 )}
 

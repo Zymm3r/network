@@ -1,12 +1,11 @@
 import { useI18n } from '../i18n';
-import { Button } from './ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
-import { Languages, Globe } from 'lucide-react';
+import { Globe } from 'lucide-react';
 
 export function LanguageSwitcher() {
   const { language, setLanguage } = useI18n();
@@ -14,10 +13,10 @@ export function LanguageSwitcher() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-white/70 hover:text-white hover:bg-white/10">
+        <button className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-white/70 hover:text-white hover:bg-white/10 transition-colors">
           <Globe className="w-4 h-4" />
           <span className="flex-1 text-left">{language === 'th' ? 'ภาษาไทย' : 'English'}</span>
-        </Button>
+        </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-40">
         <DropdownMenuItem
