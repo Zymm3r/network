@@ -2,11 +2,13 @@ import { useParams, Link, useNavigate } from 'react-router';
 import { useI18n } from '../i18n';
 import { useCourses } from '../hooks/useCourses';
 import { useLessons } from '../hooks/useLessons';
+import { useAuth } from '../hooks/useAuth';
+import { useLessonsProgress } from '../hooks/useProgress';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { Skeleton } from '../components/ui/skeleton';
-import { ArrowLeft, Clock, BookOpen, Users, ChevronRight, Play, FileText, HelpCircle } from 'lucide-react';
+import { ArrowLeft, Clock, BookOpen, Users, ChevronRight, Play, FileText, HelpCircle, CheckCircle2 } from 'lucide-react';
 
 const lessonTypeIcons: Record<string, typeof Play> = {
   video: Play,
@@ -26,8 +28,12 @@ export function CourseDetail() {
   const { language, t } = useI18n();
   const navigate = useNavigate();
 
+  const { user } = useAuth();
   const { courses, loading: coursesLoading } = useCourses({ limit: 100 });
   const { lessons, loading: lessonsLoading } = useLessons({ courseId, limit: 50 });
+
+  const lessonIds = lessons.map(l => l.id);
+  const { completedLessonIds } = useLessonsProgress(user?.id || '', lessonIds);
 
   const course = courses.find(c => c.id === courseId);
 
@@ -188,6 +194,7 @@ export function CourseDetail() {
             {lessons.map((lesson, index) => {
               const lessonName = language === 'th' ? lesson.title_th : lesson.title_en;
               const Icon = lessonTypeIcons[lesson.lesson_type] || BookOpen;
+              const isCompleted = completedLessonIds.has(lesson.id);
 
               return (
                 <Link
@@ -195,13 +202,22 @@ export function CourseDetail() {
                   to={`/lessons/${lesson.id}`}
                   className="block"
                 >
-                  <Card className="hover:shadow-md transition-shadow cursor-pointer border-slate-100">
+                  <Card className={`hover:shadow-md transition-all cursor-pointer border-slate-100 ${isCompleted ? 'bg-green-50/10 border-green-100/60' : ''}`}>
                     <CardContent className="pt-4 flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center">
-                        <Icon className="w-5 h-5" />
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
+                        isCompleted ? 'bg-green-100 text-green-600' : 'bg-indigo-100 text-indigo-600'
+                      }`}>
+                        {isCompleted ? <CheckCircle2 className="w-5 h-5" /> : <Icon className="w-5 h-5" />}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="font-medium">{lessonName}</div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className={`font-medium ${isCompleted ? 'text-slate-600' : ''}`}>{lessonName}</span>
+                          {isCompleted && (
+                            <Badge className="bg-green-100/80 hover:bg-green-100 text-green-700 border-green-200 border text-[10px] font-semibold px-1.5 py-0 rounded-full shrink-0 flex items-center gap-0.5">
+                              <span>เรียนแล้ว</span>
+                            </Badge>
+                          )}
+                        </div>
                         <div className="text-sm text-muted-foreground flex items-center gap-2">
                           <span className="capitalize">{lesson.lesson_type}</span>
                           {lesson.duration_minutes && (

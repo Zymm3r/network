@@ -276,3 +276,49 @@ export function useLessonProgress(userId: string, lessonId: string) {
 
   return { progress, loading, error, markComplete, refetch: fetchProgress };
 }
+
+export function useLessonsProgress(userId: string, lessonIds: string[]) {
+  const [completedLessonIds, setCompletedLessonIds] = useState<Set<string>>(new Set());
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  // Memoize lessonIds stringified to avoid infinite loops in useEffect
+  const lessonIdsStr = JSON.stringify(lessonIds);
+
+  useEffect(() => {
+    const fetchLessonsProgress = async () => {
+      if (!userId || !lessonIds || lessonIds.length === 0) {
+        setCompletedLessonIds(new Set());
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError(null);
+
+        const { data, error: fetchError } = await supabase
+          .from('user_progress')
+          .select('lesson_id')
+          .eq('user_id', userId)
+          .eq('status', 'completed')
+          .in('lesson_id', lessonIds);
+
+        if (fetchError) {
+          throw fetchError;
+        }
+
+        const completedSet = new Set((data || []).map((row: any) => row.lesson_id));
+        setCompletedLessonIds(completedSet);
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error('Failed to fetch lessons progress'));
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLessonsProgress();
+  }, [userId, lessonIdsStr]);
+
+  return { completedLessonIds, loading, error };
+}

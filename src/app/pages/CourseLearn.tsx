@@ -2,6 +2,8 @@ import { useParams, Link, useNavigate } from 'react-router';
 import { useI18n } from '../i18n';
 import { useCourses } from '../hooks/useCourses';
 import { useLessons } from '../hooks/useLessons';
+import { useAuth } from '../hooks/useAuth';
+import { useLessonsProgress } from '../hooks/useProgress';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Skeleton } from '../components/ui/skeleton';
@@ -19,8 +21,12 @@ export function CourseLearn() {
   const { language, t } = useI18n();
   const navigate = useNavigate();
 
+  const { user } = useAuth();
   const { courses, loading: coursesLoading } = useCourses({ limit: 100 });
   const { lessons, loading: lessonsLoading } = useLessons({ courseId, limit: 50 });
+
+  const lessonIds = lessons.map(l => l.id);
+  const { completedLessonIds } = useLessonsProgress(user?.id || '', lessonIds);
 
   const course = courses.find(c => c.id === courseId);
 
@@ -120,22 +126,32 @@ export function CourseLearn() {
                   </div>
                 ) : (
                   <div className="divide-y divide-slate-100 max-h-[60vh] overflow-y-auto">
-                    {lessons.map((lesson, idx) => {
+                     {lessons.map((lesson, idx) => {
                       const lessonName = language === 'th' ? lesson.title_th : lesson.title_en;
                       const Icon = lessonTypeIcons[lesson.lesson_type] || BookOpen;
+                      const isCompleted = completedLessonIds.has(lesson.id);
                       
                       return (
                         <Link 
                           key={lesson.id} 
                           to={`/lessons/${lesson.id}`}
-                          className="flex items-start gap-3 p-4 hover:bg-slate-50 transition-colors group"
+                          className={`flex items-start gap-3 p-4 hover:bg-slate-50 transition-colors group ${isCompleted ? 'bg-green-50/10' : ''}`}
                         >
-                          <div className="shrink-0 w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 group-hover:bg-indigo-100 group-hover:text-indigo-600 transition-colors mt-0.5">
-                            <Icon className="w-4 h-4" />
+                          <div className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-colors mt-0.5 ${
+                            isCompleted 
+                              ? 'bg-green-100 text-green-600' 
+                              : 'bg-slate-100 text-slate-500 group-hover:bg-indigo-100 group-hover:text-indigo-600'
+                          }`}>
+                            {isCompleted ? <CheckCircle className="w-4 h-4" /> : <Icon className="w-4 h-4" />}
                           </div>
                           <div>
-                            <div className="font-medium text-sm text-slate-900 group-hover:text-indigo-700 transition-colors">
-                              {idx + 1}. {lessonName}
+                            <div className="font-medium text-sm text-slate-900 group-hover:text-indigo-700 transition-colors flex items-center gap-1.5 flex-wrap">
+                              <span>{idx + 1}. {lessonName}</span>
+                              {isCompleted && (
+                                <span className="text-[9px] bg-green-100/80 text-green-700 border border-green-200 px-1.5 py-0.5 rounded-full font-semibold">
+                                  เรียนแล้ว
+                                </span>
+                              )}
                             </div>
                             <div className="text-xs text-slate-500 mt-1 capitalize">
                               {lesson.lesson_type} {lesson.duration_minutes ? `• ${lesson.duration_minutes} นาที` : ''}

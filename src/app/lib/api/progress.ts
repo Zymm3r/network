@@ -76,7 +76,7 @@ export const progressApi = {
       .from('user_progress')
       .select('*')
       .eq('user_id', userId)
-      .eq('completed', true)
+      .eq('status', 'completed')
       .in('lesson_id', lessonIds);
 
     return handleSupabaseResponse(response, 'get course progress');
@@ -107,7 +107,8 @@ export const progressApi = {
 
   async markComplete(userId: string, lessonId: string): Promise<UserProgress> {
     return this.updateProgress(userId, lessonId, {
-      completed: true,
+      status: 'completed',
+      progress_percentage: 100,
       completed_at: new Date().toISOString(),
     });
   },
