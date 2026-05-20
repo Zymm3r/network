@@ -90,6 +90,24 @@ function VideoPlayer({ url }: { url: string }) {
   );
 }
 
+function formatCompletedAt(dateStr: string | null | undefined): string {
+  if (!dateStr) return '';
+  try {
+    const safeStr = dateStr.includes(' ') && !dateStr.includes('T') ? dateStr.replace(' ', 'T') : dateStr;
+    const date = new Date(safeStr);
+    if (isNaN(date.getTime())) return '';
+    return `เมื่อ ${date.toLocaleString('th-TH', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })}`;
+  } catch {
+    return '';
+  }
+}
+
 export function LessonDetail() {
   const { lessonId } = useParams();
   const { language, t } = useI18n();
@@ -308,7 +326,7 @@ export function LessonDetail() {
                 </div>
                 <div className="text-sm text-muted-foreground mt-0.5">
                   {isCompleted 
-                    ? `ยินดีด้วย! คุณเรียนบทเรียนนี้ครบถ้วนแล้ว ${progress?.completed_at ? `เมื่อ ${new Date(progress.completed_at).toLocaleString('th-TH', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}` : ''}` 
+                    ? `ยินดีด้วย! คุณเรียนบทเรียนนี้ครบถ้วนแล้ว ${formatCompletedAt(progress?.completed_at)}` 
                     : 'กรุณาใช้เวลาศึกษาเนื้อหาบทเรียนนี้ให้ครบถ้วนเพื่อบันทึกความก้าวหน้าของคุณ'}
                 </div>
               </div>

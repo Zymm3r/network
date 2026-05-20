@@ -65,7 +65,10 @@ export function useProgress(userId: string, courseId: string) {
 
   useEffect(() => {
     const fetchProgress = async () => {
-      if (!userId || !courseId) return;
+      if (!userId || !courseId) {
+        setLoading(false);
+        return;
+      }
 
       try {
         setLoading(true);
@@ -155,11 +158,14 @@ export function useCourseProgress(userId: string, courseId: string) {
 
   useEffect(() => {
     const fetchCourseProgress = async () => {
-      if (!userId || !courseId) return;
+      if (!userId || !courseId) {
+        setLoading(false);
+        return;
+      }
 
       try {
         setLoading(true);
-
+ 
         // Get user's progress for this course
         const { data, error: fetchError } = await supabase
           .from('user_progress')
@@ -201,7 +207,10 @@ export function useLessonProgress(userId: string, lessonId: string) {
   const [error, setError] = useState<Error | null>(null);
 
   const fetchProgress = useCallback(async () => {
-    if (!userId || !lessonId) return;
+    if (!userId || !lessonId) {
+      setLoading(false);
+      return;
+    }
 
     try {
       setLoading(true);
