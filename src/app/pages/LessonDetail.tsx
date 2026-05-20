@@ -1,6 +1,8 @@
+import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router';
 import { useI18n } from '../i18n';
 import { useLesson } from '../hooks/useLessons';
+import { useAuth, useLessonProgress } from '../hooks';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
@@ -20,14 +22,130 @@ const difficultyColors: Record<string, string> = {
   challenging: 'bg-red-100 text-red-700 border-red-200',
 };
 
+/**
+ * Convert a YouTube URL to its embeddable format.
+ * Supports:
+ *   - https://www.youtube.com/watch?v=VIDEO_ID
+ *   - https://youtu.be/VIDEO_ID
+ *   - https://www.youtube.com/embed/VIDEO_ID (already embed, return as-is)
+ * Returns null if the URL is not a recognized YouTube link.
+ */
+function getYouTubeEmbedUrl(url: string): string | null {
+  try {
+    const parsed = new URL(url);
+
+    // Already an embed URL
+    if (parsed.pathname.startsWith('/embed/')) {
+      return url;
+    }
+
+    // Standard watch URL: youtube.com/watch?v=VIDEO_ID
+    if (
+      (parsed.hostname === 'www.youtube.com' || parsed.hostname === 'youtube.com') &&
+      parsed.pathname === '/watch'
+    ) {
+      const videoId = parsed.searchParams.get('v');
+      if (videoId) {
+        return `https://www.youtube.com/embed/${videoId}`;
+      }
+    }
+
+    // Short URL: youtu.be/VIDEO_ID
+    if (parsed.hostname === 'youtu.be') {
+      const videoId = parsed.pathname.slice(1);
+      if (videoId) {
+        return `https://www.youtube.com/embed/${videoId}`;
+      }
+    }
+  } catch {
+    // Invalid URL
+  }
+  return null;
+}
+
+/** Renders either a YouTube iframe embed or an HTML5 video player */
+function VideoPlayer({ url }: { url: string }) {
+  const embedUrl = getYouTubeEmbedUrl(url);
+
+  if (embedUrl) {
+    return (
+      <iframe
+        src={embedUrl}
+        className="w-full h-full rounded-xl"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        allowFullScreen
+        title="Lesson video"
+        style={{ border: 0 }}
+      />
+    );
+  }
+
+  // Fallback: direct video file (e.g. .mp4)
+  return (
+    <video
+      src={url}
+      className="w-full h-full object-cover rounded-xl"
+      controls
+    />
+  );
+}
+
 export function LessonDetail() {
   const { lessonId } = useParams();
   const { language, t } = useI18n();
   const navigate = useNavigate();
 
   const { lesson, loading } = useLesson(lessonId || '');
+  const { user } = useAuth();
+  const { progress, loading: progressLoading, markComplete } = useLessonProgress(
+    user?.id || '',
+    lessonId || ''
+  );
 
-  if (loading) {
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const isCompleted = progress?.status === 'completed';
+  const durationMinutes = lesson?.duration_minutes || 0;
+  const requiredSeconds = durationMinutes * 60;
+  const isTimeMet = elapsedSeconds >= requiredSeconds;
+
+  useEffect(() => {
+    // Reset elapsed seconds when lesson changes
+    setElapsedSeconds(0);
+  }, [lessonId]);
+
+  useEffect(() => {
+    if (isCompleted || isTimeMet || !lesson || requiredSeconds <= 0) return;
+
+    const interval = setInterval(() => {
+      setElapsedSeconds((prev) => {
+        const next = prev + 1;
+        if (next >= requiredSeconds) {
+          clearInterval(interval);
+          return requiredSeconds;
+        }
+        return next;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isCompleted, isTimeMet, lesson, requiredSeconds]);
+
+  const handleMarkComplete = async () => {
+    if (!isTimeMet || isSubmitting || isCompleted) return;
+
+    try {
+      setIsSubmitting(true);
+      await markComplete();
+    } catch (err) {
+      console.error('Failed to mark lesson complete:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (loading || progressLoading) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-8 w-32" />
@@ -89,6 +207,31 @@ export function LessonDetail() {
         </div>
       </div>
 
+      {/* Video Player — shown for any lesson type that has a video_url */}
+      {lesson.video_url && (
+        <Card className="border-slate-100">
+          <CardContent className="pt-6">
+            <div className="aspect-video bg-slate-900 rounded-xl overflow-hidden">
+              <VideoPlayer url={lesson.video_url} />
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Placeholder when video type has no URL */}
+      {lesson.lesson_type === 'video' && !lesson.video_url && (
+        <Card className="border-slate-100">
+          <CardContent className="pt-6">
+            <div className="aspect-video bg-slate-100 rounded-xl flex items-center justify-center">
+              <div className="text-center">
+                <Play className="w-12 h-12 text-muted-foreground mx-auto mb-2" />
+                <p className="text-muted-foreground">วิดีโอจะแสดงเมื่อพร้อมใช้งาน</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Content */}
       {content && (
         <Card className="border-slate-100">
@@ -102,27 +245,6 @@ export function LessonDetail() {
       )}
 
       {/* Lesson Type Specific Content */}
-      {lesson.lesson_type === 'video' && (
-        <Card className="border-slate-100">
-          <CardContent className="pt-6">
-            <div className="aspect-video bg-slate-100 rounded-xl flex items-center justify-center">
-              {lesson.video_url ? (
-                <video
-                  src={lesson.video_url}
-                  className="w-full h-full object-cover rounded-xl"
-                  controls
-                />
-              ) : (
-                <div className="text-center">
-                  <Play className="w-12 h-12 text-muted-foreground mx-auto mb-2" />
-                  <p className="text-muted-foreground">วิดีโอจะแสดงเมื่อพร้อมใช้งาน</p>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       {lesson.lesson_type === 'quiz' && (
         <Card className="border-slate-100">
           <CardHeader>
@@ -173,20 +295,71 @@ export function LessonDetail() {
       )}
 
       {/* Completion */}
-      <Card className="border-green-200 bg-green-50">
-        <CardContent className="pt-6 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-              <CheckCircle className="w-5 h-5 text-green-600" />
+      <Card className={`border-slate-100 transition-all duration-350 ${isCompleted ? 'border-green-200 bg-green-50/40' : 'bg-slate-50/40'}`}>
+        <CardContent className="pt-6">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${isCompleted ? 'bg-green-100 text-green-600' : 'bg-indigo-50 text-indigo-600'}`}>
+                <CheckCircle className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="font-semibold text-slate-800">
+                  {isCompleted ? 'เรียนรู้บทเรียนนี้เสร็จสิ้นแล้ว' : 'ทำเครื่องหมายว่าเสร็จสิ้น'}
+                </div>
+                <div className="text-sm text-muted-foreground mt-0.5">
+                  {isCompleted 
+                    ? `ยินดีด้วย! คุณเรียนบทเรียนนี้ครบถ้วนแล้ว ${progress?.completed_at ? `เมื่อ ${new Date(progress.completed_at).toLocaleString('th-TH', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}` : ''}` 
+                    : 'กรุณาใช้เวลาศึกษาเนื้อหาบทเรียนนี้ให้ครบถ้วนเพื่อบันทึกความก้าวหน้าของคุณ'}
+                </div>
+              </div>
             </div>
-            <div>
-              <div className="font-medium">ทำเครื่องหมายว่าเสร็จสิ้น</div>
-              <div className="text-sm text-muted-foreground">บันทึกความก้าวหน้าของคุณ</div>
+
+            <div className="w-full md:w-auto flex flex-col md:flex-row items-stretch md:items-center gap-3 shrink-0">
+              {!isCompleted && requiredSeconds > 0 && (
+                <div className="text-left md:text-right shrink-0">
+                  <div className="text-xs text-muted-foreground font-medium">เวลาที่ต้องศึกษา</div>
+                  <div className="text-sm font-semibold text-indigo-600 mt-0.5">
+                    {isTimeMet ? 'สะสมเวลาครบถ้วนแล้ว!' : `เหลืออีก ${Math.floor((requiredSeconds - elapsedSeconds) / 60)} นาที ${((requiredSeconds - elapsedSeconds) % 60)} วินาที`}
+                  </div>
+                </div>
+              )}
+              
+              <Button
+                onClick={handleMarkComplete}
+                disabled={!isTimeMet || isSubmitting || isCompleted}
+                className={`w-full md:w-auto font-semibold px-6 transition-all duration-350 ${
+                  isCompleted
+                    ? 'bg-green-600 hover:bg-green-600 text-white border-green-650 opacity-90 cursor-default shadow-none'
+                    : isTimeMet
+                    ? 'bg-green-600 hover:bg-green-700 text-white cursor-pointer shadow-md shadow-green-200 animate-pulse-subtle'
+                    : 'bg-slate-200 text-slate-400 cursor-not-allowed hover:bg-slate-200 shadow-none'
+                }`}
+              >
+                {isSubmitting ? (
+                  <span className="flex items-center gap-2 justify-center">
+                    <span className="animate-spin rounded-full h-4 w-4 border-2 border-slate-300 border-t-white" />
+                    กำลังบันทึก...
+                  </span>
+                ) : isCompleted ? (
+                  'เสร็จสิ้นแล้ว'
+                ) : isTimeMet ? (
+                  'ทำเครื่องหมายเสร็จ'
+                ) : (
+                  'รอสะสมเวลา...'
+                )}
+              </Button>
             </div>
           </div>
-          <Button variant="outline" className="border-green-200 text-green-700 hover:bg-green-100">
-            ทำเครื่องหมายเสร็จ
-          </Button>
+
+          {/* Progress bar for timer */}
+          {!isCompleted && requiredSeconds > 0 && (
+            <div className="mt-4 w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+              <div 
+                className="bg-indigo-600 h-1.5 rounded-full transition-all duration-1000 ease-linear"
+                style={{ width: `${(elapsedSeconds / requiredSeconds) * 100}%` }}
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

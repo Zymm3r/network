@@ -1,26 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
-import type { UserProgress } from '../types';
-
-// Note: 'enrollments' table does not exist in current schema.
-// Enrollments are temporarily disabled.
-
-// Mock enrollments for development (table doesn't exist)
-interface MockEnrollment {
-  id: string;
-  user_id: string;
-  course_id: string;
-  enrolled_at: string;
-  completed_at: string | null;
-  status: 'active' | 'completed' | 'dropped';
-}
+import type { UserProgress, Enrollment } from '../types';
 
 interface UseEnrollmentsOptions {
   userId: string;
 }
 
 interface UseEnrollmentsResult {
-  enrollments: MockEnrollment[];
+  enrollments: Enrollment[];
   loading: boolean;
   error: Error | null;
   refetch: () => Promise<void>;
@@ -29,7 +16,7 @@ interface UseEnrollmentsResult {
 export function useEnrollments(options: UseEnrollmentsOptions): UseEnrollmentsResult {
   const { userId } = options;
 
-  const [enrollments, setEnrollments] = useState<MockEnrollment[]>([]);
+  const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
@@ -40,7 +27,6 @@ export function useEnrollments(options: UseEnrollmentsOptions): UseEnrollmentsRe
       setLoading(true);
       setError(null);
 
-      // Try to fetch enrollments (will fail if table doesn't exist)
       const { data, error: fetchError } = await supabase
         .from('enrollments')
         .select('*')
@@ -48,14 +34,12 @@ export function useEnrollments(options: UseEnrollmentsOptions): UseEnrollmentsRe
         .order('enrolled_at', { ascending: false });
 
       if (fetchError) {
-        if (import.meta.env.DEV) {
-          console.debug('[useEnrollments] Table not available, using fallback');
-        }
-        setEnrollments([]);
-      } else {
-        setEnrollments(data || []);
+        throw fetchError;
       }
-    } catch {
+
+      setEnrollments(data || []);
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('Failed to fetch enrollments'));
       setEnrollments([]);
     } finally {
       setLoading(false);
@@ -209,4 +193,86 @@ export function useCourseProgress(userId: string, courseId: string) {
     loading,
     error,
   };
+}
+
+export function useLessonProgress(userId: string, lessonId: string) {
+  const [progress, setProgress] = useState<UserProgress | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  const fetchProgress = useCallback(async () => {
+    if (!userId || !lessonId) return;
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const { data, error: fetchError } = await supabase
+        .from('user_progress')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('lesson_id', lessonId)
+        .single();
+
+      if (fetchError && fetchError.code !== 'PGRST116') {
+        throw fetchError;
+      }
+
+      setProgress(data || null);
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('Failed to fetch lesson progress'));
+    } finally {
+      setLoading(false);
+    }
+  }, [userId, lessonId]);
+
+  useEffect(() => {
+    fetchProgress();
+  }, [fetchProgress]);
+
+  const markComplete = useCallback(async () => {
+    if (!userId || !lessonId) return;
+
+    try {
+      const { error: upsertError } = await supabase
+        .from('user_progress')
+        .upsert({
+          user_id: userId,
+          lesson_id: lessonId,
+          status: 'completed',
+          progress_percentage: 100,
+          completed_at: new Date().toISOString(),
+          last_accessed_at: new Date().toISOString(),
+        }, {
+          onConflict: 'user_id,lesson_id',
+        });
+
+      if (upsertError) throw upsertError;
+
+      setProgress(prev => prev ? {
+        ...prev,
+        status: 'completed',
+        progress_percentage: 100,
+        completed_at: new Date().toISOString(),
+      } : {
+        id: '',
+        user_id: userId,
+        course_id: null,
+        path_id: null,
+        exercise_id: null,
+        lesson_id: lessonId,
+        status: 'completed',
+        progress_percentage: 100,
+        completed_at: new Date().toISOString(),
+        last_accessed_at: new Date().toISOString(),
+        notes: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      } as UserProgress);
+    } catch (err) {
+      throw err instanceof Error ? err : new Error('Failed to mark complete');
+    }
+  }, [userId, lessonId]);
+
+  return { progress, loading, error, markComplete, refetch: fetchProgress };
 }

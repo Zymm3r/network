@@ -119,10 +119,12 @@ export function CourseDetail() {
               )}
             </div>
           </div>
-          <Button size="lg" className="bg-indigo-600 hover:bg-indigo-700">
-            เริ่มเรียน
-            <ChevronRight className="w-4 h-4 ml-1" />
-          </Button>
+          <Link to={`/courses/${course.id}/learn`}>
+            <Button size="lg" className="bg-indigo-600 hover:bg-indigo-700">
+              เริ่มเรียน
+              <ChevronRight className="w-4 h-4 ml-1" />
+            </Button>
+          </Link>
         </CardContent>
       </Card>
 

@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
-import { Search, X, BookOpen, FlaskConical, Route, MapPin } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { useI18n } from '../i18n';
+import { useGlobalSearch } from '../hooks/useGlobalSearch';
 
 interface SearchResult {
   id: string;
@@ -47,23 +48,21 @@ export function GlobalSearch({ onResultClick }: GlobalSearchProps) {
     return () => window.removeEventListener('keydown', handleKeydown);
   }, []);
 
+  const { results: searchResults, loading: searchLoading, error: searchError } = useGlobalSearch(query);
+
   useEffect(() => {
-    if (query.length < 2) {
+    if (!query || query.length < 2) {
       setResults([]);
       return;
     }
 
-    // Mock search results - in real app, this would query Supabase
-    const mockResults: SearchResult[] = [
-      { id: '1', title: 'พื้นฐานเครือข่าย', subtitle: 'หลักสูตร', category: 'course', icon: '📚' },
-      { id: '2', title: 'Introduction to Networks', subtitle: 'บทที่ 1', category: 'lesson', icon: '🔌' },
-      { id: '3', title: 'OSI Model', subtitle: 'แบบฝึกหัด', category: 'lesson', icon: '📖' },
-      { id: '4', title: 'เส้นทาง Network Security', subtitle: 'เส้นทางการเรียน', category: 'path', icon: '🛡️' },
-      { id: '5', title: 'Cisco Packet Tracer', subtitle: 'เครื่องมือ', category: 'resource', icon: '🔧' },
-    ].filter(r => r.title.toLowerCase().includes(query.toLowerCase()));
+    setResults(searchResults || []);
 
-    setResults(mockResults);
-  }, [query]);
+    if (searchError) {
+      // Log or surface the error, but don't crash the UI
+      console.error('Global search error:', searchError.message);
+    }
+  }, [query, searchResults, searchError]);
 
   const handleResultClick = (result: SearchResult) => {
     onResultClick?.();

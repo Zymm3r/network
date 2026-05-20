@@ -2,6 +2,7 @@ import { createBrowserRouter } from 'react-router';
 import { AppLayout } from './components/layout/AppLayout';
 import { Courses } from './pages/Courses';
 import { CourseDetail } from './pages/CourseDetail';
+import { CourseLearn } from './pages/CourseLearn';
 import { Lessons } from './pages/Lessons';
 import { LessonDetail } from './pages/LessonDetail';
 import { Paths } from './pages/Paths';
@@ -32,6 +33,7 @@ export const router = createBrowserRouter([
       { index: true, Component: Courses },
       { path: 'courses', Component: Courses },
       { path: 'courses/:courseId', Component: CourseDetail },
+      { path: 'courses/:courseId/learn', Component: CourseLearn },
       { path: 'lessons', Component: Lessons },
       { path: 'lessons/:lessonId', Component: LessonDetail },
       { path: 'paths', Component: Paths },

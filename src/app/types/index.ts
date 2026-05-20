@@ -59,6 +59,7 @@ export interface UserProgress {
   course_id: string | null;
   path_id: string | null;
   exercise_id: string | null;
+  lesson_id: string | null;
   status: 'not_started' | 'in_progress' | 'completed';
   progress_percentage: number;
   completed_at: string | null;
