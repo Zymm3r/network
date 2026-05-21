@@ -1,14 +1,44 @@
 import { useState } from 'react';
 import { Outlet } from 'react-router';
-import { Menu, Bell, RefreshCw, BookMarked, Trophy } from 'lucide-react';
+import { Menu, Bell, RefreshCw, Trophy } from 'lucide-react';
 import { Sidebar } from './Sidebar';
 import { GlobalSearch } from '../GlobalSearch';
 import { Toaster } from 'sonner';
 import { useAuth } from '../../hooks/useAuth';
 
+/** Shared consonant-initials helper */
+function getConsonantInitials(email: string | undefined): string {
+  if (!email) return 'G';
+  const localPart = email.split('@')[0] || '';
+  const vowels = 'aeiouAEIOU';
+  const consonants = localPart
+    .split('')
+    .filter((ch) => /[a-zA-Z]/.test(ch) && !vowels.includes(ch));
+  if (consonants.length >= 2) return (consonants[0] + consonants[1]).toUpperCase();
+  if (consonants.length === 1) return consonants[0].toUpperCase();
+  const alpha = localPart.split('').filter((ch) => /[a-zA-Z]/.test(ch));
+  return alpha.length >= 2
+    ? (alpha[0] + alpha[1]).toUpperCase()
+    : alpha.length === 1
+    ? alpha[0].toUpperCase()
+    : 'G';
+}
+
 export function AppLayout() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const { user } = useAuth();
+  const { user, initialized } = useAuth();
+
+  // ─── Auth Gate: prevent blank screen while auth is resolving ───
+  if (!initialized) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-[#F8FAFC]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-10 w-10 border-2 border-indigo-200 border-t-indigo-600" />
+          <p className="text-sm text-slate-400 font-medium">กำลังเตรียมระบบ...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#F8FAFC]">
@@ -62,7 +92,7 @@ export function AppLayout() {
               <Trophy size={16} className="text-amber-500" />
             </button>
             <div className="w-8 h-8 rounded-full bg-[#6366F1] flex items-center justify-center ml-1">
-              <span className="text-white text-xs font-semibold">{user?.email?.slice(0,2).toUpperCase() || 'G'}</span>
+              <span className="text-white text-xs font-semibold">{getConsonantInitials(user?.email)}</span>
             </div>
           </div>
         </header>

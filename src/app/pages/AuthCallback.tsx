@@ -1,70 +1,47 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { supabase } from '../lib/supabase';
+import { useAuth } from '../hooks/useAuth';
 import { Network, CheckCircle2, XCircle } from 'lucide-react';
 
 /**
  * Handles the magic link callback.
  * When the user clicks the magic link in their email, Supabase redirects
  * to this route with auth tokens in the URL hash.
- * Supabase client auto-detects and exchanges them for a session.
+ *
+ * The AuthProvider's `detectSessionInUrl: true` + `onAuthStateChange`
+ * automatically picks up the tokens and updates the shared auth state.
+ * This component simply watches the auth context and redirects on success.
  */
 export function AuthCallback() {
   const navigate = useNavigate();
+  const { user, initialized } = useAuth();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => {
-    const handleCallback = async () => {
-      try {
-        // Supabase client with `detectSessionInUrl: true` automatically
-        // picks up the tokens from the URL hash fragment.
-        const { data, error } = await supabase.auth.getSession();
+    // If auth is initialized and we have a user, the magic link worked
+    if (initialized && user) {
+      setStatus('success');
+      const timer = setTimeout(() => {
+        navigate('/courses', { replace: true });
+      }, 1200);
+      return () => clearTimeout(timer);
+    }
 
-        if (error) {
-          setErrorMsg(error.message);
-          setStatus('error');
-          return;
-        }
-
-        if (data.session) {
-          setStatus('success');
-          // Short delay so the user sees the success animation
-          setTimeout(() => {
-            navigate('/courses', { replace: true });
-          }, 1500);
-        } else {
-          // No session yet — tokens might not have been processed.
-          // Listen for the auth state change event.
-          const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-            if (event === 'SIGNED_IN' && session) {
-              setStatus('success');
-              setTimeout(() => {
-                navigate('/courses', { replace: true });
-              }, 1500);
-              subscription.unsubscribe();
-            }
-          });
-
-          // Fallback timeout — if nothing happens in 8 seconds, show error
-          setTimeout(() => {
-            setStatus((prev) => {
-              if (prev === 'loading') {
-                setErrorMsg('ลิงก์หมดอายุหรือไม่ถูกต้อง กรุณาขอลิงก์ใหม่');
-                return 'error';
-              }
-              return prev;
-            });
-          }, 8000);
-        }
-      } catch (err) {
-        setErrorMsg(err instanceof Error ? err.message : 'เกิดข้อผิดพลาด');
-        setStatus('error');
-      }
-    };
-
-    handleCallback();
-  }, [navigate]);
+    // If auth is initialized but no user after a reasonable timeout, show error
+    if (initialized && !user) {
+      const timer = setTimeout(() => {
+        setStatus((prev) => {
+          if (prev === 'loading') {
+            setErrorMsg('ลิงก์หมดอายุหรือไม่ถูกต้อง กรุณาขอลิงก์ใหม่');
+            return 'error';
+          }
+          return prev;
+        });
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [initialized, user, navigate]);
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900">
@@ -83,7 +60,7 @@ export function AuthCallback() {
         )}
 
         {status === 'success' && (
-          <div className="space-y-4 animate-in fade-in">
+          <div className="space-y-4">
             <div className="w-14 h-14 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto">
               <CheckCircle2 className="w-7 h-7 text-emerald-400" />
             </div>
