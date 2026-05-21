@@ -10,7 +10,7 @@ import { Network, Mail, ArrowRight, CheckCircle2, Sparkles } from 'lucide-react'
 
 export function Auth() {
   const { language, setLanguage } = useI18n();
-  const { sendMagicLink, user, initialized } = useAuth();
+  const { sendMagicLink, user, initialized, cooldownRemaining } = useAuth();
 
   // If already authenticated, redirect to courses page
   if (initialized && user) {
@@ -22,8 +22,13 @@ export function Auth() {
   const [error, setError] = useState<string | null>(null);
   const [linkSent, setLinkSent] = useState(false);
 
-  const handleSendLink = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSendLink = async (e?: React.FormEvent | React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+    }
+    // Prevent multiple concurrent submissions and respect active cooldown
+    if (loading || cooldownRemaining > 0) return;
+
     setLoading(true);
     setError(null);
 
@@ -110,9 +115,15 @@ export function Auth() {
                     variant="ghost"
                     className="w-full text-slate-400 hover:text-white"
                     onClick={handleSendLink}
-                    disabled={loading}
+                    disabled={loading || cooldownRemaining > 0}
                   >
-                    {language === 'th' ? 'ส่งลิงก์อีกครั้ง' : 'Resend link'}
+                    {cooldownRemaining > 0 ? (
+                      language === 'th'
+                        ? `ส่งลิงก์อีกครั้งใน ${cooldownRemaining} วินาที`
+                        : `Resend link in ${cooldownRemaining}s`
+                    ) : (
+                      language === 'th' ? 'ส่งลิงก์อีกครั้ง' : 'Resend link'
+                    )}
                   </Button>
                 </div>
               </div>
@@ -144,12 +155,18 @@ export function Auth() {
                 <Button
                   type="submit"
                   className="w-full bg-indigo-600 hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-600/20"
-                  disabled={loading}
+                  disabled={loading || cooldownRemaining > 0}
                 >
                   {loading ? (
                     <>
                       <div className="animate-spin rounded-full h-4 w-4 border-2 border-white/30 border-t-white mr-2" />
                       {language === 'th' ? 'กำลังส่ง...' : 'Sending...'}
+                    </>
+                  ) : cooldownRemaining > 0 ? (
+                    <>
+                      {language === 'th'
+                        ? `กรุณารออีก ${cooldownRemaining} วินาที`
+                        : `Please wait ${cooldownRemaining}s`}
                     </>
                   ) : (
                     <>

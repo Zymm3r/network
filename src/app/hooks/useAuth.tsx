@@ -19,6 +19,7 @@ interface AuthContextValue {
   initialized: boolean;
   sendMagicLink: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
+  cooldownRemaining: number; // Persistent magic link cooldown remaining (in seconds)
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -56,11 +57,55 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
+  const [cooldownRemaining, setCooldownRemaining] = useState<number>(0);
+
+  // Cooldown timer interval ref
+  const cooldownIntervalRef = useRef<any>(null);
+  // Concurrent execution lock ref for sendMagicLink
+  const isSendingMagicLinkRef = useRef(false);
 
   // Guard against double-init in StrictMode
   const initRef = useRef(false);
   // Track if component is still mounted to prevent setState on unmounted component
   const mountedRef = useRef(true);
+
+  // ─── Cooldown Timer Helpers ──────────────────────────────────────────
+  const startCooldownTimer = useCallback((secondsLeft: number) => {
+    if (cooldownIntervalRef.current) {
+      clearInterval(cooldownIntervalRef.current);
+    }
+    setCooldownRemaining(secondsLeft);
+    
+    cooldownIntervalRef.current = setInterval(() => {
+      setCooldownRemaining((prev) => {
+        if (prev <= 1) {
+          if (cooldownIntervalRef.current) {
+            clearInterval(cooldownIntervalRef.current);
+            cooldownIntervalRef.current = null;
+          }
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  }, []);
+
+  // Check for persistent cooldown in LocalStorage on mount
+  useEffect(() => {
+    const lastSent = localStorage.getItem('sb-magic-link-cooldown');
+    if (lastSent) {
+      const elapsed = Date.now() - parseInt(lastSent, 10);
+      if (elapsed < 60000) {
+        const remaining = Math.ceil((60000 - elapsed) / 1000);
+        startCooldownTimer(remaining);
+      }
+    }
+    return () => {
+      if (cooldownIntervalRef.current) {
+        clearInterval(cooldownIntervalRef.current);
+      }
+    };
+  }, [startCooldownTimer]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -172,6 +217,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []); // Empty deps — runs once
 
   const sendMagicLink = useCallback(async (email: string) => {
+    // 1. Prevent concurrent duplicate requests (locking)
+    if (isSendingMagicLinkRef.current) {
+      authLog('MAGIC_LINK_ABORT', 'Duplicate execution blocked. Request already in progress.');
+      return;
+    }
+
+    // 2. Prevent repeated requests via local storage cooldown (rate-limit protection)
+    const lastSent = localStorage.getItem('sb-magic-link-cooldown');
+    if (lastSent) {
+      const elapsed = Date.now() - parseInt(lastSent, 10);
+      if (elapsed < 60000) {
+        const remaining = Math.ceil((60000 - elapsed) / 1000);
+        authLog('MAGIC_LINK_ABORT', `Cooldown active. ${remaining}s remaining.`);
+        throw new Error(`กรุณารออีก ${remaining} วินาทีก่อนส่งลิงก์ใหม่ (Please wait ${remaining}s before requesting a new link)`);
+      }
+    }
+
+    isSendingMagicLinkRef.current = true;
     authLog('MAGIC_LINK_SEND', { email });
     try {
       const { error } = await supabase.auth.signInWithOtp({
@@ -180,16 +243,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
       });
+
       if (error) {
         authLog('MAGIC_LINK_ERROR', error.message);
         throw error;
       }
+
+      // Success: Save cooldown timestamp and trigger countdown
+      localStorage.setItem('sb-magic-link-cooldown', Date.now().toString());
+      startCooldownTimer(60);
+
       authLog('MAGIC_LINK_SENT', { email });
     } catch (err) {
       authLog('MAGIC_LINK_CATCH', err);
       throw err;
+    } finally {
+      isSendingMagicLinkRef.current = false;
     }
-  }, []);
+  }, [startCooldownTimer]);
 
   const signOut = useCallback(async () => {
     authLog('SIGNOUT_START', 'Clearing session...');
@@ -221,7 +292,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, initialized, sendMagicLink, signOut }}>
+    <AuthContext.Provider value={{ user, loading, initialized, sendMagicLink, signOut, cooldownRemaining }}>
       {children}
     </AuthContext.Provider>
   );
