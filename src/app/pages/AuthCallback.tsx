@@ -4,13 +4,15 @@ import { useAuth } from '../hooks/useAuth';
 import { Network, CheckCircle2, XCircle } from 'lucide-react';
 
 /**
- * Handles the magic link callback.
- * When the user clicks the magic link in their email, Supabase redirects
- * to this route with auth tokens in the URL hash.
+ * Magic link callback page.
  *
- * The AuthProvider's `detectSessionInUrl: true` + `onAuthStateChange`
- * automatically picks up the tokens and updates the shared auth state.
- * This component simply watches the auth context and redirects on success.
+ * When the user clicks the email link, Supabase redirects here with tokens
+ * in the URL hash. The Supabase client (`detectSessionInUrl: true`) parses
+ * them automatically and fires SIGNED_IN via onAuthStateChange.
+ *
+ * This component watches the auth context and:
+ *   - On success → shows a confirmation and redirects to /courses
+ *   - On timeout → shows an error with a link back to /auth
  */
 export function AuthCallback() {
   const navigate = useNavigate();
@@ -19,28 +21,27 @@ export function AuthCallback() {
   const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => {
-    // If auth is initialized and we have a user, the magic link worked
-    if (initialized && user) {
+    if (!initialized) return; // Wait for auth bootstrap
+
+    if (user) {
+      // Session established — magic link worked
       setStatus('success');
-      const timer = setTimeout(() => {
-        navigate('/courses', { replace: true });
-      }, 1200);
-      return () => clearTimeout(timer);
+      const t = setTimeout(() => navigate('/courses', { replace: true }), 1200);
+      return () => clearTimeout(t);
     }
 
-    // If auth is initialized but no user after a reasonable timeout, show error
-    if (initialized && !user) {
-      const timer = setTimeout(() => {
-        setStatus((prev) => {
-          if (prev === 'loading') {
-            setErrorMsg('ลิงก์หมดอายุหรือไม่ถูกต้อง กรุณาขอลิงก์ใหม่');
-            return 'error';
-          }
-          return prev;
-        });
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
+    // Auth is initialized but no user — wait a bit for token exchange,
+    // then show an error if still no session.
+    const t = setTimeout(() => {
+      setStatus((prev) => {
+        if (prev === 'loading') {
+          setErrorMsg('ลิงก์หมดอายุหรือไม่ถูกต้อง กรุณาขอลิงก์ใหม่');
+          return 'error';
+        }
+        return prev;
+      });
+    }, 5000);
+    return () => clearTimeout(t);
   }, [initialized, user, navigate]);
 
   return (

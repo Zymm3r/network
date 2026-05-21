@@ -2,11 +2,12 @@ import { createContext, useContext, useState, useEffect, useCallback, useRef } f
 import type { ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
 import type { User } from '../types';
+import type { Session } from '@supabase/supabase-js';
 
 // ─── Debug Logger ────────────────────────────────────────────────────
 const AUTH_DEBUG = import.meta.env.DEV;
 
-function authLog(event: string, detail?: any) {
+function authLog(event: string, detail?: unknown) {
   if (!AUTH_DEBUG) return;
   const ts = new Date().toISOString().slice(11, 23);
   console.log(`%c[Auth ${ts}] ${event}`, 'color: #818cf8; font-weight: bold', detail ?? '');
@@ -19,70 +20,60 @@ interface AuthContextValue {
   initialized: boolean;
   sendMagicLink: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
-  cooldownRemaining: number; // Persistent magic link cooldown remaining (in seconds)
+  cooldownRemaining: number;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-// ─── Helper: build User from Supabase session ───────────────────────
-function buildUserFromSession(supabaseUser: { id: string; email?: string; user_metadata?: any }): User {
+// ─── Helpers ─────────────────────────────────────────────────────────
+
+/** Build a User object from Supabase session data (no DB call). */
+function buildUser(su: { id: string; email?: string; user_metadata?: Record<string, unknown> }): User {
   return {
-    id: supabaseUser.id,
-    email: supabaseUser.email || '',
-    full_name_th: supabaseUser.user_metadata?.full_name_th || null,
-    full_name_en: supabaseUser.user_metadata?.full_name_en || null,
-    avatar_url: supabaseUser.user_metadata?.avatar_url || null,
+    id: su.id,
+    email: su.email || '',
+    full_name_th: (su.user_metadata?.full_name_th as string) || null,
+    full_name_en: (su.user_metadata?.full_name_en as string) || null,
+    avatar_url: (su.user_metadata?.avatar_url as string) || null,
     role: 'student',
     created_at: new Date().toISOString(),
   };
 }
 
-async function resolveUser(supabaseUser: { id: string; email?: string; user_metadata?: any }): Promise<User> {
+/** Try to resolve a richer profile from the `users` table, fall back to session data. */
+async function resolveUser(su: { id: string; email?: string; user_metadata?: Record<string, unknown> }): Promise<User> {
   try {
-    const { data: profile } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', supabaseUser.id)
-      .single();
-
-    return profile || buildUserFromSession(supabaseUser);
+    const { data } = await supabase.from('users').select('*').eq('id', su.id).single();
+    return data || buildUser(su);
   } catch {
-    // Table might not exist or RLS might block — fallback gracefully
-    return buildUserFromSession(supabaseUser);
+    return buildUser(su);
   }
 }
+
+// Maximum time to wait for INITIAL_SESSION before forcing initialized=true.
+// This prevents the "กำลังเตรียมระบบ..." spinner from hanging forever.
+const INIT_TIMEOUT_MS = 8_000;
 
 // ─── Provider ────────────────────────────────────────────────────────
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
-  const [cooldownRemaining, setCooldownRemaining] = useState<number>(0);
+  const [cooldownRemaining, setCooldownRemaining] = useState(0);
 
-  // Cooldown timer interval ref
-  const cooldownIntervalRef = useRef<any>(null);
-  // Concurrent execution lock ref for sendMagicLink
-  const isSendingMagicLinkRef = useRef(false);
+  // Refs for cooldown / request locking (stable across renders)
+  const cooldownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const isSendingRef = useRef(false);
 
-  // Guard against double-init in StrictMode
-  const initRef = useRef(false);
-  // Track if component is still mounted to prevent setState on unmounted component
-  const mountedRef = useRef(true);
-
-  // ─── Cooldown Timer Helpers ──────────────────────────────────────────
-  const startCooldownTimer = useCallback((secondsLeft: number) => {
-    if (cooldownIntervalRef.current) {
-      clearInterval(cooldownIntervalRef.current);
-    }
-    setCooldownRemaining(secondsLeft);
-    
+  // ─── Cooldown Timer ─────────────────────────────────────────────
+  const startCooldown = useCallback((seconds: number) => {
+    if (cooldownIntervalRef.current) clearInterval(cooldownIntervalRef.current);
+    setCooldownRemaining(seconds);
     cooldownIntervalRef.current = setInterval(() => {
       setCooldownRemaining((prev) => {
         if (prev <= 1) {
-          if (cooldownIntervalRef.current) {
-            clearInterval(cooldownIntervalRef.current);
-            cooldownIntervalRef.current = null;
-          }
+          clearInterval(cooldownIntervalRef.current!);
+          cooldownIntervalRef.current = null;
           return 0;
         }
         return prev - 1;
@@ -90,208 +81,171 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, 1000);
   }, []);
 
-  // Check for persistent cooldown in LocalStorage on mount
+  // Restore persistent cooldown on mount
   useEffect(() => {
-    const lastSent = localStorage.getItem('sb-magic-link-cooldown');
-    if (lastSent) {
-      const elapsed = Date.now() - parseInt(lastSent, 10);
-      if (elapsed < 60000) {
-        const remaining = Math.ceil((60000 - elapsed) / 1000);
-        startCooldownTimer(remaining);
-      }
+    const ts = localStorage.getItem('sb-magic-link-cooldown');
+    if (ts) {
+      const remaining = Math.ceil((60_000 - (Date.now() - Number(ts))) / 1000);
+      if (remaining > 0) startCooldown(remaining);
     }
     return () => {
-      if (cooldownIntervalRef.current) {
-        clearInterval(cooldownIntervalRef.current);
-      }
+      if (cooldownIntervalRef.current) clearInterval(cooldownIntervalRef.current);
     };
-  }, [startCooldownTimer]);
+  }, [startCooldown]);
 
+  // ─── Auth Bootstrap (single useEffect, no refs) ─────────────────
+  //
+  // Architecture:
+  //   Supabase v2 fires `INITIAL_SESSION` exactly once when the SDK
+  //   finishes restoring (or failing to restore) a session from storage.
+  //   We use that single event as our initialization signal.
+  //   All subsequent events (SIGNED_IN, SIGNED_OUT, TOKEN_REFRESHED)
+  //   update the user state normally.
+  //
+  //   A timeout ensures we never hang on the loading screen even if
+  //   the SDK silently fails or the network is unreachable.
+  //
   useEffect(() => {
-    mountedRef.current = true;
+    authLog('BOOT', 'Starting auth bootstrap');
+    let disposed = false; // cleanup flag for this effect instance
 
-    // Prevent double initialization in React 18 StrictMode
-    if (initRef.current) return;
-    initRef.current = true;
-
-    authLog('INIT', 'Starting auth initialization');
-
-    let subscription: { unsubscribe: () => void } | null = null;
-
-    const initializeAuth = async () => {
-      try {
-        // Step 1: Restore session from storage
-        const { data: { session }, error } = await supabase.auth.getSession();
-
-        if (error) {
-          authLog('INIT_ERROR', error.message);
-          if (mountedRef.current) {
-            setUser(null);
-            setLoading(false);
-            setInitialized(true);
-          }
-          return;
-        }
-
-        if (session?.user) {
-          authLog('SESSION_RESTORED', { userId: session.user.id, email: session.user.email });
-          const resolvedUser = await resolveUser(session.user);
-          if (mountedRef.current) {
-            setUser(resolvedUser);
-          }
-        } else {
-          authLog('NO_SESSION', 'No existing session found');
-          if (mountedRef.current) {
-            setUser(null);
-          }
-        }
-      } catch (err) {
-        authLog('INIT_CATCH', err);
-        if (mountedRef.current) {
-          setUser(null);
-        }
-      } finally {
-        if (mountedRef.current) {
-          setLoading(false);
-          setInitialized(true);
-        }
+    // Helper: process a session into user state
+    const applySession = async (session: Session | null, label: string) => {
+      if (disposed) return;
+      if (session?.user) {
+        authLog(label, { userId: session.user.id, email: session.user.email });
+        const resolved = await resolveUser(session.user);
+        if (!disposed) setUser(resolved);
+      } else {
+        authLog(label, 'No session');
+        if (!disposed) setUser(null);
       }
     };
 
-    // Step 2: Set up the SINGLE auth state change listener
-    // Must be set up BEFORE getSession() to avoid missing events
-    const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
-      authLog('AUTH_EVENT', { event, hasSession: !!session, userId: session?.user?.id });
+    // Helper: mark initialization complete (idempotent)
+    const markReady = () => {
+      if (disposed) return;
+      setLoading(false);
+      setInitialized(true);
+      authLog('READY', 'Auth initialized');
+    };
 
-      if (!mountedRef.current) return;
+    // Safety timeout — if INITIAL_SESSION never fires, force ready state
+    const timeout = setTimeout(() => {
+      if (!disposed) {
+        authLog('TIMEOUT', `Auth bootstrap timed out after ${INIT_TIMEOUT_MS}ms — forcing ready`);
+        markReady();
+      }
+    }, INIT_TIMEOUT_MS);
+
+    // Single onAuthStateChange listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      authLog('EVENT', { event, hasSession: !!session, userId: session?.user?.id });
 
       switch (event) {
-        case 'SIGNED_IN':
+        case 'INITIAL_SESSION': {
+          // This is the primary initialization path.
+          // It fires once when Supabase finishes restoring session from localStorage.
+          await applySession(session, 'INITIAL_SESSION');
+          clearTimeout(timeout);
+          markReady();
+          break;
+        }
+        case 'SIGNED_IN': {
+          await applySession(session, 'SIGNED_IN');
+          // Ensure initialized in case INITIAL_SESSION was somehow missed
+          if (!disposed) { setLoading(false); setInitialized(true); }
+          break;
+        }
         case 'TOKEN_REFRESHED': {
-          if (session?.user) {
-            authLog(event === 'SIGNED_IN' ? 'LOGIN' : 'TOKEN_REFRESH', {
-              userId: session.user.id,
-              email: session.user.email,
-            });
-            const resolvedUser = await resolveUser(session.user);
-            if (mountedRef.current) {
-              setUser(resolvedUser);
-              setLoading(false);
-              setInitialized(true);
-            }
-          }
+          await applySession(session, 'TOKEN_REFRESHED');
           break;
         }
         case 'SIGNED_OUT': {
-          authLog('LOGOUT', 'Session cleared');
-          if (mountedRef.current) {
-            setUser(null);
-            setLoading(false);
-            setInitialized(true);
-          }
-          break;
-        }
-        case 'INITIAL_SESSION': {
-          // This fires when getSession() completes on newer Supabase versions
-          // We already handle this in initializeAuth, but ensure we don't flicker
-          authLog('INITIAL_SESSION', { hasSession: !!session });
+          if (!disposed) { setUser(null); setLoading(false); setInitialized(true); }
+          authLog('SIGNED_OUT', 'Session cleared by server/client');
           break;
         }
         default:
-          authLog('UNHANDLED_EVENT', event);
+          authLog('UNHANDLED', event);
       }
     });
 
-    subscription = data.subscription;
-
-    // Start the async init
-    initializeAuth();
-
     return () => {
-      mountedRef.current = false;
-      initRef.current = false; // Allow clean re-initialization on subsequent mounts (fixes React 18 StrictMode race condition)
-      if (subscription) {
-        authLog('CLEANUP', 'Unsubscribing auth listener');
-        subscription.unsubscribe();
-      }
+      disposed = true;
+      clearTimeout(timeout);
+      subscription.unsubscribe();
+      authLog('CLEANUP', 'Auth listener unsubscribed');
     };
-  }, []); // Empty deps — runs once
+  }, []); // Empty deps — runs once per mount
 
+  // ─── sendMagicLink ──────────────────────────────────────────────
   const sendMagicLink = useCallback(async (email: string) => {
-    // 1. Prevent concurrent duplicate requests (locking)
-    if (isSendingMagicLinkRef.current) {
-      authLog('MAGIC_LINK_ABORT', 'Duplicate execution blocked. Request already in progress.');
+    // Lock: prevent concurrent duplicate calls
+    if (isSendingRef.current) {
+      authLog('MAGIC_LINK_BLOCKED', 'Request already in flight');
       return;
     }
 
-    // 2. Prevent repeated requests via local storage cooldown (rate-limit protection)
-    const lastSent = localStorage.getItem('sb-magic-link-cooldown');
-    if (lastSent) {
-      const elapsed = Date.now() - parseInt(lastSent, 10);
-      if (elapsed < 60000) {
-        const remaining = Math.ceil((60000 - elapsed) / 1000);
-        authLog('MAGIC_LINK_ABORT', `Cooldown active. ${remaining}s remaining.`);
-        throw new Error(`กรุณารออีก ${remaining} วินาทีก่อนส่งลิงก์ใหม่ (Please wait ${remaining}s before requesting a new link)`);
+    // Cooldown: prevent rapid repeated requests
+    const lastTs = localStorage.getItem('sb-magic-link-cooldown');
+    if (lastTs) {
+      const remaining = Math.ceil((60_000 - (Date.now() - Number(lastTs))) / 1000);
+      if (remaining > 0) {
+        authLog('MAGIC_LINK_COOLDOWN', `${remaining}s remaining`);
+        throw new Error(
+          `กรุณารออีก ${remaining} วินาทีก่อนส่งลิงก์ใหม่ (Please wait ${remaining}s)`
+        );
       }
     }
 
-    isSendingMagicLinkRef.current = true;
+    isSendingRef.current = true;
     authLog('MAGIC_LINK_SEND', { email });
+
     try {
       const { error } = await supabase.auth.signInWithOtp({
         email,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-        },
+        options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
       });
-
       if (error) {
         authLog('MAGIC_LINK_ERROR', error.message);
         throw error;
       }
-
-      // Success: Save cooldown timestamp and trigger countdown
-      localStorage.setItem('sb-magic-link-cooldown', Date.now().toString());
-      startCooldownTimer(60);
-
+      // Persist cooldown
+      localStorage.setItem('sb-magic-link-cooldown', String(Date.now()));
+      startCooldown(60);
       authLog('MAGIC_LINK_SENT', { email });
     } catch (err) {
       authLog('MAGIC_LINK_CATCH', err);
       throw err;
     } finally {
-      isSendingMagicLinkRef.current = false;
+      isSendingRef.current = false;
     }
-  }, [startCooldownTimer]);
+  }, [startCooldown]);
 
+  // ─── signOut ────────────────────────────────────────────────────
   const signOut = useCallback(async () => {
-    authLog('SIGNOUT_START', 'Clearing session...');
+    authLog('SIGNOUT_START', 'Clearing session');
+    // Clear UI state immediately — don't wait for Supabase round-trip
+    setUser(null);
+
     try {
-      // Clear local state FIRST to ensure UI reacts immediately
-      setUser(null);
-
-      // Then clear the Supabase session
       const { error } = await supabase.auth.signOut();
-      if (error) {
-        authLog('SIGNOUT_ERROR', error.message);
-        // Even on error, keep user cleared to prevent stale re-login
-      }
-
-      // Belt-and-suspenders: clear any storage remnants
-      try {
-        const storageKey = `sb-${new URL(import.meta.env.VITE_SUPABASE_URL || 'https://placeholder.supabase.co').hostname.split('.')[0]}-auth-token`;
-        localStorage.removeItem(storageKey);
-      } catch {
-        // Storage access might fail in some contexts
-      }
-
-      authLog('SIGNOUT_COMPLETE', 'Session fully cleared');
+      if (error) authLog('SIGNOUT_ERROR', error.message);
     } catch (err) {
       authLog('SIGNOUT_CATCH', err);
-      // Ensure user is still cleared even if signOut throws
-      setUser(null);
     }
+
+    // Belt-and-suspenders: wipe auth token from localStorage
+    try {
+      const host = new URL(import.meta.env.VITE_SUPABASE_URL || 'https://x.supabase.co').hostname.split('.')[0];
+      localStorage.removeItem(`sb-${host}-auth-token`);
+    } catch { /* ignore */ }
+
+    authLog('SIGNOUT_COMPLETE', 'Session fully cleared');
   }, []);
 
+  // ─── Render ─────────────────────────────────────────────────────
   return (
     <AuthContext.Provider value={{ user, loading, initialized, sendMagicLink, signOut, cooldownRemaining }}>
       {children}
@@ -301,12 +255,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 // ─── Consumer Hook ───────────────────────────────────────────────────
 export function useAuth(): AuthContextValue {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error(
-      'useAuth() must be used within an <AuthProvider>. ' +
-      'Wrap your app with <AuthProvider> in App.tsx.'
-    );
+  const ctx = useContext(AuthContext);
+  if (!ctx) {
+    throw new Error('useAuth() must be used within <AuthProvider>. Wrap your app in App.tsx.');
   }
-  return context;
+  return ctx;
 }

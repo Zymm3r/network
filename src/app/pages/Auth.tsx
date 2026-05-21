@@ -12,22 +12,20 @@ export function Auth() {
   const { language, setLanguage } = useI18n();
   const { sendMagicLink, user, initialized, cooldownRemaining } = useAuth();
 
-  // If already authenticated, redirect to courses page
-  if (initialized && user) {
-    return <Navigate to="/courses" replace />;
-  }
-
+  // Local form state — ALL hooks must be declared before any early returns
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [linkSent, setLinkSent] = useState(false);
 
+  // If already authenticated, redirect to courses page
+  if (initialized && user) {
+    return <Navigate to="/courses" replace />;
+  }
+
   const handleSendLink = async (e?: React.FormEvent | React.MouseEvent) => {
-    if (e) {
-      e.preventDefault();
-    }
-    // Prevent multiple concurrent submissions and respect active cooldown
-    if (loading || cooldownRemaining > 0) return;
+    if (e) e.preventDefault();
+    if (loading || cooldownRemaining > 0) return; // prevent double-submit
 
     setLoading(true);
     setError(null);

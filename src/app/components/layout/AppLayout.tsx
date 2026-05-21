@@ -6,17 +6,15 @@ import { GlobalSearch } from '../GlobalSearch';
 import { Toaster } from 'sonner';
 import { useAuth } from '../../hooks/useAuth';
 
-/** Shared consonant-initials helper */
+/** Extract first two consonant initials from email local part. */
 function getConsonantInitials(email: string | undefined): string {
   if (!email) return 'G';
-  const localPart = email.split('@')[0] || '';
+  const local = email.split('@')[0] || '';
   const vowels = 'aeiouAEIOU';
-  const consonants = localPart
-    .split('')
-    .filter((ch) => /[a-zA-Z]/.test(ch) && !vowels.includes(ch));
+  const consonants = local.split('').filter((c) => /[a-zA-Z]/.test(c) && !vowels.includes(c));
   if (consonants.length >= 2) return (consonants[0] + consonants[1]).toUpperCase();
   if (consonants.length === 1) return consonants[0].toUpperCase();
-  const alpha = localPart.split('').filter((ch) => /[a-zA-Z]/.test(ch));
+  const alpha = local.split('').filter((c) => /[a-zA-Z]/.test(c));
   return alpha.length >= 2
     ? (alpha[0] + alpha[1]).toUpperCase()
     : alpha.length === 1
@@ -28,7 +26,9 @@ export function AppLayout() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const { user, initialized } = useAuth();
 
-  // ─── Auth Gate: prevent blank screen while auth is resolving ───
+  // ─── Loading Gate ──────────────────────────────────────────────
+  // Show a branded loading screen while auth bootstraps.
+  // The AuthProvider guarantees initialized=true within 8 seconds max.
   if (!initialized) {
     return (
       <div className="flex items-center justify-center h-screen bg-[#F8FAFC]">
@@ -40,8 +40,11 @@ export function AppLayout() {
     );
   }
 
-  // Redirect unauthenticated users to the auth page
-  if (initialized && !user) {
+  // ─── Auth Gate ─────────────────────────────────────────────────
+  // Once initialized, redirect unauthenticated users to /auth.
+  // This is safe because initialized=true guarantees the session
+  // check has completed (either found a user or confirmed none).
+  if (!user) {
     return <Navigate to="/auth" replace />;
   }
 
