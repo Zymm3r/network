@@ -209,6 +209,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => {
       mountedRef.current = false;
+      initRef.current = false; // Allow clean re-initialization on subsequent mounts (fixes React 18 StrictMode race condition)
       if (subscription) {
         authLog('CLEANUP', 'Unsubscribing auth listener');
         subscription.unsubscribe();
