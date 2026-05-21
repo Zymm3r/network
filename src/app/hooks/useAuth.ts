@@ -52,7 +52,7 @@ export function useAuth() {
     initializeAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session?.user) {
+      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {
         const { data: profile } = await supabase
           .from('users')
           .select('*')
@@ -80,33 +80,22 @@ export function useAuth() {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = useCallback(async (email: string, password: string, options?: {
-    fullNameTh?: string;
-    fullNameEn?: string;
-  }) => {
-    const { data, error } = await supabase.auth.signUp({
+  /**
+   * Send a magic link to the user's email.
+   * - First-time users: automatically signs them up and sends a magic link.
+   * - Returning users: sends a magic link for login.
+   * No password is ever stored or required.
+   */
+  const sendMagicLink = useCallback(async (email: string) => {
+    const { error } = await supabase.auth.signInWithOtp({
       email,
-      password,
       options: {
-        data: {
-          full_name_th: options?.fullNameTh || '',
-          full_name_en: options?.fullNameEn || '',
-        },
+        // Redirect back to the app after clicking the magic link
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
       },
     });
 
     if (error) throw error;
-    return data;
-  }, []);
-
-  const signIn = useCallback(async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error) throw error;
-    return data;
   }, []);
 
   const signOut = useCallback(async () => {
@@ -119,8 +108,7 @@ export function useAuth() {
     user: state.user,
     loading: state.loading,
     initialized: state.initialized,
-    signUp,
-    signIn,
+    sendMagicLink,
     signOut,
   };
 }

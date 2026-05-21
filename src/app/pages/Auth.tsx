@@ -1,49 +1,37 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router';
 import { useI18n } from '../i18n';
 import { useAuth } from '../hooks/useAuth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { Network, Mail, Lock, ArrowRight } from 'lucide-react';
+import { Network, Mail, ArrowRight, CheckCircle2, Sparkles } from 'lucide-react';
 
 export function Auth() {
-  const { t, language, setLanguage } = useI18n();
-  const navigate = useNavigate();
-  const { signIn, signUp } = useAuth();
+  const { language, setLanguage } = useI18n();
+  const { sendMagicLink } = useAuth();
 
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [linkSent, setLinkSent] = useState(false);
 
-  const handleSignIn = async (e: React.FormEvent) => {
+  const handleSendLink = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
     try {
-      await signIn(email, password);
-      navigate('/courses');
+      await sendMagicLink(email);
+      setLinkSent(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'เข้าสู่ระบบไม่สำเร็จ');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-
-    try {
-      await signUp(email, password);
-      navigate('/courses');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'สมัครสมาชิกไม่สำเร็จ');
+      setError(
+        err instanceof Error
+          ? err.message
+          : language === 'th'
+          ? 'ส่งลิงก์ไม่สำเร็จ กรุณาลองใหม่'
+          : 'Failed to send link. Please try again.'
+      );
     } finally {
       setLoading(false);
     }
@@ -61,7 +49,9 @@ export function Auth() {
             <Network className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-3xl font-bold text-white">Network 101</h1>
-          <p className="text-indigo-300 mt-2">{language === 'th' ? 'การสร้างเครือข่ายพื้นฐาน' : 'Network Fundamentals'}</p>
+          <p className="text-indigo-300 mt-2">
+            {language === 'th' ? 'การสร้างเครือข่ายพื้นฐาน' : 'Network Fundamentals'}
+          </p>
         </div>
 
         <Card className="border-slate-800 bg-slate-900/80 backdrop-blur">
@@ -70,102 +60,107 @@ export function Auth() {
               {language === 'th' ? 'ยินดีต้อนรับ' : 'Welcome'}
             </CardTitle>
             <CardDescription className="text-slate-400">
-              {language === 'th' ? 'เข้าสู่ระบบเพื่อเริ่มต้นการเรียนรู้' : 'Sign in to start learning'}
+              {language === 'th'
+                ? 'กรอกอีเมลเพื่อรับลิงก์เข้าสู่ระบบ ไม่ต้องใช้รหัสผ่าน'
+                : 'Enter your email to receive a sign-in link. No password needed.'}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="signin" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 bg-slate-800">
-                <TabsTrigger value="signin" className="text-slate-300 data-[state=active]:text-white data-[state=active]:bg-slate-700">
-                  {t.auth.login}
-                </TabsTrigger>
-                <TabsTrigger value="signup" className="text-slate-300 data-[state=active]:text-white data-[state=active]:bg-slate-700">
-                  {t.auth.signup}
-                </TabsTrigger>
-              </TabsList>
+            {linkSent ? (
+              /* Success State */
+              <div className="flex flex-col items-center text-center py-4 space-y-4">
+                <div className="w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+                  <CheckCircle2 className="w-8 h-8 text-emerald-400" />
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-lg font-semibold text-white">
+                    {language === 'th' ? 'ส่งลิงก์แล้ว!' : 'Link Sent!'}
+                  </h3>
+                  <p className="text-slate-400 text-sm leading-relaxed max-w-xs mx-auto">
+                    {language === 'th'
+                      ? `เราส่งลิงก์เข้าสู่ระบบไปที่`
+                      : `We sent a sign-in link to`}
+                  </p>
+                  <p className="text-indigo-300 font-medium text-sm break-all">{email}</p>
+                  <p className="text-slate-500 text-xs mt-2">
+                    {language === 'th'
+                      ? 'กรุณาตรวจสอบอีเมลและคลิกลิงก์เพื่อเข้าสู่ระบบ'
+                      : 'Please check your email and click the link to sign in.'}
+                  </p>
+                </div>
 
-              <TabsContent value="signin">
-                <form onSubmit={handleSignIn} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signin-email" className="text-slate-300">{t.auth.email}</Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                      <Input
-                        id="signin-email"
-                        type="email"
-                        placeholder="email@example.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                        className="bg-slate-800 border-slate-700 text-white pl-10"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signin-password" className="text-slate-300">{t.auth.password}</Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                      <Input
-                        id="signin-password"
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        className="bg-slate-800 border-slate-700 text-white pl-10"
-                      />
-                    </div>
-                  </div>
-                  {error && (
-                    <p className="text-sm text-red-400 bg-red-900/30 p-2 rounded">{error}</p>
-                  )}
-                  <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700" disabled={loading}>
-                    {loading ? t.common.loading : t.auth.login}
-                    <ArrowRight className="ml-2 w-4 h-4" />
+                <div className="flex flex-col gap-2 w-full pt-2">
+                  <Button
+                    variant="outline"
+                    className="w-full border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
+                    onClick={() => {
+                      setLinkSent(false);
+                      setEmail('');
+                    }}
+                  >
+                    {language === 'th' ? 'ใช้อีเมลอื่น' : 'Use a different email'}
                   </Button>
-                </form>
-              </TabsContent>
+                  <Button
+                    variant="ghost"
+                    className="w-full text-slate-400 hover:text-white"
+                    onClick={handleSendLink}
+                    disabled={loading}
+                  >
+                    {language === 'th' ? 'ส่งลิงก์อีกครั้ง' : 'Resend link'}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              /* Email Form */
+              <form onSubmit={handleSendLink} className="space-y-5">
+                <div className="space-y-2">
+                  <Label htmlFor="magic-email" className="text-slate-300">
+                    {language === 'th' ? 'ที่อยู่อีเมล' : 'Email address'}
+                  </Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                    <Input
+                      id="magic-email"
+                      type="email"
+                      placeholder="email@example.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      className="bg-slate-800 border-slate-700 text-white pl-10 focus:border-indigo-500 focus:ring-indigo-500/20"
+                    />
+                  </div>
+                </div>
 
-              <TabsContent value="signup">
-                <form onSubmit={handleSignUp} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-email" className="text-slate-300">{t.auth.email}</Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                      <Input
-                        id="signup-email"
-                        type="email"
-                        placeholder="email@example.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                        className="bg-slate-800 border-slate-700 text-white pl-10"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-password" className="text-slate-300">{t.auth.password}</Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                      <Input
-                        id="signup-password"
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        className="bg-slate-800 border-slate-700 text-white pl-10"
-                      />
-                    </div>
-                  </div>
-                  {error && (
-                    <p className="text-sm text-red-400 bg-red-900/30 p-2 rounded">{error}</p>
+                {error && (
+                  <p className="text-sm text-red-400 bg-red-900/30 p-2 rounded">{error}</p>
+                )}
+
+                <Button
+                  type="submit"
+                  className="w-full bg-indigo-600 hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-600/20"
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white/30 border-t-white mr-2" />
+                      {language === 'th' ? 'กำลังส่ง...' : 'Sending...'}
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      {language === 'th' ? 'ส่งลิงก์เข้าสู่ระบบ' : 'Send Magic Link'}
+                      <ArrowRight className="ml-2 w-4 h-4" />
+                    </>
                   )}
-                  <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700" disabled={loading}>
-                    {loading ? t.common.loading : t.auth.signup}
-                    <ArrowRight className="ml-2 w-4 h-4" />
-                  </Button>
-                </form>
-              </TabsContent>
-            </Tabs>
+                </Button>
+
+                <p className="text-xs text-slate-500 text-center leading-relaxed">
+                  {language === 'th'
+                    ? 'ไม่ต้องสร้างรหัสผ่าน — เราจะส่งลิงก์ไปยังอีเมลของคุณเพื่อเข้าสู่ระบบทุกครั้ง เซสชันจะคงอยู่ 3 วัน'
+                    : 'No password required — we\'ll email you a secure link to sign in. Sessions last 3 days.'}
+                </p>
+              </form>
+            )}
           </CardContent>
         </Card>
 

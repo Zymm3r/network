@@ -10,6 +10,7 @@ import { PathDetail } from './pages/PathDetail';
 import { Resources } from './pages/Resources';
 import { Profile } from './pages/Profile';
 import { Auth } from './pages/Auth';
+import { AuthCallback } from './pages/AuthCallback';
 
 function NotFound() {
   return (
@@ -25,6 +26,10 @@ export const router = createBrowserRouter([
   {
     path: '/auth',
     Component: Auth,
+  },
+  {
+    path: '/auth/callback',
+    Component: AuthCallback,
   },
   {
     path: '/',
