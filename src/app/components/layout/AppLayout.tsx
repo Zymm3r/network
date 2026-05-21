@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Outlet } from 'react-router';
+import { Outlet, Navigate } from 'react-router';
 import { Menu, Bell, RefreshCw, Trophy } from 'lucide-react';
 import { Sidebar } from './Sidebar';
 import { GlobalSearch } from '../GlobalSearch';
@@ -38,6 +38,11 @@ export function AppLayout() {
         </div>
       </div>
     );
+  }
+
+  // Redirect unauthenticated users to the auth page
+  if (initialized && !user) {
+    return <Navigate to="/auth" replace />;
   }
 
   return (

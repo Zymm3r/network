@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Navigate } from 'react-router';
 import { useI18n } from '../i18n';
 import { useAuth } from '../hooks/useAuth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
@@ -9,7 +10,12 @@ import { Network, Mail, ArrowRight, CheckCircle2, Sparkles } from 'lucide-react'
 
 export function Auth() {
   const { language, setLanguage } = useI18n();
-  const { sendMagicLink } = useAuth();
+  const { sendMagicLink, user, initialized } = useAuth();
+
+  // If already authenticated, redirect to courses page
+  if (initialized && user) {
+    return <Navigate to="/courses" replace />;
+  }
 
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
