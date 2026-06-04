@@ -1,11 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useI18n } from '../i18n';
 import { useLessons } from '../hooks/useLessons';
+import { useAuth } from '../hooks/useAuth';
+import { supabase } from '../lib/supabase';
 import { LessonCard } from '../components/lesson/LessonCard';
 import { Skeleton } from '../components/ui/skeleton';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { FlaskConical, Video, FileQuestion, PenTool, BookOpen, CheckCircle2, Clock } from 'lucide-react';
+import QuizCard from '../components/QuizCard';
+import ExerciseCard from '../components/ExerciseCard';
 
 const lessonTypes = [
   { key: 'all', label: 'ทั้งหมด', icon: FlaskConical },
@@ -17,17 +21,48 @@ const lessonTypes = [
 
 export function Lessons() {
   const { t } = useI18n();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('all');
   const { lessons, loading, error } = useLessons({ limit: 100 });
+  const [userProgressList, setUserProgressList] = useState<{ lesson_id: string; status: string }[]>([]);
+
+  useEffect(() => {
+    const fetchUserProgress = async () => {
+      if (!user?.id) return;
+      try {
+        const { data, error: progressErr } = await supabase
+          .from('user_progress')
+          .select('lesson_id, status')
+          .eq('user_id', user.id);
+
+        if (!progressErr && data) {
+          setUserProgressList(data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch user progress stats:', err);
+      }
+    };
+
+    fetchUserProgress();
+  }, [user?.id]);
 
   const filteredLessons = activeTab === 'all'
     ? lessons
     : lessons.filter(l => l.lesson_type === activeTab);
 
+  const lessonIdsSet = new Set(lessons.map(l => l.id));
+  const completedCount = userProgressList.filter(
+    p => p.status === 'completed' && lessonIdsSet.has(p.lesson_id)
+  ).length;
+
+  const inProgressCount = userProgressList.filter(
+    p => p.status === 'in_progress' && lessonIdsSet.has(p.lesson_id)
+  ).length;
+
   const stats = {
     total: lessons.length,
-    completed: 3,
-    inProgress: 2,
+    completed: completedCount,
+    inProgress: inProgressCount,
   };
 
   return (
@@ -87,15 +122,20 @@ export function Lessons() {
         </TabsList>
       </Tabs>
 
-      {/* Error */}
-      {error && (
+      {/* Content Area */}
+      {activeTab === 'quiz' ? (
+        <div className="max-w-4xl mx-auto">
+          <QuizCard />
+        </div>
+      ) : activeTab === 'exercise' ? (
+        <div className="max-w-5xl mx-auto">
+          <ExerciseCard />
+        </div>
+      ) : error ? (
         <div className="p-4 rounded-lg bg-red-50 text-red-600 border border-red-100">
           {t.common.error}: {error.message}
         </div>
-      )}
-
-      {/* Loading */}
-      {loading ? (
+      ) : loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="space-y-3">
@@ -109,7 +149,7 @@ export function Lessons() {
         <Card className="border-dashed">
           <CardContent className="py-12 text-center">
             <FlaskConical className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">ไม่พบแบบฝึกหัด</p>
+            <p className="text-muted-foreground">ไม่พบเนื้อหา</p>
           </CardContent>
         </Card>
       ) : (

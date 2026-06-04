@@ -1,27 +1,114 @@
-import { useState } from 'react';
+import { useState, useEffect, Component } from 'react';
+import type { ErrorInfo, ReactNode } from 'react';
 import { useI18n } from '../i18n';
 import { useCourses } from '../hooks/useCourses';
+import { useAuth } from '../hooks/useAuth';
+import { supabase } from '../lib/supabase';
 import { CourseCard } from '../components/course/CourseCard';
 import { CourseFilters } from '../components/course/CourseFilters';
 import { Skeleton } from '../components/ui/skeleton';
 import { Card, CardContent } from '../components/ui/card';
-import { BookOpen, Users, Award, ArrowRight } from 'lucide-react';
+import { BookOpen, Users, Clock, ArrowRight } from 'lucide-react';
+import { useActivity } from '../contexts/ActivityContext';
 import type { CourseLevel } from '../types';
 
-export function Courses() {
-  const { t } = useI18n();
+function formatStudyTime(seconds: number, lang: 'th' | 'en') {
+  if (seconds < 60) return lang === 'th' ? `${seconds} วินาที` : `${seconds} secs`;
+  
+  const days = Math.floor(seconds / 86400);
+  const hours = Math.floor((seconds % 86400) / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const remainingSeconds = seconds % 60;
+  
+  if (days > 0) {
+    return lang === 'th' 
+      ? `${days} วัน ${hours} ชั่วโมง` 
+      : `${days} days ${hours} hrs`;
+  } else if (hours > 0) {
+    return lang === 'th' 
+      ? `${hours} ชม. ${minutes} นาที` 
+      : `${hours} hrs ${minutes} mins`;
+  } else {
+    // Show minutes and seconds so it ticks live
+    return lang === 'th' 
+      ? `${minutes} นาที ${remainingSeconds} วินาที` 
+      : `${minutes} mins ${remainingSeconds} secs`;
+  }
+}
+
+export function CoursesContent() {
+  const { t, language } = useI18n();
+  const { user, initialized } = useAuth();
   const [selectedLevel, setSelectedLevel] = useState<CourseLevel | undefined>(undefined);
+  const { totalSeconds } = useActivity();
+
+  // Route-level logging
+  useEffect(() => {
+    console.log('[Courses Auth Guard] Mount check:', { initialized, hasUser: !!user });
+  }, [initialized, user]);
 
   const { courses, loading, error } = useCourses({
     level: selectedLevel,
     limit: 50,
   });
 
+  const [courseCount, setCourseCount] = useState<number | null>(null);
+  const [studentCount, setStudentCount] = useState<number | null>(null);
+  const [statsLoading, setStatsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        setStatsLoading(true);
+
+        // 1. Fetch Course Count
+        const { count: cCount, error: cErr } = await supabase
+          .from('courses')
+          .select('id', { count: 'exact', head: true });
+        
+        if (!cErr && cCount !== null) {
+          setCourseCount(cCount);
+        }
+
+        // 2. Fetch Student Count via RPC
+        const { data: sCount, error: sErr } = await supabase
+          .rpc('get_active_students_count');
+        
+        if (!sErr && sCount !== null) {
+          setStudentCount(sCount);
+        }
+
+        // Removed the total study time fetch because it's now handled by ActivityContext
+
+      } catch (err) {
+        console.error('[Dashboard Stats Log] Failed to restore dashboard stats:', err);
+      } finally {
+        setStatsLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, [user?.id]);
+
   const stats = [
-    { icon: BookOpen, label: 'หลักสูตร', value: '12+', color: 'bg-indigo-100 text-indigo-600' },
-    { icon: Users, label: 'ผู้เรียน', value: '500+', color: 'bg-green-100 text-green-600' },
-    { icon: Award, label: 'ใบรับรอง', value: '8', color: 'bg-amber-100 text-amber-600' },
+    { icon: BookOpen, label: language === 'th' ? 'หลักสูตร' : 'Courses', value: statsLoading ? '...' : courseCount !== null ? `${courseCount} ${language === 'th' ? 'หลักสูตร' : 'Courses'}` : '0', color: 'bg-indigo-100 text-indigo-600' },
+    { icon: Users, label: language === 'th' ? 'ผู้เรียน' : 'Students', value: statsLoading ? '...' : studentCount !== null ? `${studentCount} ${language === 'th' ? 'คน' : 'Students'}` : '0', color: 'bg-green-100 text-green-600' },
+    { icon: Clock, label: language === 'th' ? 'เวลาเรียนทั้งหมด' : 'Total Study Time', value: statsLoading ? '...' : formatStudyTime(totalSeconds, language), color: 'bg-amber-100 text-amber-600' },
   ];
+
+  // Auth Render Protection
+  if (!initialized || (initialized && !user)) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-48 w-full rounded-2xl" />
+        <div className="grid grid-cols-3 gap-4">
+          <Skeleton className="h-24 w-full rounded-xl" />
+          <Skeleton className="h-24 w-full rounded-xl" />
+          <Skeleton className="h-24 w-full rounded-xl" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -105,5 +192,49 @@ export function Courses() {
         </div>
       )}
     </div>
+  );
+}
+
+// Route-level Error Boundary for Courses
+class CoursesErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; error: Error | null }> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error('[Courses ErrorBoundary] Caught render error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex items-center justify-center h-[50vh] flex-col space-y-4">
+          <div className="p-4 bg-red-50 text-red-600 rounded-lg max-w-md text-center border border-red-100">
+            <h2 className="text-lg font-bold mb-2">Something went wrong</h2>
+            <p className="text-sm">{this.state.error?.message || 'An unexpected error occurred while loading the courses.'}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-4 px-4 py-2 bg-red-600 text-white rounded-md text-sm font-medium hover:bg-red-700 transition-colors"
+            >
+              Reload Page
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+export function Courses() {
+  return (
+    <CoursesErrorBoundary>
+      <CoursesContent />
+    </CoursesErrorBoundary>
   );
 }

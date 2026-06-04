@@ -62,6 +62,7 @@ export interface UserProgress {
   lesson_id: string | null;
   status: 'not_started' | 'in_progress' | 'completed';
   progress_percentage: number;
+  study_time_seconds?: number;
   completed_at: string | null;
   last_accessed_at: string;
   notes: string | null;

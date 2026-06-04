@@ -59,7 +59,7 @@ export function useEnrollments(options: UseEnrollmentsOptions): UseEnrollmentsRe
 }
 
 export function useProgress(userId: string, courseId: string) {
-  const [progress, setProgress] = useState<UserProgress | null>(null);
+  const [progress, setProgress] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
@@ -72,9 +72,9 @@ export function useProgress(userId: string, courseId: string) {
 
       try {
         setLoading(true);
-        // Use course_id instead of lesson_id to match schema
+        console.log(`[Progress DB Log] Fetching course progress (enrollment) for user: ${userId}, course: ${courseId}`);
         const { data, error: fetchError } = await supabase
-          .from('user_progress')
+          .from('enrollments')
           .select('*')
           .eq('user_id', userId)
           .eq('course_id', courseId)
@@ -84,8 +84,10 @@ export function useProgress(userId: string, courseId: string) {
           throw fetchError;
         }
 
+        console.log(`[Progress DB Log] Fetched course progress:`, data);
         setProgress(data || null);
       } catch (err) {
+        console.error('[Progress DB Log] Failed to fetch course progress:', err);
         setError(err instanceof Error ? err : new Error('Failed to fetch progress'));
       } finally {
         setLoading(false);
@@ -99,8 +101,9 @@ export function useProgress(userId: string, courseId: string) {
     if (!userId || !courseId) return;
 
     try {
+      console.log(`[Progress DB Log] Marking course ${courseId} complete for user ${userId}`);
       const { error: upsertError } = await supabase
-        .from('user_progress')
+        .from('enrollments')
         .upsert({
           user_id: userId,
           course_id: courseId,
@@ -109,11 +112,12 @@ export function useProgress(userId: string, courseId: string) {
           completed_at: new Date().toISOString(),
           last_accessed_at: new Date().toISOString(),
         }, {
-          onConflict: 'user_id,course_id,path_id,exercise_id',
+          onConflict: 'user_id,course_id',
         });
 
       if (upsertError) throw upsertError;
 
+      console.log(`[Progress DB Log] Successfully marked course ${courseId} complete`);
       setProgress(prev => prev ? {
         ...prev,
         status: 'completed',
@@ -121,6 +125,7 @@ export function useProgress(userId: string, courseId: string) {
         completed_at: new Date().toISOString(),
       } : null);
     } catch (err) {
+      console.error('[Progress DB Log] Failed to mark course complete:', err);
       throw err instanceof Error ? err : new Error('Failed to mark complete');
     }
   }, [userId, courseId]);
@@ -129,28 +134,30 @@ export function useProgress(userId: string, courseId: string) {
     if (!userId || !courseId) return;
 
     try {
+      console.log(`[Progress DB Log] Updating course ${courseId} progress to ${percentage}% for user ${userId}`);
       const { error: upsertError } = await supabase
-        .from('user_progress')
+        .from('enrollments')
         .upsert({
           user_id: userId,
           course_id: courseId,
-          status: percentage >= 100 ? 'completed' : 'in_progress',
+          status: percentage >= 100 ? 'completed' : 'active',
           progress_percentage: percentage,
           last_accessed_at: new Date().toISOString(),
         }, {
-          onConflict: 'user_id,course_id,path_id,exercise_id',
+          onConflict: 'user_id,course_id',
         });
 
       if (upsertError) throw upsertError;
+      console.log(`[Progress DB Log] Successfully updated course ${courseId} progress`);
     } catch (err) {
-      console.error('Failed to update progress:', err);
+      console.error('[Progress DB Log] Failed to update course progress:', err);
     }
   }, [userId, courseId]);
 
   return { progress, loading, error, markComplete, updateProgress };
 }
 
-// Fixed: useCourseProgress now works with the correct schema
+// Fixed: useCourseProgress now works with the correct schema (enrollments table)
 export function useCourseProgress(userId: string, courseId: string) {
   const [progressPercentage, setProgressPercentage] = useState<number>(0);
   const [loading, setLoading] = useState(true);
@@ -165,10 +172,11 @@ export function useCourseProgress(userId: string, courseId: string) {
 
       try {
         setLoading(true);
+        console.log(`[Progress DB Log] Fetching course progress percentage for user: ${userId}, course: ${courseId}`);
  
-        // Get user's progress for this course
+        // Get user's enrollment progress for this course
         const { data, error: fetchError } = await supabase
-          .from('user_progress')
+          .from('enrollments')
           .select('progress_percentage, status')
           .eq('user_id', userId)
           .eq('course_id', courseId)
@@ -179,11 +187,13 @@ export function useCourseProgress(userId: string, courseId: string) {
         }
 
         if (data) {
+          console.log(`[Progress DB Log] Fetched course progress percentage: ${data.progress_percentage}%`);
           setProgressPercentage(data.progress_percentage || 0);
         } else {
           setProgressPercentage(0);
         }
       } catch (err) {
+        console.error('[Progress DB Log] Failed to fetch course progress percentage:', err);
         setError(err instanceof Error ? err : new Error('Failed to fetch course progress'));
         setProgressPercentage(0);
       } finally {
@@ -206,6 +216,12 @@ export function useLessonProgress(userId: string, lessonId: string) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
+  // When userId or lessonId changes, reset progress state first so it triggers a loading skeleton on new content
+  useEffect(() => {
+    setProgress(null);
+    setLoading(true);
+  }, [userId, lessonId]);
+
   const fetchProgress = useCallback(async () => {
     if (!userId || !lessonId) {
       setLoading(false);
@@ -213,8 +229,10 @@ export function useLessonProgress(userId: string, lessonId: string) {
     }
 
     try {
-      setLoading(true);
+      // Only set loading = true if we don't have progress loaded yet (silent refetch)
+      setLoading(prevLoading => progress === null ? true : prevLoading);
       setError(null);
+      console.log(`[Progress DB Log] Fetching lesson progress for user: ${userId}, lesson: ${lessonId}`);
 
       const { data, error: fetchError } = await supabase
         .from('user_progress')
@@ -227,13 +245,15 @@ export function useLessonProgress(userId: string, lessonId: string) {
         throw fetchError;
       }
 
+      console.log(`[Progress DB Log] Fetched lesson progress result:`, data);
       setProgress(data || null);
     } catch (err) {
+      console.error('[Progress DB Log] Failed to fetch lesson progress:', err);
       setError(err instanceof Error ? err : new Error('Failed to fetch lesson progress'));
     } finally {
       setLoading(false);
     }
-  }, [userId, lessonId]);
+  }, [userId, lessonId, progress === null]);
 
   useEffect(() => {
     fetchProgress();
@@ -243,6 +263,7 @@ export function useLessonProgress(userId: string, lessonId: string) {
     if (!userId || !lessonId) return;
 
     try {
+      console.log(`[Progress DB Log] Marking lesson ${lessonId} complete for user ${userId}`);
       const { error: upsertError } = await supabase
         .from('user_progress')
         .upsert({
@@ -258,6 +279,7 @@ export function useLessonProgress(userId: string, lessonId: string) {
 
       if (upsertError) throw upsertError;
 
+      console.log(`[Progress DB Log] Successfully marked lesson ${lessonId} complete`);
       setProgress(prev => prev ? {
         ...prev,
         status: 'completed',
@@ -279,6 +301,7 @@ export function useLessonProgress(userId: string, lessonId: string) {
         updated_at: new Date().toISOString(),
       } as UserProgress);
     } catch (err) {
+      console.error('[Progress DB Log] Failed to mark lesson complete:', err);
       throw err instanceof Error ? err : new Error('Failed to mark complete');
     }
   }, [userId, lessonId]);
@@ -305,6 +328,7 @@ export function useLessonsProgress(userId: string, lessonIds: string[]) {
       try {
         setLoading(true);
         setError(null);
+        console.log(`[Progress DB Log] Fetching lessons progress list for user: ${userId}, count: ${lessonIds.length}`);
 
         const { data, error: fetchError } = await supabase
           .from('user_progress')
@@ -318,8 +342,10 @@ export function useLessonsProgress(userId: string, lessonIds: string[]) {
         }
 
         const completedSet = new Set((data || []).map((row: any) => row.lesson_id));
+        console.log(`[Progress DB Log] Completed lessons counts: ${completedSet.size}`);
         setCompletedLessonIds(completedSet);
       } catch (err) {
+        console.error('[Progress DB Log] Failed to fetch lessons progress:', err);
         setError(err instanceof Error ? err : new Error('Failed to fetch lessons progress'));
       } finally {
         setLoading(false);

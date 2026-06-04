@@ -8,7 +8,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { Skeleton } from '../components/ui/skeleton';
-import { ArrowLeft, Clock, BookOpen, Users, ChevronRight, Play, FileText, HelpCircle, CheckCircle2 } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { ArrowLeft, Clock, BookOpen, Users, ChevronRight, Play, FileText, HelpCircle, CheckCircle2, PenTool, FlaskConical, Video } from 'lucide-react';
+import QuizCard from '../components/QuizCard';
+import ExerciseCard from '../components/ExerciseCard';
+import { useState } from 'react';
 
 const lessonTypeIcons: Record<string, typeof Play> = {
   video: Play,
@@ -23,10 +27,19 @@ const levelColors: Record<string, string> = {
   advanced: 'bg-red-100 text-red-700 border-red-200',
 };
 
+const lessonTypesTab = [
+  { key: 'all', label: 'ทั้งหมด', icon: FlaskConical },
+  { key: 'video', label: 'วิดีโอ', icon: Video },
+  { key: 'quiz', label: 'แบบทดสอบ', icon: HelpCircle },
+  { key: 'exercise', label: 'แบบฝึกหัด', icon: PenTool },
+  { key: 'reading', label: 'เอกสาร', icon: FileText },
+];
+
 export function CourseDetail() {
   const { courseId } = useParams();
   const { language, t } = useI18n();
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState('all');
 
   const { user } = useAuth();
   const { courses, loading: coursesLoading } = useCourses({ limit: 100 });
@@ -69,6 +82,10 @@ export function CourseDetail() {
   const description = language === 'th' ? course.description_th : course.description_en;
   const includes = course.includes || [];
   const highlights = course.highlights || [];
+
+  const filteredLessons = activeTab === 'all'
+    ? lessons
+    : lessons.filter(l => l.lesson_type === activeTab);
 
   return (
     <div className="space-y-6">
@@ -172,26 +189,49 @@ export function CourseDetail() {
         </Card>
       )}
 
-      {/* Lessons List */}
+      {/* Lessons Filter Tabs & List */}
       <div>
-        <h2 className="text-lg font-semibold mb-4">บทเรียน ({lessons.length})</h2>
-        {lessonsLoading ? (
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold">เนื้อหาในหลักสูตร ({lessons.length})</h2>
+        </div>
+        
+        {/* Filter Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
+          <TabsList className="bg-slate-50 flex flex-wrap h-auto p-1 gap-1">
+            {lessonTypesTab.map((type) => (
+              <TabsTrigger key={type.key} value={type.key} className="gap-1.5 min-w-[80px]">
+                <type.icon className="w-4 h-4" />
+                {type.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
+
+        {activeTab === 'quiz' ? (
+          <div className="max-w-4xl mx-auto">
+            <QuizCard courseName={name} courseId={courseId} />
+          </div>
+        ) : activeTab === 'exercise' ? (
+          <div className="max-w-5xl mx-auto">
+            <ExerciseCard courseName={name} courseId={courseId} />
+          </div>
+        ) : lessonsLoading ? (
           <div className="space-y-3">
             {Array.from({ length: 4 }).map((_, i) => (
               <Skeleton key={i} className="h-20 w-full" />
             ))}
           </div>
-        ) : lessons.length === 0 ? (
+        ) : filteredLessons.length === 0 ? (
           <Card className="border-dashed">
             <CardContent className="py-12 text-center">
               <BookOpen className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">ยังไม่มีบทเรียน</p>
-              <p className="text-sm text-muted-foreground mt-1">บทเรียนจะแสดงเมื่อหลักสูตรพร้อม</p>
+              <p className="text-muted-foreground">ไม่พบเนื้อหา</p>
+              <p className="text-sm text-muted-foreground mt-1">เนื้อหาที่คุณเลือกอาจยังไม่พร้อมใช้งานในตอนนี้</p>
             </CardContent>
           </Card>
         ) : (
           <div className="space-y-3">
-            {lessons.map((lesson, index) => {
+            {filteredLessons.map((lesson, index) => {
               const lessonName = language === 'th' ? lesson.title_th : lesson.title_en;
               const Icon = lessonTypeIcons[lesson.lesson_type] || BookOpen;
               const isCompleted = completedLessonIds.has(lesson.id);

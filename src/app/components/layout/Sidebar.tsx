@@ -42,10 +42,10 @@ export function Sidebar({ onClose }: SidebarProps) {
       await signOut();
     } catch (err) {
       console.error('[Sidebar] signOut error:', err);
-    } finally {
-      // Always navigate to auth, even if signOut throws
-      navigate('/auth', { replace: true });
     }
+    // Note: We DO NOT manually navigate('/auth') here.
+    // The `signOut` function clears the user state in AuthProvider,
+    // which automatically triggers `AppLayout` to redirect unauthenticated users.
   };
 
   const getConsonantInitials = (email: string | undefined): string => {

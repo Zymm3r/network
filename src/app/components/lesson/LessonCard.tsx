@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from 'react-router';
 import { Card, CardContent, CardFooter, CardHeader } from '../ui/card';
 import { Badge } from '../ui/badge';
@@ -5,6 +6,7 @@ import { Button } from '../ui/button';
 import { Clock, Video, FileQuestion, PenTool, BookOpen, ChevronRight, CheckCircle2 } from 'lucide-react';
 import { useI18n } from '../../i18n';
 import type { Lesson } from '../../types';
+import { supabase } from '../../lib/supabase';
 
 interface LessonCardProps {
   lesson: Lesson;
@@ -33,6 +35,7 @@ const lessonTypeLabels: Record<string, string> = {
 
 export function LessonCard({ lesson }: LessonCardProps) {
   const { language, t } = useI18n();
+  const [imgError, setImgError] = useState(false);
 
   const name = language === 'th' ? lesson.title_th : lesson.title_en;
   const description = language === 'th' ? lesson.content_th : lesson.content_en;
@@ -40,13 +43,19 @@ export function LessonCard({ lesson }: LessonCardProps) {
 
   const isCompleted = false; // This would come from user progress
 
+  const thumbnailUrl = lesson.thumbnail_url?.startsWith('lesson-thumbnails/')
+    ? supabase.storage.from('lesson-thumbnails').getPublicUrl(lesson.thumbnail_url.replace('lesson-thumbnails/', '')).data.publicUrl
+    : lesson.thumbnail_url;
+
   return (
     <Card className="overflow-hidden hover:shadow-lg transition-all hover:-translate-y-1 border-slate-100">
       <div className="aspect-video relative bg-gradient-to-br from-slate-50 to-slate-100">
-        {lesson.thumbnail_url ? (
+        {thumbnailUrl && !imgError ? (
           <img
-            src={lesson.thumbnail_url}
+            src={thumbnailUrl}
             alt={name}
+            loading="lazy"
+            onError={() => setImgError(true)}
             className="object-cover w-full h-full"
           />
         ) : (

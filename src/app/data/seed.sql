@@ -144,39 +144,39 @@ INSERT INTO learning_paths (id, name_th, name_en, description_th, description_en
 
 INSERT INTO lessons (id, course_id, title_th, title_en, content_th, content_en, lesson_type, duration_minutes, order_index, video_url, thumbnail_url, created_at, updated_at) VALUES
 -- CCNA 001 Lessons
-('lesson-ccna001-01', 'ccna-001', 'บทนำสู่เครือข่ายคอมพิวเตอร์', 'Introduction to Computer Networks', 'เรียนรู้พื้นฐานการทำงานของเครือข่ายและความสำคัญในยุคดิจิทัล', 'Learn the fundamentals of how networks work and their importance in the digital age.', 'video', 45, 1, 'https://example.com/videos/ccna001-01', '/images/lessons/network-intro.jpg', NOW(), NOW()),
+('lesson-ccna001-01', 'ccna-001', 'บทนำสู่เครือข่ายคอมพิวเตอร์', 'Introduction to Computer Networks', 'เรียนรู้พื้นฐานการทำงานของเครือข่ายและความสำคัญในยุคดิจิทัล', 'Learn the fundamentals of how networks work and their importance in the digital age.', 'video', 45, 1, 'qiQR5rTSshw', 'lesson-thumbnails/ccna001-01.jpg', NOW(), NOW()),
 
-('lesson-ccna001-02', 'ccna-001', 'โมเดล OSI 7 Layers', 'OSI 7 Layers Model', 'ทำความเข้าใจโมเดล OSI และหน้าที่ของแต่ละ layer', 'Understand the OSI model and the functions of each layer.', 'video', 60, 2, 'https://example.com/videos/ccna001-02', '/images/lessons/osi-model.jpg', NOW(), NOW()),
+('lesson-ccna001-02', 'ccna-001', 'โมเดล OSI 7 Layers', 'OSI 7 Layers Model', 'ทำความเข้าใจโมเดล OSI และหน้าที่ของแต่ละ layer', 'Understand the OSI model and the functions of each layer.', 'video', 60, 2, 'vv4y_uOneC0', 'lesson-thumbnails/ccna001-02.jpg', NOW(), NOW()),
 
-('lesson-ccna001-03', 'ccna-001', 'TCP/IP Protocol Suite', 'TCP/IP Protocol Suite', 'เรียนรู้ TCP/IP model และ protocols ต่างๆ ในชุดโปรโตคอล', 'Learn the TCP/IP model and various protocols in the suite.', 'reading', 30, 3, NULL, '/images/lessons/tcpip.jpg', NOW(), NOW()),
+('lesson-ccna001-03', 'ccna-001', 'TCP/IP Protocol Suite', 'TCP/IP Protocol Suite', 'เรียนรู้ TCP/IP model และ protocols ต่างๆ ในชุดโปรโตคอล', 'Learn the TCP/IP model and various protocols in the suite.', 'reading', 30, 3, NULL, 'lesson-thumbnails/ccna001-03.jpg', NOW(), NOW()),
 
-('lesson-ccna001-04', 'ccna-001', 'Network Devices', 'Network Devices', 'ทำความรู้จักอุปกรณ์เครือข่ายต่างๆ เช่น Router, Switch, Hub', 'Learn about network devices such as Router, Switch, Hub.', 'video', 40, 4, 'https://example.com/videos/ccna001-04', '/images/lessons/network-devices.jpg', NOW(), NOW()),
+('lesson-ccna001-04', 'ccna-001', 'Network Devices', 'Network Devices', 'ทำความรู้จักอุปกรณ์เครือข่ายต่างๆ เช่น Router, Switch, Hub', 'Learn about network devices such as Router, Switch, Hub.', 'video', 40, 4, '1z0ULvgBiF8', 'lesson-thumbnails/ccna001-04.jpg', NOW(), NOW()),
 
-('lesson-ccna001-05', 'ccna-001', 'IP Addressing and Subnetting', 'IP Addressing and Subnetting', 'เรียนรู้การกำหนด IP address และการคำนวณ subnet', 'Learn IP address assignment and subnet calculation.', 'video', 55, 5, 'https://example.com/videos/ccna001-05', '/images/lessons/ip-addressing.jpg', NOW(), NOW()),
+('lesson-ccna001-05', 'ccna-001', 'IP Addressing and Subnetting', 'IP Addressing and Subnetting', 'เรียนรู้การกำหนด IP address และการคำนวณ subnet', 'Learn IP address assignment and subnet calculation.', 'video', 55, 5, 's_Ntt6eTN94', 'lesson-thumbnails/ccna001-05.jpg', NOW(), NOW()),
 
 -- Wireshark Lessons
-('lesson-wireshark-01', 'troubleshoot-001', 'การติดตั้งและใช้งาน Wireshark', 'Installing and Using Wireshark', 'เรียนรู้การติดตั้งและใช้งาน Wireshark เบื้องต้น', 'Learn how to install and use Wireshark basics.', 'video', 50, 1, 'https://example.com/videos/wireshark-01', '/images/lessons/wireshark-intro.jpg', NOW(), NOW()),
+('lesson-wireshark-01', 'troubleshoot-001', 'การติดตั้งและใช้งาน Wireshark', 'Installing and Using Wireshark', 'เรียนรู้การติดตั้งและใช้งาน Wireshark เบื้องต้น', 'Learn how to install and use Wireshark basics.', 'video', 50, 1, 'OU-A2EIhc0k', 'lesson-thumbnails/wireshark-01.jpg', NOW(), NOW()),
 
-('lesson-wireshark-02', 'troubleshoot-001', 'การวิเคราะห์ TCP Packets', 'Analyzing TCP Packets', 'เรียนรู้การวิเคราะห์ TCP three-way handshake และ packet flow', 'Learn to analyze TCP three-way handshake and packet flow.', 'video', 60, 2, 'https://example.com/videos/wireshark-02', '/images/lessons/tcp-analysis.jpg', NOW(), NOW()),
+('lesson-wireshark-02', 'troubleshoot-001', 'การวิเคราะห์ TCP Packets', 'Analyzing TCP Packets', 'เรียนรู้การวิเคราะห์ TCP three-way handshake และ packet flow', 'Learn to analyze TCP three-way handshake and packet flow.', 'video', 60, 2, 'F052EUzEpmU', 'lesson-thumbnails/wireshark-02.jpg', NOW(), NOW()),
 
-('lesson-wireshark-03', 'troubleshoot-001', 'การวิเคราะห์ UDP และ DNS', 'UDP and DNS Analysis', 'เรียนรู้การวิเคราะห์ UDP packets และ DNS queries', 'Learn to analyze UDP packets and DNS queries.', 'video', 45, 3, 'https://example.com/videos/wireshark-03', '/images/lessons/dns-analysis.jpg', NOW(), NOW()),
+('lesson-wireshark-03', 'troubleshoot-001', 'การวิเคราะห์ UDP และ DNS', 'UDP and DNS Analysis', 'เรียนรู้การวิเคราะห์ UDP packets และ DNS queries', 'Learn to analyze UDP packets and DNS queries.', 'video', 45, 3, '1AByJvE5dZ4', 'lesson-thumbnails/wireshark-03.jpg', NOW(), NOW()),
 
 -- Python Lessons
-('lesson-python-01', 'devnet-001', 'พื้นฐาน Python', 'Python Basics', 'เรียนรู้พื้นฐาน Python programming สำหรับ network engineers', 'Learn Python basics for network engineers.', 'video', 90, 1, 'https://example.com/videos/python-01', '/images/lessons/python-basics.jpg', NOW(), NOW()),
+('lesson-python-01', 'devnet-001', 'พื้นฐาน Python', 'Python Basics', 'เรียนรู้พื้นฐาน Python programming สำหรับ network engineers', 'Learn Python basics for network engineers.', 'video', 90, 1, 'kqtD5dpn9C8', 'lesson-thumbnails/python-01.jpg', NOW(), NOW()),
 
-('lesson-python-02', 'devnet-001', 'การใช้ Netmiko', 'Using Netmiko', 'เรียนรู้การใช้ Netmiko library สำหรับ SSH ไปยัง network devices', 'Learn to use Netmiko library for SSH to network devices.', 'video', 75, 2, 'https://example.com/videos/python-02', '/images/lessons/netmiko.jpg', NOW(), NOW()),
+('lesson-python-02', 'devnet-001', 'การใช้ Netmiko', 'Using Netmiko', 'เรียนรู้การใช้ Netmiko library สำหรับ SSH ไปยัง network devices', 'Learn to use Netmiko library for SSH to network devices.', 'video', 75, 2, '5H4P2sF_4o0', 'lesson-thumbnails/python-02.jpg', NOW(), NOW()),
 
-('lesson-python-03', 'devnet-001', 'การใช้ NAPALM', 'Using NAPALM', 'เรียนรู้การใช้ NAPALM สำหรับ multi-vendor network automation', 'Learn to use NAPALM for multi-vendor network automation.', 'video', 80, 3, 'https://example.com/videos/python-03', '/images/lessons/napalm.jpg', NOW(), NOW()),
+('lesson-python-03', 'devnet-001', 'การใช้ NAPALM', 'Using NAPALM', 'เรียนรู้การใช้ NAPALM สำหรับ multi-vendor network automation', 'Learn to use NAPALM for multi-vendor network automation.', 'video', 80, 3, 'WcR9A-7y69M', 'lesson-thumbnails/python-03.jpg', NOW(), NOW()),
 
 -- Security Lessons
-('lesson-sec-01', 'sec-001', 'Firewall Basics', 'Firewall Basics', 'เรียนรู้หลักการทำงานของ Firewall และ packet filtering', 'Learn firewall operation principles and packet filtering.', 'video', 55, 1, 'https://example.com/videos/sec-01', '/images/lessons/firewall-basics.jpg', NOW(), NOW()),
+('lesson-sec-01', 'sec-001', 'Firewall Basics', 'Firewall Basics', 'เรียนรู้หลักการทำงานของ Firewall และ packet filtering', 'Learn firewall operation principles and packet filtering.', 'video', 55, 1, 'v=K2n90kZfE2E', 'lesson-thumbnails/sec-01.jpg', NOW(), NOW()),
 
-('lesson-sec-02', 'sec-001', 'Stateful Inspection', 'Stateful Inspection', 'เรียนรู้การทำงานของ Stateful inspection firewall', 'Learn how stateful inspection firewalls work.', 'video', 50, 2, 'https://example.com/videos/sec-02', '/images/lessons/stateful.jpg', NOW(), NOW()),
+('lesson-sec-02', 'sec-001', 'Stateful Inspection', 'Stateful Inspection', 'เรียนรู้การทำงานของ Stateful inspection firewall', 'Learn how stateful inspection firewalls work.', 'video', 50, 2, 'pE6Z5r8s9r4', 'lesson-thumbnails/sec-02.jpg', NOW(), NOW()),
 
 -- Routing Lessons
-('lesson-adv-001', 'adv-001', 'OSPF Areas and LSA Types', 'OSPF Areas and LSA Types', 'เรียนรู้ OSPF area types และ LSA types ต่างๆ', 'Learn OSPF area types and different LSA types.', 'video', 65, 1, 'https://example.com/videos/ospf-01', '/images/lessons/ospf-areas.jpg', NOW(), NOW()),
+('lesson-adv-001', 'adv-001', 'OSPF Areas and LSA Types', 'OSPF Areas and LSA Types', 'เรียนรู้ OSPF area types และ LSA types ต่างๆ', 'Learn OSPF area types and different LSA types.', 'video', 65, 1, 'D0rQ_K-b2C4', 'lesson-thumbnails/adv-001.jpg', NOW(), NOW()),
 
-('lesson-adv-002', 'adv-001', 'OSPF Route Summarization', 'OSPF Route Summarization', 'เรียนรู้การ summarize routes ใน OSPF', 'Learn route summarization in OSPF.', 'video', 60, 2, 'https://example.com/videos/ospf-02', '/images/lessons/ospf-summary.jpg', NOW(), NOW());
+('lesson-adv-002', 'adv-001', 'OSPF Route Summarization', 'OSPF Route Summarization', 'เรียนรู้การ summarize routes ใน OSPF', 'Learn route summarization in OSPF.', 'video', 60, 2, 'KqfE1h4l5a8', 'lesson-thumbnails/adv-002.jpg', NOW(), NOW());
 
 -- ============================================
 -- PRACTICE EXERCISES - 20 Quiz Questions

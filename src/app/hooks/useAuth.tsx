@@ -16,9 +16,11 @@ function authLog(event: string, detail?: unknown) {
 // ─── Types ───────────────────────────────────────────────────────────
 interface AuthContextValue {
   user: User | null;
+  session: Session | null;
   loading: boolean;
   initialized: boolean;
   sendMagicLink: (email: string) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
   cooldownRemaining: number;
 }
@@ -50,13 +52,10 @@ async function resolveUser(su: { id: string; email?: string; user_metadata?: Rec
   }
 }
 
-// Maximum time to wait for INITIAL_SESSION before forcing initialized=true.
-// This prevents the "กำลังเตรียมระบบ..." spinner from hanging forever.
-const INIT_TIMEOUT_MS = 8_000;
-
 // ─── Provider ────────────────────────────────────────────────────────
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
   const [cooldownRemaining, setCooldownRemaining] = useState(0);
@@ -64,6 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Refs for cooldown / request locking (stable across renders)
   const cooldownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isSendingRef = useRef(false);
+  const initializedRef = useRef(false); // track initialized without triggering re-render checks
 
   // ─── Cooldown Timer ─────────────────────────────────────────────
   const startCooldown = useCallback((seconds: number) => {
@@ -93,76 +93,91 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [startCooldown]);
 
-  // ─── Auth Bootstrap (single useEffect, no refs) ─────────────────
+  // ─── Auth Bootstrap ─────────────────────────────────────────────
   //
   // Architecture:
-  //   Supabase v2 fires `INITIAL_SESSION` exactly once when the SDK
-  //   finishes restoring (or failing to restore) a session from storage.
-  //   We use that single event as our initialization signal.
-  //   All subsequent events (SIGNED_IN, SIGNED_OUT, TOKEN_REFRESHED)
-  //   update the user state normally.
-  //
-  //   A timeout ensures we never hang on the loading screen even if
-  //   the SDK silently fails or the network is unreachable.
+  //   1. Manually fetch the session using getSession() on mount to ensure
+  //      hydration is 100% reliable and instantaneous.
+  //   2. Attach onAuthStateChange listener to catch subsequent events
+  //      (SIGNED_IN, SIGNED_OUT, TOKEN_REFRESHED).
+  //   3. Safety timeout prevents infinite loading.
+  //   4. Visibility change handler refreshes session when tab becomes visible.
   //
   useEffect(() => {
     authLog('BOOT', 'Starting auth bootstrap');
-    let disposed = false; // cleanup flag for this effect instance
+    let disposed = false;
 
     // Helper: process a session into user state
-    const applySession = async (session: Session | null, label: string) => {
+    const applySession = (currentSession: Session | null, label: string) => {
       if (disposed) return;
-      if (session?.user) {
-        authLog(label, { userId: session.user.id, email: session.user.email });
-        const resolved = await resolveUser(session.user);
-        if (!disposed) setUser(resolved);
+      setSession(currentSession);
+      if (currentSession?.user) {
+        authLog(label, { userId: currentSession.user.id, email: currentSession.user.email });
+        // Immediately set a basic user to prevent flashing to login
+        const quickUser = buildUser(currentSession.user);
+        if (!disposed) setUser(quickUser);
+        // Then resolve full profile in background (truly non-blocking)
+        resolveUser(currentSession.user).then((resolved) => {
+          if (!disposed) setUser(resolved);
+        }).catch(() => {
+          // quickUser is already set, safe to continue
+        });
       } else {
         authLog(label, 'No session');
         if (!disposed) setUser(null);
       }
     };
 
-    // Helper: mark initialization complete (idempotent)
+    // Helper: mark initialization complete
     const markReady = () => {
-      if (disposed) return;
+      if (disposed || initializedRef.current) return;
+      initializedRef.current = true;
       setLoading(false);
       setInitialized(true);
       authLog('READY', 'Auth initialized');
     };
 
-    // Safety timeout — if INITIAL_SESSION never fires, force ready state
+    // Safety timeout: Ensure we never hang forever
     const timeout = setTimeout(() => {
-      if (!disposed) {
-        authLog('TIMEOUT', `Auth bootstrap timed out after ${INIT_TIMEOUT_MS}ms — forcing ready`);
+      if (!disposed && !initializedRef.current) {
+        authLog('TIMEOUT', 'Auth bootstrap timed out — forcing ready');
         markReady();
       }
-    }, INIT_TIMEOUT_MS);
+    }, 4000);
 
-    // Single onAuthStateChange listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      authLog('EVENT', { event, hasSession: !!session, userId: session?.user?.id });
+    // 1. Manually fetch the session to guarantee hydration on mount
+    supabase.auth.getSession().then(({ data: { session: s }, error }) => {
+      if (error) {
+        authLog('SESSION_ERROR', error);
+      } else {
+        applySession(s, 'INITIAL_GET_SESSION');
+      }
+      clearTimeout(timeout);
+      markReady();
+    });
+
+    // 2. Single onAuthStateChange listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, currentSession) => {
+      authLog('EVENT', { event, hasSession: !!currentSession, userId: currentSession?.user?.id });
 
       switch (event) {
-        case 'INITIAL_SESSION': {
-          // This is the primary initialization path.
-          // It fires once when Supabase finishes restoring session from localStorage.
-          await applySession(session, 'INITIAL_SESSION');
+        case 'INITIAL_SESSION':
+        case 'SIGNED_IN':
+        case 'TOKEN_REFRESHED': {
+          applySession(currentSession, event);
           clearTimeout(timeout);
           markReady();
           break;
         }
-        case 'SIGNED_IN': {
-          await applySession(session, 'SIGNED_IN');
-          // Ensure initialized in case INITIAL_SESSION was somehow missed
-          if (!disposed) { setLoading(false); setInitialized(true); }
-          break;
-        }
-        case 'TOKEN_REFRESHED': {
-          await applySession(session, 'TOKEN_REFRESHED');
-          break;
-        }
         case 'SIGNED_OUT': {
-          if (!disposed) { setUser(null); setLoading(false); setInitialized(true); }
+          if (!disposed) {
+            setUser(null);
+            setSession(null);
+            setLoading(false);
+            setInitialized(true);
+            initializedRef.current = true;
+          }
+          clearTimeout(timeout);
           authLog('SIGNED_OUT', 'Session cleared by server/client');
           break;
         }
@@ -171,11 +186,65 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     });
 
+    // ── Shared debounce timestamp to prevent duplicate getSession() calls
+    //    when both visibilitychange and focus fire in quick succession ──
+    let lastSessionCheck = 0;
+
+    // Helper: refresh session from Supabase (shared by visibility/focus/online)
+    const refreshSession = (label: string) => {
+      lastSessionCheck = Date.now();
+      supabase.auth.getSession().then(async ({ data: { session: s }, error }) => {
+        if (disposed) return;
+        if (error) {
+          authLog(`${label}_ERROR`, error);
+          return;
+        }
+        if (s?.user) {
+          setSession(s);
+          const quickUser = buildUser(s.user);
+          setUser(quickUser);
+        } else if (label === 'VISIBILITY') {
+          // Only clear user on visibility (tab return), not on focus
+          authLog('VISIBILITY_NO_SESSION', 'Session lost while tab was hidden');
+          setSession(null);
+          setUser(null);
+        }
+      });
+    };
+
+    // 3. Tab visibility handler
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        authLog('VISIBILITY', 'Tab became visible — refreshing session');
+        refreshSession('VISIBILITY');
+      }
+    };
+
+    // 4. Online recovery handler
+    const handleOnline = () => {
+      authLog('NETWORK', 'Back online — refreshing session');
+      refreshSession('NETWORK');
+    };
+
+    // 5. Focus handler (debounced — skips if visibility handler just ran)
+    const handleFocus = () => {
+      if (Date.now() - lastSessionCheck < 2000) return;
+      authLog('FOCUS', 'Window focused');
+      refreshSession('FOCUS');
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('focus', handleFocus);
+
     return () => {
       disposed = true;
       clearTimeout(timeout);
       subscription.unsubscribe();
-      authLog('CLEANUP', 'Auth listener unsubscribed');
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('focus', handleFocus);
+      authLog('CLEANUP', 'Auth listener + lifecycle handlers unsubscribed');
     };
   }, []); // Empty deps — runs once per mount
 
@@ -223,11 +292,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [startCooldown]);
 
+  // ─── signInWithGoogle ───────────────────────────────────────────
+  const signInWithGoogle = useCallback(async () => {
+    authLog('GOOGLE_SIGN_IN_START');
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+      if (error) {
+        authLog('GOOGLE_SIGN_IN_ERROR', error.message);
+        throw error;
+      }
+    } catch (err) {
+      authLog('GOOGLE_SIGN_IN_CATCH', err);
+      throw err;
+    }
+  }, []);
+
   // ─── signOut ────────────────────────────────────────────────────
   const signOut = useCallback(async () => {
     authLog('SIGNOUT_START', 'Clearing session');
     // Clear UI state immediately — don't wait for Supabase round-trip
     setUser(null);
+    setSession(null);
 
     try {
       const { error } = await supabase.auth.signOut();
@@ -246,8 +336,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // ─── Render ─────────────────────────────────────────────────────
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-[#F8FAFC]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-10 w-10 border-2 border-indigo-200 border-t-indigo-600" />
+          <p className="text-sm text-slate-400 font-medium">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <AuthContext.Provider value={{ user, loading, initialized, sendMagicLink, signOut, cooldownRemaining }}>
+    <AuthContext.Provider value={{ user, session, loading, initialized, sendMagicLink, signInWithGoogle, signOut, cooldownRemaining }}>
       {children}
     </AuthContext.Provider>
   );
