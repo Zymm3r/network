@@ -12,7 +12,7 @@ import { Skeleton } from '../components/ui/skeleton';
 import {
   ArrowLeft, Clock, ChevronRight, Play, FileText, HelpCircle,
   CheckCircle, CheckCircle2, Circle, Zap, BookOpen, Trophy, ChevronDown,
-  Code2, PlayCircle
+  Code2, PlayCircle, Eye
 } from 'lucide-react';
 import QuizCard from '../components/QuizCard';
 import ExerciseCard from '../components/ExerciseCard';
@@ -263,6 +263,174 @@ function CheckpointRow({ cp, isCompleted, isActive, onClick }: CheckpointRowProp
 }
 
 /* ─────────────────────────────────────────
+   Reading Content Markdown-like Renderer
+───────────────────────────────────────── */
+function ReadingContentRenderer({ content }: { content: string }) {
+  const lines = content.split('\n');
+  const elements: React.ReactNode[] = [];
+  let i = 0;
+  let key = 0;
+
+  while (i < lines.length) {
+    const line = lines[i];
+
+    // Code block (```)
+    if (line.trim().startsWith('```')) {
+      const langMatch = line.trim().match(/^```(\w*)/);
+      const lang = langMatch?.[1] || '';
+      const codeLines: string[] = [];
+      i++;
+      while (i < lines.length && !lines[i].trim().startsWith('```')) {
+        codeLines.push(lines[i]);
+        i++;
+      }
+      i++; // skip closing ```
+      elements.push(
+        <div key={key++} className="my-5 rounded-xl overflow-hidden border border-slate-200 shadow-sm">
+          {lang && (
+            <div className="bg-slate-800 text-slate-300 text-xs font-mono px-4 py-1.5 flex items-center gap-2">
+              <Code2 className="w-3.5 h-3.5" />
+              {lang}
+            </div>
+          )}
+          <pre className="bg-slate-900 text-slate-100 text-sm font-mono px-5 py-4 overflow-x-auto leading-relaxed">
+            <code>{codeLines.join('\n')}</code>
+          </pre>
+        </div>
+      );
+      continue;
+    }
+
+    // H2 heading (##)
+    if (line.trim().startsWith('## ')) {
+      elements.push(
+        <h2 key={key++} className="text-xl md:text-2xl font-bold text-slate-800 mt-10 mb-4 pb-2 border-b border-slate-100 flex items-center gap-2">
+          <span className="w-1 h-6 bg-gradient-to-b from-indigo-500 to-purple-500 rounded-full" />
+          {line.trim().replace(/^## /, '')}
+        </h2>
+      );
+      i++;
+      continue;
+    }
+
+    // H3 heading (###)
+    if (line.trim().startsWith('### ')) {
+      elements.push(
+        <h3 key={key++} className="text-lg font-semibold text-slate-700 mt-7 mb-3">
+          {line.trim().replace(/^### /, '')}
+        </h3>
+      );
+      i++;
+      continue;
+    }
+
+    // Bullet point (- or *)
+    if (line.trim().match(/^[-*] /)) {
+      const listItems: string[] = [];
+      while (i < lines.length && lines[i].trim().match(/^[-*] /)) {
+        listItems.push(lines[i].trim().replace(/^[-*] /, ''));
+        i++;
+      }
+      elements.push(
+        <ul key={key++} className="my-4 space-y-2 pl-1">
+          {listItems.map((item, idx) => (
+            <li key={idx} className="flex gap-3 text-slate-600 leading-relaxed">
+              <span className="mt-2 w-1.5 h-1.5 bg-indigo-400 rounded-full shrink-0" />
+              <span dangerouslySetInnerHTML={{ __html: inlineFormat(item) }} />
+            </li>
+          ))}
+        </ul>
+      );
+      continue;
+    }
+
+    // Numbered list (1. 2. etc.)
+    if (line.trim().match(/^\d+\. /)) {
+      const listItems: string[] = [];
+      while (i < lines.length && lines[i].trim().match(/^\d+\. /)) {
+        listItems.push(lines[i].trim().replace(/^\d+\. /, ''));
+        i++;
+      }
+      elements.push(
+        <ol key={key++} className="my-4 space-y-2 pl-1 list-none">
+          {listItems.map((item, idx) => (
+            <li key={idx} className="flex gap-3 text-slate-700 leading-relaxed text-base">
+              <span className="mt-0.5 w-6 h-6 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center text-xs font-bold shrink-0">
+                {idx + 1}
+              </span>
+              <span dangerouslySetInnerHTML={{ __html: inlineFormat(item) }} />
+            </li>
+          ))}
+        </ol>
+      );
+      continue;
+    }
+
+    // Markdown Table (| Header | Header |)
+    if (line.trim().startsWith('|') && i + 1 < lines.length && lines[i+1].trim().match(/^\|[-\s|]+\|$/)) {
+      const tableRows: string[] = [];
+      while (i < lines.length && lines[i].trim().startsWith('|')) {
+        tableRows.push(lines[i].trim());
+        i++;
+      }
+      
+      const headers = tableRows[0].split('|').filter(Boolean).map(s => s.trim());
+      // Skip row 1 which is the separator |---|---|
+      const rows = tableRows.slice(2).map(row => row.split('|').filter(Boolean).map(s => s.trim()));
+      
+      elements.push(
+        <div key={key++} className="my-6 overflow-x-auto rounded-xl border border-slate-200 shadow-sm">
+          <table className="w-full text-left text-base text-slate-700">
+            <thead className="bg-slate-50 text-slate-800 font-semibold border-b border-slate-200">
+              <tr>
+                {headers.map((h, idx) => (
+                  <th key={idx} className="px-4 py-3" dangerouslySetInnerHTML={{ __html: inlineFormat(h) }} />
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {rows.map((row, rIdx) => (
+                <tr key={rIdx} className="hover:bg-slate-50/50 transition-colors">
+                  {row.map((cell, cIdx) => (
+                    <td key={cIdx} className="px-4 py-3 leading-relaxed" dangerouslySetInnerHTML={{ __html: inlineFormat(cell) }} />
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
+      continue;
+    }
+
+    // Empty line
+    if (line.trim() === '') {
+      i++;
+      continue;
+    }
+
+    // Regular paragraph
+    elements.push(
+      <p key={key++} className="text-slate-700 leading-[1.85] my-4 text-base" dangerouslySetInnerHTML={{ __html: inlineFormat(line) }} />
+    );
+    i++;
+  }
+
+  return <div className="reading-content max-w-none">{elements}</div>;
+}
+
+/** Inline formatting: **bold**, `code`, [link](url) */
+function inlineFormat(text: string): string {
+  return text
+    // Bold **text**
+    .replace(/\*\*([^*]+)\*\*/g, '<strong class="font-semibold text-slate-800">$1</strong>')
+    // Inline code `text`
+    .replace(/`([^`]+)`/g, '<code class="bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded text-[13px] font-mono">$1</code>')
+    // Links [text](url)
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-indigo-600 underline underline-offset-2 hover:text-indigo-800">$1</a>');
+}
+
+/* ─────────────────────────────────────────
    Main Component
 ───────────────────────────────────────── */
 export function LessonDetail() {
@@ -285,6 +453,8 @@ export function LessonDetail() {
   const [showAllCheckpoints, setShowAllCheckpoints] = useState(false);
   const [activeCheckpointIdx, setActiveCheckpointIdx] = useState(0);
   const [videoSeekState, setVideoSeekState] = useState<VideoSeekState | null>(null);
+  const [readingProgress, setReadingProgress] = useState(0);
+  const readingContentRef = useRef<HTMLDivElement>(null);
   
   // Concurrent Flight Lock
   const isSavingRef = useRef(false);
@@ -320,7 +490,26 @@ export function LessonDetail() {
 
   /* ── Derived values ── */
   const activeCheckpoint = isPythonLesson ? PYTHON_CHECKPOINTS[activeCheckpointIdx] : null;
-  const durationMinutes = lesson?.duration_minutes || 0;
+
+  /* ── Dynamic reading time calculation ── */
+  const isReadingLesson = lesson?.lesson_type === 'reading';
+  const readingContent = useMemo(() => {
+    if (!isReadingLesson || !lesson) return '';
+    return (language === 'th' ? lesson.content_th : lesson.content_en) || '';
+  }, [isReadingLesson, lesson, language]);
+
+  const estimatedReadingMinutes = useMemo(() => {
+    if (!readingContent) return 0;
+    // Thai text: ~200 words/min, English: ~250 words/min
+    // Count words by splitting on whitespace and filtering empty
+    const wordCount = readingContent.split(/\s+/).filter(Boolean).length;
+    const wpm = language === 'th' ? 180 : 230;
+    return Math.max(1, Math.ceil(wordCount / wpm));
+  }, [readingContent, language]);
+
+  const durationMinutes = isReadingLesson && estimatedReadingMinutes > 0
+    ? estimatedReadingMinutes
+    : (lesson?.duration_minutes || 0);
   const requiredSeconds = isPythonLesson
     ? (activeCheckpoint?.duration ?? 0)
     : durationMinutes * 60;
@@ -803,10 +992,21 @@ export function LessonDetail() {
               )}
             </div>
           ) : (
-            lesson.duration_minutes && (
+            (durationMinutes > 0) && (
               <div className="flex items-center gap-2 text-indigo-100">
                 <Clock className="w-4 h-4" />
-                <span>{lesson.duration_minutes} นาที</span>
+                <span>
+                  {isReadingLesson
+                    ? `อ่านประมาณ ${durationMinutes} นาที`
+                    : `${durationMinutes} นาที`
+                  }
+                </span>
+                {isReadingLesson && (
+                  <span className="flex items-center gap-1 ml-2 text-indigo-200">
+                    <Eye className="w-3.5 h-3.5" />
+                    <span className="text-xs">{readingContent.split(/\s+/).filter(Boolean).length.toLocaleString()} คำ</span>
+                  </span>
+                )}
               </div>
             )
           )}
@@ -837,8 +1037,8 @@ export function LessonDetail() {
         </Card>
       )}
 
-      {/* Content */}
-      {content && (
+      {/* Content — show short description for non-reading lessons */}
+      {content && !isReadingLesson && (
         <Card className="border-slate-100">
           <CardHeader>
             <CardTitle>เนื้อหา</CardTitle>
@@ -853,12 +1053,66 @@ export function LessonDetail() {
       {lesson.lesson_type === 'quiz' && <QuizCard />}
 
       {lesson.lesson_type === 'exercise' && <ExerciseCard />}
-      {lesson.lesson_type === 'reading' && (
+
+      {/* ══════════════════════════════════════════════════════════
+          READING LESSON: Rich Article Renderer
+      ══════════════════════════════════════════════════════════ */}
+      {isReadingLesson && readingContent && (
+        <>
+          {/* Reading progress bar — fixed at top */}
+          <div className="sticky top-0 z-30 -mx-1">
+            <div className="h-1 bg-slate-100 rounded-full overflow-hidden">
+              <div
+                className="h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-full transition-all duration-300 ease-out"
+                style={{ width: `${readingProgress}%` }}
+              />
+            </div>
+          </div>
+
+          <Card className="border-slate-100 overflow-hidden shadow-sm">
+            <CardHeader className="bg-gradient-to-r from-indigo-50 via-purple-50/40 to-slate-50 border-b border-slate-100">
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2 text-slate-800">
+                  <BookOpen className="w-5 h-5 text-indigo-600" />
+                  บทความ
+                </CardTitle>
+                <div className="flex items-center gap-3 text-sm text-slate-500">
+                  <span className="flex items-center gap-1">
+                    <Clock className="w-3.5 h-3.5" />
+                    อ่านประมาณ {durationMinutes} นาที
+                  </span>
+                  <span className="font-medium text-indigo-600">
+                    {Math.round(readingProgress)}%
+                  </span>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div
+                ref={readingContentRef}
+                className="reading-article px-6 py-8 md:px-10 md:py-10"
+                onScroll={(e) => {
+                  const el = e.currentTarget;
+                  const scrollPct = el.scrollTop / (el.scrollHeight - el.clientHeight);
+                  setReadingProgress(Math.min(100, Math.round(scrollPct * 100)));
+                }}
+                style={{ maxHeight: '70vh', overflowY: 'auto', scrollBehavior: 'smooth' }}
+              >
+                <ReadingContentRenderer content={readingContent} />
+              </div>
+            </CardContent>
+          </Card>
+        </>
+      )}
+
+      {/* Reading lesson with no content yet */}
+      {isReadingLesson && !readingContent && (
         <Card className="border-slate-100">
-          <CardHeader><CardTitle>อ่านเพิ่มเติม</CardTitle></CardHeader>
+          <CardHeader><CardTitle>บทความ</CardTitle></CardHeader>
           <CardContent>
-            <div className="prose prose-slate max-w-none">
-              <p className="text-muted-foreground leading-relaxed">เนื้อหาสำหรับอ่านเพิ่มเติมจะแสดงที่นี่</p>
+            <div className="text-center py-10">
+              <BookOpen className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+              <p className="text-muted-foreground">เนื้อหาบทความกำลังจัดเตรียม</p>
             </div>
           </CardContent>
         </Card>

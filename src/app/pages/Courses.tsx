@@ -185,8 +185,11 @@ export function CoursesContent() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {courses.map((course) => (
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {[...courses].sort((a, b) => {
+            const levelOrder: Record<string, number> = { beginner: 1, intermediate: 2, advanced: 3 };
+            return (levelOrder[a.level] || 99) - (levelOrder[b.level] || 99);
+          }).map((course) => (
             <CourseCard key={course.id} course={course} />
           ))}
         </div>

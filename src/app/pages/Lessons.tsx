@@ -46,9 +46,11 @@ export function Lessons() {
     fetchUserProgress();
   }, [user?.id]);
 
-  const filteredLessons = activeTab === 'all'
+  const difficultyOrder: Record<string, number> = { easy: 1, beginner: 1, moderate: 2, intermediate: 2, challenging: 3, advanced: 3 };
+  const filteredLessons = [...(activeTab === 'all'
     ? lessons
-    : lessons.filter(l => l.lesson_type === activeTab);
+    : lessons.filter(l => l.lesson_type === activeTab))]
+    .sort((a, b) => (difficultyOrder[a.difficulty || ''] || 99) - (difficultyOrder[b.difficulty || ''] || 99));
 
   const lessonIdsSet = new Set(lessons.map(l => l.id));
   const completedCount = userProgressList.filter(

@@ -47,7 +47,10 @@ export function Paths() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {paths.map((path) => {
+        {[...paths].sort((a, b) => {
+          const levelOrder: Record<string, number> = { beginner: 1, intermediate: 2, advanced: 3 };
+          return (levelOrder[a.from_level || ''] || 99) - (levelOrder[b.from_level || ''] || 99);
+        }).map((path) => {
           const name = language === 'th' ? path.name_th : path.name_en;
           const description = language === 'th' ? path.description_th : path.description_en;
           const courseCount = path.modules?.length || 0;
