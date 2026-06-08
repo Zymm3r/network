@@ -1,0 +1,146 @@
+import { loadPyodide } from 'pyodide';
+
+let pyodideReadyPromise: Promise<any> | null = null;
+
+// Initialize Pyodide exactly once
+async function initPyodide() {
+  if (!pyodideReadyPromise) {
+    pyodideReadyPromise = loadPyodide({
+       indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.29.4/full/',
+    });
+  }
+  return pyodideReadyPromise;
+}
+
+self.onmessage = async (event: MessageEvent) => {
+  const { id, code, testCases } = event.data;
+
+  try {
+    const pyodide = await initPyodide();
+
+    self.postMessage({ id, type: 'start' });
+
+    // Define a wrapper that captures stdout and executes test cases
+    // We pass data via globals
+    pyodide.globals.set('__USER_CODE__', code);
+    pyodide.globals.set('__TEST_CASES__', pyodide.toPy(testCases));
+
+    const wrapperCode = `
+import sys
+import io
+import json
+import traceback
+
+class CappedStdout(io.StringIO):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.chars_written = 0
+        self.lines_written = 0
+        self.limit_reached = False
+
+    def write(self, s):
+        if self.limit_reached:
+            raise RuntimeError("Output limit exceeded")
+            
+        if not isinstance(s, str):
+            s = str(s)
+            
+        if len(s) > 50000:
+            s = s[:50000]
+            
+        prev_chars = self.chars_written
+        prev_lines = self.lines_written
+        
+        self.chars_written += len(s)
+        self.lines_written += s.count('\\n')
+        
+        if self.chars_written > 50000 or self.lines_written > 1000:
+            self.limit_reached = True
+            allowed_chars = max(0, 50000 - prev_chars)
+            truncated_s = s[:allowed_chars]
+            
+            allowed_lines = max(0, 1000 - prev_lines)
+            lines = truncated_s.split('\\n')
+            if len(lines) > allowed_lines + 1:
+                truncated_s = '\\n'.join(lines[:allowed_lines + 1])
+                
+            super().write(truncated_s)
+            super().write("\\n[Error: Output limit exceeded (50000 chars or 1000 lines)]")
+            raise RuntimeError("Output limit exceeded")
+            
+        return super().write(s)
+
+def run_tests():
+    # 1. Run user code in the global scope (to define functions, etc.)
+    user_globals = {}
+    old_stdout = sys.stdout
+    capped_stdout = CappedStdout()
+    sys.stdout = capped_stdout
+    try:
+        exec(__USER_CODE__, user_globals)
+    except Exception as e:
+        output = capped_stdout.getvalue().strip()
+        if isinstance(e, RuntimeError) and "Output limit exceeded" in str(e):
+            error_msg = output
+        else:
+            tb = traceback.format_exc(limit=10)
+            if output:
+                error_msg = output + "\\n" + tb
+            else:
+                error_msg = tb
+        return json.dumps([{**tc, "actual": error_msg, "passed": False} for tc in __TEST_CASES__])
+    finally:
+        sys.stdout = old_stdout
+
+    # 2. Run each test case against the user_globals
+    results = []
+    for tc in __TEST_CASES__:
+        old_stdout = sys.stdout
+        sys.stdout = CappedStdout()
+        try:
+            try:
+                ret = eval(tc["input"], user_globals)
+                if ret is not None:
+                    print(ret)
+            except SyntaxError:
+                exec(tc["input"], user_globals)
+            
+            output = sys.stdout.getvalue().strip()
+            
+            result_obj = dict(tc)
+            result_obj["actual"] = output
+            result_obj["passed"] = output == tc["expected"]
+            results.append(result_obj)
+        except Exception as e:
+            # getvalue() might have the output with the appended error from CappedStdout
+            output = sys.stdout.getvalue().strip()
+            if isinstance(e, RuntimeError) and "Output limit exceeded" in str(e):
+                pass
+            else:
+                tb = traceback.format_exc(limit=10)
+                if output:
+                    output = output + "\\n" + tb
+                else:
+                    output = tb
+            # if output already contains the custom error, it's fine
+            
+            result_obj = dict(tc)
+            result_obj["actual"] = output
+            result_obj["passed"] = False
+            results.append(result_obj)
+        finally:
+            sys.stdout = old_stdout
+            
+    return json.dumps(results)
+
+run_tests()
+`;
+
+    const resultsJson = await pyodide.runPythonAsync(wrapperCode);
+    const results = JSON.parse(resultsJson);
+
+    self.postMessage({ id, success: true, results });
+  } catch (error: any) {
+    self.postMessage({ id, success: false, error: error.message || String(error) });
+  }
+};
