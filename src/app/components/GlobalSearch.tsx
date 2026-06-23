@@ -29,7 +29,7 @@ export function GlobalSearch({ onResultClick }: GlobalSearchProps) {
   const [results, setResults] = useState<SearchResult[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
-  const { language } = useI18n();
+  const { language, t } = useI18n();
 
   useEffect(() => {
     const handleKeydown = (e: KeyboardEvent) => {
@@ -96,7 +96,7 @@ export function GlobalSearch({ onResultClick }: GlobalSearchProps) {
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => setFocused(true)}
           onBlur={() => setTimeout(() => setFocused(false), 200)}
-          placeholder="ค้นหาหลักสูตร บทเรียน..."
+          placeholder={t.search.placeholder}
           className="w-full pl-10 pr-10 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 transition-all placeholder:text-slate-400"
         />
         {query && (
@@ -137,7 +137,7 @@ export function GlobalSearch({ onResultClick }: GlobalSearchProps) {
                   <div className="text-xs text-muted-foreground">{result.subtitle}</div>
                 </div>
                 <span className={`text-xs font-medium ${config.color}`}>
-                  {config.label}
+                  {t.search.categories[result.category] || config.label}
                 </span>
               </button>
             );

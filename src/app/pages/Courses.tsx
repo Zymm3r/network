@@ -8,12 +8,12 @@ import { CourseCard } from '../components/course/CourseCard';
 import { CourseFilters } from '../components/course/CourseFilters';
 import { Skeleton } from '../components/ui/skeleton';
 import { Card, CardContent } from '../components/ui/card';
-import { BookOpen, Users, Clock, ArrowRight } from 'lucide-react';
+import { BookOpen, Users, Clock } from 'lucide-react';
 import { useActivity } from '../contexts/ActivityContext';
 import type { CourseLevel } from '../types';
 
-function formatStudyTime(seconds: number, lang: 'th' | 'en') {
-  if (seconds < 60) return lang === 'th' ? `${seconds} วินาที` : `${seconds} secs`;
+function formatStudyTime(seconds: number, t: any) {
+  if (seconds < 60) return t.coursesList.studySec.replace('{seconds}', String(seconds));
   
   const days = Math.floor(seconds / 86400);
   const hours = Math.floor((seconds % 86400) / 3600);
@@ -21,18 +21,18 @@ function formatStudyTime(seconds: number, lang: 'th' | 'en') {
   const remainingSeconds = seconds % 60;
   
   if (days > 0) {
-    return lang === 'th' 
-      ? `${days} วัน ${hours} ชั่วโมง` 
-      : `${days} days ${hours} hrs`;
+    return t.coursesList.studyDaysHours
+      .replace('{days}', String(days))
+      .replace('{hours}', String(hours));
   } else if (hours > 0) {
-    return lang === 'th' 
-      ? `${hours} ชม. ${minutes} นาที` 
-      : `${hours} hrs ${minutes} mins`;
+    return t.coursesList.studyHoursMins
+      .replace('{hours}', String(hours))
+      .replace('{minutes}', String(minutes));
   } else {
     // Show minutes and seconds so it ticks live
-    return lang === 'th' 
-      ? `${minutes} นาที ${remainingSeconds} วินาที` 
-      : `${minutes} mins ${remainingSeconds} secs`;
+    return t.coursesList.studyMinsSec
+      .replace('{minutes}', String(minutes))
+      .replace('{remainingSeconds}', String(remainingSeconds));
   }
 }
 
@@ -91,9 +91,24 @@ export function CoursesContent() {
   }, [user?.id]);
 
   const stats = [
-    { icon: BookOpen, label: language === 'th' ? 'หลักสูตร' : 'Courses', value: statsLoading ? '...' : courseCount !== null ? `${courseCount} ${language === 'th' ? 'หลักสูตร' : 'Courses'}` : '0', color: 'bg-indigo-100 text-indigo-600' },
-    { icon: Users, label: language === 'th' ? 'ผู้เรียน' : 'Students', value: statsLoading ? '...' : studentCount !== null ? `${studentCount} ${language === 'th' ? 'คน' : 'Students'}` : '0', color: 'bg-green-100 text-green-600' },
-    { icon: Clock, label: language === 'th' ? 'เวลาเรียนทั้งหมด' : 'Total Study Time', value: statsLoading ? '...' : formatStudyTime(totalSeconds, language), color: 'bg-amber-100 text-amber-600' },
+    { 
+      icon: BookOpen, 
+      label: t.coursesList.coursesLabel, 
+      value: statsLoading ? '...' : courseCount !== null ? t.coursesList.countText.replace('{count}', String(courseCount)) : '0', 
+      color: 'bg-indigo-100 text-indigo-600' 
+    },
+    { 
+      icon: Users, 
+      label: t.coursesList.studentsLabel, 
+      value: statsLoading ? '...' : studentCount !== null ? t.coursesList.studentCountText.replace('{count}', String(studentCount)) : '0', 
+      color: 'bg-green-100 text-green-600' 
+    },
+    { 
+      icon: Clock, 
+      label: t.coursesList.totalStudyTime, 
+      value: statsLoading ? '...' : formatStudyTime(totalSeconds, t), 
+      color: 'bg-amber-100 text-amber-600' 
+    },
   ];
 
   // Auth Render Protection
@@ -116,17 +131,17 @@ export function CoursesContent() {
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 via-purple-600 to-indigo-700 p-6 md:p-8 text-white">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIgZmlsbD0id2hpdGUiIGZpbGwtb3BhY2l0eT0iMC4xIi8+PC9zdmc+')] opacity-20" />
         <div className="relative z-10">
-          <h1 className="text-2xl md:text-3xl font-bold mb-2">Network Fundamentals 101</h1>
-          <p className="text-indigo-100 mb-4">เรียนรู้การสร้างเครือข่ายตั้งแต่พื้นฐานสู่การปฏิบัติ</p>
+          <h1 className="text-2xl md:text-3xl font-bold mb-2">{t.coursesList.heroTitle}</h1>
+          <p className="text-indigo-100 mb-4">{t.coursesList.heroDesc}</p>
           <div className="flex flex-wrap gap-3">
             <div className="px-3 py-1.5 bg-white/20 rounded-lg text-sm font-medium">
-              🔌 พื้นฐานเครือข่าย
+              {t.coursesList.tagFundamentals}
             </div>
             <div className="px-3 py-1.5 bg-white/20 rounded-lg text-sm font-medium">
-              🌐 Internet Protocols
+              {t.coursesList.tagProtocols}
             </div>
             <div className="px-3 py-1.5 bg-white/20 rounded-lg text-sm font-medium">
-              🔒 Network Security
+              {t.coursesList.tagSecurity}
             </div>
           </div>
         </div>
@@ -151,7 +166,7 @@ export function CoursesContent() {
 
       {/* Filter */}
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">หลักสูตรทั้งหมด</h2>
+        <h2 className="text-lg font-semibold">{t.coursesList.allCourses}</h2>
         <CourseFilters
           selectedLevel={selectedLevel}
           onLevelChange={setSelectedLevel}
@@ -180,8 +195,8 @@ export function CoursesContent() {
         <Card className="border-dashed">
           <CardContent className="py-12 text-center">
             <BookOpen className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">ยังไม่มีหลักสูตร</p>
-            <p className="text-sm text-muted-foreground mt-1">กรองหรือล้างตัวกรองเพื่อดูหลักสูตรอื่น</p>
+            <p className="text-muted-foreground">{t.coursesList.noCourses}</p>
+            <p className="text-sm text-muted-foreground mt-1">{t.coursesList.noCoursesDesc}</p>
           </CardContent>
         </Card>
       ) : (
@@ -199,8 +214,8 @@ export function CoursesContent() {
 }
 
 // Route-level Error Boundary for Courses
-class CoursesErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; error: Error | null }> {
-  constructor(props: { children: ReactNode }) {
+class CoursesErrorBoundary extends Component<{ children: ReactNode; t: any }, { hasError: boolean; error: Error | null }> {
+  constructor(props: { children: ReactNode; t: any }) {
     super(props);
     this.state = { hasError: false, error: null };
   }
@@ -218,13 +233,13 @@ class CoursesErrorBoundary extends Component<{ children: ReactNode }, { hasError
       return (
         <div className="flex items-center justify-center h-[50vh] flex-col space-y-4">
           <div className="p-4 bg-red-50 text-red-600 rounded-lg max-w-md text-center border border-red-100">
-            <h2 className="text-lg font-bold mb-2">Something went wrong</h2>
-            <p className="text-sm">{this.state.error?.message || 'An unexpected error occurred while loading the courses.'}</p>
+            <h2 className="text-lg font-bold mb-2">{this.props.t.coursesList.somethingWrong}</h2>
+            <p className="text-sm">{this.state.error?.message || this.props.t.coursesList.unexpectedError}</p>
             <button
               onClick={() => window.location.reload()}
               className="mt-4 px-4 py-2 bg-red-600 text-white rounded-md text-sm font-medium hover:bg-red-700 transition-colors"
             >
-              Reload Page
+              {this.props.t.coursesList.reloadPage}
             </button>
           </div>
         </div>
@@ -235,8 +250,9 @@ class CoursesErrorBoundary extends Component<{ children: ReactNode }, { hasError
 }
 
 export function Courses() {
+  const { t } = useI18n();
   return (
-    <CoursesErrorBoundary>
+    <CoursesErrorBoundary t={t}>
       <CoursesContent />
     </CoursesErrorBoundary>
   );

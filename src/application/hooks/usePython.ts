@@ -17,7 +17,7 @@ export function usePython() {
 
   const initWorker = useCallback(() => {
     if (!workerRef.current) {
-      workerRef.current = new Worker(new URL('../lib/pythonWorker.ts', import.meta.url), { type: 'module' });
+      workerRef.current = new Worker(new URL('../../infrastructure/workers/pythonWorker.ts', import.meta.url), { type: 'module' });
     }
   }, []);
 

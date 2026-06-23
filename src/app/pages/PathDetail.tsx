@@ -48,18 +48,18 @@ export function PathDetail() {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
         <div className="text-6xl mb-4">🔍</div>
-        <h2 className="text-xl font-semibold mb-2">ไม่พบเส้นทาง</h2>
-        <p className="text-muted-foreground mb-4">เส้นทางที่คุณกำลังค้นหาอาจถูกลบหรือย้ายไปแล้ว</p>
+        <h2 className="text-xl font-semibold mb-2">{t.paths.notFound}</h2>
+        <p className="text-muted-foreground mb-4">{t.paths.notFoundDesc}</p>
         <Button onClick={() => navigate('/paths')}>
           <ArrowLeft className="w-4 h-4 mr-2" />
-          กลับไปหน้าเส้นทางการเรียนรู้
+          {t.paths.backToPaths}
         </Button>
       </div>
     );
   }
 
-  const name = language === 'th' ? path.name_th : path.name_en;
-  const description = language === 'th' ? path.description_th : path.description_en;
+  const name = path[`name_${language}` as 'name_th' | 'name_en'];
+  const description = path[`description_${language}` as 'description_th' | 'description_en'];
   const courseIds = path.modules || [];
   const pathCourses = courses.filter(c => courseIds.includes(c.id));
 
@@ -71,7 +71,7 @@ export function PathDetail() {
         className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
-        กลับ
+        {t.common.back}
       </Link>
 
       {/* Path Header */}
@@ -140,13 +140,13 @@ export function PathDetail() {
           <Card className="border-dashed">
             <CardContent className="py-12 text-center">
               <BookOpen className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">หลักสูตรจะแสดงเมื่อพร้อม</p>
+              <p className="text-muted-foreground">{t.paths.coursesWhenReady}</p>
             </CardContent>
           </Card>
         ) : (
           <div className="space-y-3">
             {pathCourses.map((course, index) => {
-              const courseName = language === 'th' ? course.name_th : course.name_en;
+              const courseName = course[`name_${language}` as 'name_th' | 'name_en'];
 
               return (
                 <Link

@@ -13,12 +13,6 @@ const levelColors: Record<string, string> = {
   advanced: 'bg-red-100 text-red-800 border-red-200',
 };
 
-const pathTypeLabels: Record<string, string> = {
-  sequential: 'ลำดับ',
-  milestone: 'เส้นทาง',
-  optional: 'เลือกเอง',
-};
-
 export function Paths() {
   const { language, t } = useI18n();
   const { paths, loading } = usePaths();
@@ -27,8 +21,8 @@ export function Paths() {
     return (
       <div className="space-y-6">
         <div className="flex flex-col gap-2">
-          <h1 className="text-2xl font-semibold">เส้นทางการเรียนรู้</h1>
-          <p className="text-muted-foreground">เลือกเส้นทางที่เหมาะกับคุณ</p>
+          <h1 className="text-2xl font-semibold">{t.paths.title}</h1>
+          <p className="text-muted-foreground">{t.paths.subtitle}</p>
         </div>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {[1, 2, 3].map(i => (
@@ -42,8 +36,8 @@ export function Paths() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-2">
-        <h1 className="text-2xl font-semibold">เส้นทางการเรียนรู้</h1>
-        <p className="text-muted-foreground">เลือกเส้นทางที่เหมาะกับคุณ</p>
+        <h1 className="text-2xl font-semibold">{t.paths.title}</h1>
+        <p className="text-muted-foreground">{t.paths.subtitle}</p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -51,8 +45,8 @@ export function Paths() {
           const levelOrder: Record<string, number> = { beginner: 1, intermediate: 2, advanced: 3 };
           return (levelOrder[a.from_level || ''] || 99) - (levelOrder[b.from_level || ''] || 99);
         }).map((path) => {
-          const name = language === 'th' ? path.name_th : path.name_en;
-          const description = language === 'th' ? path.description_th : path.description_en;
+          const name = path[`name_${language}` as 'name_th' | 'name_en'];
+          const description = path[`description_${language}` as 'description_th' | 'description_en'];
           const courseCount = path.modules?.length || 0;
 
           return (
@@ -64,7 +58,7 @@ export function Paths() {
                     <Route className="w-6 h-6 text-white" />
                   </div>
                   <Badge variant="outline" className={levelColors[path.path_type] || ''}>
-                    {pathTypeLabels[path.path_type] || path.path_type}
+                    {t.paths[path.path_type === 'sequential' ? 'seq' : path.path_type === 'milestone' ? 'path' : 'custom'] || path.path_type}
                   </Badge>
                 </div>
                 <div>
@@ -77,7 +71,7 @@ export function Paths() {
                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
                   <div className="flex items-center gap-1">
                     <BookOpen className="w-4 h-4" />
-                    <span>{courseCount} หลักสูตร</span>
+                    <span>{t.coursesList.countText.replace('{count}', courseCount.toString())}</span>
                   </div>
                   {path.duration && (
                     <div className="flex items-center gap-1">
@@ -89,7 +83,7 @@ export function Paths() {
 
                 {path.price != null && (
                   <div className="text-lg font-bold text-indigo-600">
-                    {path.price === 0 ? 'ฟรี' : `${path.price} ฿`}
+                    {path.price === 0 ? t.coursesList.free : `${path.price} ฿`}
                   </div>
                 )}
 
@@ -100,7 +94,7 @@ export function Paths() {
                     </Badge>
                   )}
                   <Button size="sm" className="gap-1">
-                    เริ่มเรียน
+                    {t.paths.startBtn}
                     <ChevronRight className="w-4 h-4" />
                   </Button>
                 </div>
@@ -116,12 +110,12 @@ export function Paths() {
         <CardContent className="pt-6">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="font-semibold text-lg">เส้นทางการเรียนรู้ของคุณ</h3>
-              <p className="text-sm text-muted-foreground mt-1">ติดตามความก้าวหน้าในเส้นทางที่คุณเลือก</p>
+              <h3 className="font-semibold text-lg">{t.paths.progressCardTitle}</h3>
+              <p className="text-sm text-muted-foreground mt-1">{t.paths.progressCardDesc}</p>
             </div>
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <CheckCircle2 className="w-4 h-4 text-green-500" />
-              <span>1/3 เส้นทางที่เริ่มต้น</span>
+              <span>{t.paths.pathsStartedText.replace('{completed}', '1').replace('{total}', '3')}</span>
             </div>
           </div>
         </CardContent>

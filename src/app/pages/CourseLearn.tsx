@@ -44,17 +44,17 @@ export function CourseLearn() {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
         <div className="text-6xl mb-4">🔍</div>
-        <h2 className="text-xl font-semibold mb-2">ไม่พบหลักสูตร</h2>
+        <h2 className="text-xl font-semibold mb-2">{t.courses.notFound}</h2>
         <Button onClick={() => navigate('/courses')}>
           <ArrowLeft className="w-4 h-4 mr-2" />
-          กลับไปหน้าหลักสูตร
+          {t.courses.backToCourses}
         </Button>
       </div>
     );
   }
 
-  const name = language === 'th' ? course.name_th : course.name_en;
-  const description = language === 'th' ? course.description_th : course.description_en;
+  const name = course[`name_${language}` as 'name_th' | 'name_en'];
+  const description = course[`description_${language}` as 'description_th' | 'description_en'];
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-12">
@@ -64,7 +64,7 @@ export function CourseLearn() {
         className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
-        {t.common.back || 'กลับไปหน้ารายละเอียด'}
+        {t.courses.backToCourseDetails}
       </Link>
 
       <div className="flex flex-col md:flex-row gap-8">
@@ -122,12 +122,12 @@ export function CourseLearn() {
                   </div>
                 ) : lessons.length === 0 ? (
                   <div className="p-8 text-center text-muted-foreground text-sm">
-                    ยังไม่มีเนื้อหาบทเรียน
+                    {t.lessons.noLessonsAvailable}
                   </div>
                 ) : (
                   <div className="divide-y divide-slate-100 max-h-[60vh] overflow-y-auto">
                      {lessons.map((lesson, idx) => {
-                      const lessonName = language === 'th' ? lesson.title_th : lesson.title_en;
+                      const lessonName = lesson[`title_${language}` as 'title_th' | 'title_en'];
                       const Icon = lessonTypeIcons[lesson.lesson_type] || BookOpen;
                       const isCompleted = completedLessonIds.has(lesson.id);
                       

@@ -4,6 +4,7 @@ import { useCourses } from '../hooks/useCourses';
 import { useLessons } from '../hooks/useLessons';
 import { useAuth } from '../hooks/useAuth';
 import { useLessonsProgress } from '../hooks/useProgress';
+import { supabase } from '../lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
@@ -68,18 +69,18 @@ export function CourseDetail() {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
         <div className="text-6xl mb-4">🔍</div>
-        <h2 className="text-xl font-semibold mb-2">ไม่พบหลักสูตร</h2>
-        <p className="text-muted-foreground mb-4">หลักสูตรที่คุณกำลังค้นหาอาจถูกลบหรือย้ายไปแล้ว</p>
+        <h2 className="text-xl font-semibold mb-2">{t.courses.notFound}</h2>
+        <p className="text-muted-foreground mb-4">{t.courses.notFoundDesc}</p>
         <Button onClick={() => navigate('/courses')}>
           <ArrowLeft className="w-4 h-4 mr-2" />
-          กลับไปหน้าหลักสูตร
+          {t.courses.backToCourses}
         </Button>
       </div>
     );
   }
 
-  const name = language === 'th' ? course.name_th : course.name_en;
-  const description = language === 'th' ? course.description_th : course.description_en;
+  const name = course[`name_${language}` as 'name_th' | 'name_en'];
+  const description = course[`description_${language}` as 'description_th' | 'description_en'];
   const includes = course.includes || [];
   const highlights = course.highlights || [];
 
@@ -142,12 +143,39 @@ export function CourseDetail() {
               )}
             </div>
           </div>
-          <Link to={`/courses/${course.id}/learn`}>
-            <Button size="lg" className="bg-indigo-600 hover:bg-indigo-700">
+          {user ? (
+            <Button 
+              size="lg" 
+              className="bg-indigo-600 hover:bg-indigo-700"
+              onClick={async (e) => {
+                e.preventDefault();
+                try {
+                  const { error } = await supabase.from('enrollments').upsert({
+                    user_id: user.id,
+                    course_id: course.id,
+                    status: 'active',
+                    last_accessed_at: new Date().toISOString()
+                  }, { onConflict: 'user_id,course_id' });
+                  
+                  if (error) console.error('Enrollment error:', error);
+                } catch (err) {
+                  console.error('Failed to enroll:', err);
+                } finally {
+                  navigate(`/courses/${course.id}/learn`);
+                }
+              }}
+            >
               เริ่มเรียน
               <ChevronRight className="w-4 h-4 ml-1" />
             </Button>
-          </Link>
+          ) : (
+            <Link to={`/courses/${course.id}/learn`}>
+              <Button size="lg" className="bg-indigo-600 hover:bg-indigo-700">
+                เริ่มเรียน
+                <ChevronRight className="w-4 h-4 ml-1" />
+              </Button>
+            </Link>
+          )}
         </CardContent>
       </Card>
 
@@ -225,14 +253,14 @@ export function CourseDetail() {
           <Card className="border-dashed">
             <CardContent className="py-12 text-center">
               <BookOpen className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">ไม่พบเนื้อหา</p>
-              <p className="text-sm text-muted-foreground mt-1">เนื้อหาที่คุณเลือกอาจยังไม่พร้อมใช้งานในตอนนี้</p>
+              <p className="text-muted-foreground">{t.lessons.noContent}</p>
+              <p className="text-sm text-muted-foreground mt-1">{t.lessons.noContentDesc}</p>
             </CardContent>
           </Card>
         ) : (
           <div className="space-y-3">
             {filteredLessons.map((lesson, index) => {
-              const lessonName = language === 'th' ? lesson.title_th : lesson.title_en;
+              const lessonName = lesson[`title_${language}` as 'title_th' | 'title_en'];
               const Icon = lessonTypeIcons[lesson.lesson_type] || BookOpen;
               const isCompleted = completedLessonIds.has(lesson.id);
 

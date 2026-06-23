@@ -87,6 +87,8 @@ export interface LearningPath {
   modules: string[];
   operator: string | null;
   frequency: string | null;
+  course_ids: string[];
+  prerequisite_path_ids: string[];
   created_at: string;
   updated_at: string;
 }
@@ -124,7 +126,9 @@ export interface User {
 export interface Certificate {
   id: string;
   user_id: string;
-  course_id: string;
+  course_id: string | null;
+  learning_path_id: string | null;
+  certificate_number: string;
   issued_at: string;
   certificate_url: string | null;
 }
@@ -146,4 +150,25 @@ export interface PracticeExercise {
   correct_index: number;
   explanation_th: string | null;
   explanation_en: string | null;
+}
+
+export interface ExerciseAttempt {
+  id: string;
+  user_id: string;
+  exercise_id: string;
+  lesson_id: string;
+  course_id: string;
+  submitted_code: string | null;
+  passed_tests: number;
+  total_tests: number;
+  passed: boolean;
+  score: number | null;
+  attempts_count: number;
+  stdout: string | null;
+  error_message: string | null;
+  execution_time: number | null;
+  status: 'passed' | 'failed' | 'error' | 'timeout' | null;
+  execution_timestamp: string;
+  created_at: string;
+  updated_at: string;
 }

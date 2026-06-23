@@ -9,7 +9,7 @@ import { Label } from '../components/ui/label';
 import { Network, Mail, ArrowRight, CheckCircle2, Sparkles } from 'lucide-react';
 
 export function Auth() {
-  const { language, setLanguage } = useI18n();
+  const { language, setLanguage, t } = useI18n();
   const { sendMagicLink, signInWithGoogle, user, initialized, cooldownRemaining } = useAuth();
 
   // Local form state — ALL hooks must be declared before any early returns
@@ -37,9 +37,7 @@ export function Auth() {
       setError(
         err instanceof Error
           ? err.message
-          : language === 'th'
-          ? 'ส่งลิงก์ไม่สำเร็จ กรุณาลองใหม่'
-          : 'Failed to send link. Please try again.'
+          : t.authMagic.failedLink
       );
     } finally {
       setLoading(false);
@@ -59,19 +57,17 @@ export function Auth() {
           </div>
           <h1 className="text-3xl font-bold text-white">Network 101</h1>
           <p className="text-indigo-300 mt-2">
-            {language === 'th' ? 'การสร้างเครือข่ายพื้นฐาน' : 'Network Fundamentals'}
+            {t.authMagic.fundamentals}
           </p>
         </div>
 
         <Card className="border-slate-800 bg-slate-900/80 backdrop-blur">
           <CardHeader className="text-center">
             <CardTitle className="text-white text-xl">
-              {language === 'th' ? 'ยินดีต้อนรับ' : 'Welcome'}
+              {t.authMagic.welcome}
             </CardTitle>
             <CardDescription className="text-slate-400">
-              {language === 'th'
-                ? 'กรอกอีเมลเพื่อรับลิงก์เข้าสู่ระบบ ไม่ต้องใช้รหัสผ่าน'
-                : 'Enter your email to receive a sign-in link. No password needed.'}
+              {t.authMagic.welcomeDesc}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -83,18 +79,14 @@ export function Auth() {
                 </div>
                 <div className="space-y-2">
                   <h3 className="text-lg font-semibold text-white">
-                    {language === 'th' ? 'ส่งลิงก์แล้ว!' : 'Link Sent!'}
+                    {t.authMagic.linkSent}
                   </h3>
                   <p className="text-slate-400 text-sm leading-relaxed max-w-xs mx-auto">
-                    {language === 'th'
-                      ? `เราส่งลิงก์เข้าสู่ระบบไปที่`
-                      : `We sent a sign-in link to`}
+                    {t.authMagic.linkSentDesc}
                   </p>
                   <p className="text-indigo-300 font-medium text-sm break-all">{email}</p>
                   <p className="text-slate-500 text-xs mt-2">
-                    {language === 'th'
-                      ? 'กรุณาตรวจสอบอีเมลและคลิกลิงก์เพื่อเข้าสู่ระบบ'
-                      : 'Please check your email and click the link to sign in.'}
+                    {t.authMagic.checkEmail}
                   </p>
                 </div>
 
@@ -107,7 +99,7 @@ export function Auth() {
                       setEmail('');
                     }}
                   >
-                    {language === 'th' ? 'ใช้อีเมลอื่น' : 'Use a different email'}
+                    {t.authMagic.useDifferentEmail}
                   </Button>
                   <Button
                     variant="ghost"
@@ -116,11 +108,9 @@ export function Auth() {
                     disabled={loading || cooldownRemaining > 0}
                   >
                     {cooldownRemaining > 0 ? (
-                      language === 'th'
-                        ? `ส่งลิงก์อีกครั้งใน ${cooldownRemaining} วินาที`
-                        : `Resend link in ${cooldownRemaining}s`
+                      t.authMagic.resendCooldown.replace('{cooldown}', String(cooldownRemaining))
                     ) : (
-                      language === 'th' ? 'ส่งลิงก์อีกครั้ง' : 'Resend link'
+                      t.authMagic.resend
                     )}
                   </Button>
                 </div>
@@ -130,7 +120,7 @@ export function Auth() {
               <form onSubmit={handleSendLink} className="space-y-5">
                 <div className="space-y-2">
                   <Label htmlFor="magic-email" className="text-slate-300">
-                    {language === 'th' ? 'ที่อยู่อีเมล' : 'Email address'}
+                    {t.authMagic.emailLabel}
                   </Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
@@ -158,27 +148,23 @@ export function Auth() {
                   {loading ? (
                     <>
                       <div className="animate-spin rounded-full h-4 w-4 border-2 border-white/30 border-t-white mr-2" />
-                      {language === 'th' ? 'กำลังส่ง...' : 'Sending...'}
+                      {t.authMagic.sending}
                     </>
                   ) : cooldownRemaining > 0 ? (
                     <>
-                      {language === 'th'
-                        ? `กรุณารออีก ${cooldownRemaining} วินาที`
-                        : `Please wait ${cooldownRemaining}s`}
+                      {t.authMagic.waitCooldown.replace('{cooldown}', String(cooldownRemaining))}
                     </>
                   ) : (
                     <>
                       <Sparkles className="w-4 h-4 mr-2" />
-                      {language === 'th' ? 'ส่งลิงก์เข้าสู่ระบบ' : 'Send Magic Link'}
+                      {t.authMagic.sendLinkBtn}
                       <ArrowRight className="ml-2 w-4 h-4" />
                     </>
                   )}
                 </Button>
 
                 <p className="text-xs text-slate-500 text-center leading-relaxed">
-                  {language === 'th'
-                    ? 'ไม่ต้องสร้างรหัสผ่าน — เราจะส่งลิงก์ไปยังอีเมลของคุณเพื่อเข้าสู่ระบบทุกครั้ง เซสชันจะคงอยู่ 3 วัน'
-                    : 'No password required — we\'ll email you a secure link to sign in. Sessions last 3 days.'}
+                  {t.authMagic.disclaimer}
                 </p>
               </form>
             )}
@@ -191,7 +177,7 @@ export function Auth() {
                   </div>
                   <div className="relative flex justify-center text-xs uppercase">
                     <span className="bg-slate-900/80 px-2 text-slate-500">
-                      {language === 'th' ? 'หรือดำเนินการต่อด้วย' : 'Or continue with'}
+                      {t.authMagic.orContinue}
                     </span>
                   </div>
                 </div>
@@ -204,7 +190,7 @@ export function Auth() {
                     try {
                       await signInWithGoogle();
                     } catch (err) {
-                      setError(language === 'th' ? 'เกิดข้อผิดพลาดในการเชื่อมต่อ Google' : 'Failed to connect to Google');
+                      setError(t.authMagic.googleError);
                       setLoading(false);
                     }
                   }}
@@ -218,7 +204,7 @@ export function Auth() {
                     <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
                     <path fill="none" d="M1 1h22v22H1z" />
                   </svg>
-                  {language === 'th' ? 'เข้าสู่ระบบด้วย Google' : 'Sign in with Google'}
+                  {t.authMagic.googleSignIn}
                 </Button>
               </div>
             )}
@@ -229,10 +215,16 @@ export function Auth() {
         <div className="mt-6 text-center">
           <Button
             variant="link"
-            onClick={() => setLanguage(language === 'th' ? 'en' : 'th')}
+            onClick={() => {
+              const toggleMap: Record<'th' | 'en', 'th' | 'en'> = { th: 'en', en: 'th' };
+              setLanguage(toggleMap[language]);
+            }}
             className="text-slate-400 hover:text-white"
           >
-            {language === 'th' ? 'English' : 'ภาษาไทย'}
+            {(() => {
+              const labelMap: Record<'th' | 'en', string> = { th: 'English', en: 'ภาษาไทย' };
+              return labelMap[language];
+            })()}
           </Button>
         </div>
       </div>

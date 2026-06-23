@@ -1,0 +1,151 @@
+import { useState, useEffect } from 'react';
+import { supabase } from '../../../app/lib/supabase';
+import { useProducts } from './useProducts';
+import { ProductDetailData } from '../types/product';
+
+export function useProductDetail(slug: string | undefined) {
+  const { products, isLoading: isCatalogLoading } = useProducts();
+  const [data, setData] = useState<ProductDetailData>({
+    product: null,
+    documents: [],
+    faqs: [],
+    troubleshooting_guides: [],
+    training_courses: []
+  });
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    if (isCatalogLoading) return;
+
+    const fetchDetail = async () => {
+      setIsLoading(true);
+      setError(null);
+      
+      try {
+        if (!slug) throw new Error('Product slug is required');
+
+        console.log('[DEBUG PD] === TRACE START ===');
+        console.log('[DEBUG PD] 1. Route slug:', slug);
+
+        // 1. Load product overview from products.json via useProducts hook
+        let localProduct = products.find(p => p.slug === slug) || null;
+        console.log('[DEBUG PD] 2a. localProduct (exact match):', localProduct ? localProduct.slug : 'null', 'desc:', JSON.stringify(localProduct?.description?.substring(0,50)), 'content:', JSON.stringify((localProduct as any)?.content?.substring(0,50)));
+        
+        // Resilience: If exact match fails, try matching by ignoring hyphens (e.g. wme1-c vs wme1c)
+        if (!localProduct) {
+          const normalizedInputSlug = slug.replace(/-/g, '');
+          localProduct = products.find(p => p.slug.replace(/-/g, '') === normalizedInputSlug) || null;
+          console.log('[DEBUG PD] 2b. localProduct (hyphen-fallback):', localProduct ? localProduct.slug : 'null');
+          
+          if (localProduct) {
+            // Optional redirect: update URL to canonical slug without reloading page
+            window.history.replaceState(null, '', `/equipment/${localProduct.slug}`);
+          }
+        }
+
+        if (!localProduct) {
+          console.log('[DEBUG PD] 2c. localProduct NULL — throwing error');
+          throw new Error('Product not found in catalog');
+        }
+
+        console.log('[DEBUG PD] 2d. localProduct FULL:', JSON.stringify({ name: localProduct.name, slug: localProduct.slug, description: localProduct.description?.substring(0,80), content: (localProduct as any)?.content?.substring(0,80) }));
+
+        // Use the canonical slug from the matched product for DB lookup
+        const canonicalSlug = localProduct.slug;
+        console.log('[DEBUG PD] 3. canonicalSlug for DB:', canonicalSlug);
+
+        // 2. Attempt to load related content from Supabase
+        const { data: dbProduct, error: dbProductError } = await supabase
+          .from('products')
+          .select('*')
+          .eq('slug', canonicalSlug)
+          .maybeSingle();
+
+        console.log('[DEBUG PD] 4a. dbProduct:', dbProduct ? `found id=${dbProduct.id}` : 'null/undefined');
+        console.log('[DEBUG PD] 4b. dbProduct.content:', JSON.stringify(dbProduct?.content?.substring(0,100)));
+        console.log('[DEBUG PD] 4c. dbProduct.description:', JSON.stringify(dbProduct?.description?.substring(0,100)));
+        console.log('[DEBUG PD] 4d. dbProduct.source_url:', dbProduct?.source_url);
+        console.log('[DEBUG PD] 4e. dbProductError:', dbProductError?.message || 'none');
+
+        // If product doesn't exist in DB, we just gracefully return empty arrays for related content
+        if (!dbProduct || dbProductError) {
+          console.log('[DEBUG PD] 5. NO DB match — using localProduct only');
+          console.log('[DEBUG PD] 6. data.product (localProduct):', JSON.stringify({
+            name: localProduct.name,
+            slug: localProduct.slug,
+            description: localProduct.description?.substring(0,80),
+            content: (localProduct as any)?.content?.substring(0,80),
+          }));
+          setData({
+            product: localProduct,
+            documents: [],
+            faqs: [],
+            troubleshooting_guides: [],
+            training_courses: []
+          });
+          setIsLoading(false);
+          console.log('[DEBUG PD] === TRACE END (no DB) ===');
+          return;
+        }
+
+        // 3. If product exists in DB, fetch related data in parallel
+        const productId = dbProduct.id;
+        console.log('[DEBUG PD] 5. DB match — fetching related data for productId:', productId);
+        
+        const [
+          { data: documents },
+          { data: faqs },
+          { data: troubleshooting_guides },
+          { data: training_courses }
+        ] = await Promise.all([
+          supabase.from('documents').select('*').eq('product_id', productId),
+          supabase.from('faqs').select('*').eq('product_id', productId),
+          supabase.from('troubleshooting_guides').select('*').eq('product_id', productId),
+          supabase.from('training_courses').select('*, training_lessons(*)').eq('product_id', productId)
+        ]);
+
+        console.log('[DEBUG PD] 6. related counts:', 
+          'documents:', documents?.length || 0, 
+          'faqs:', faqs?.length || 0, 
+          'troubleshooting:', troubleshooting_guides?.length || 0, 
+          'courses:', training_courses?.length || 0
+        );
+
+        const mergedProduct = {
+          ...localProduct,
+          content: dbProduct.content || localProduct.description,
+          source_url: dbProduct.source_url || localProduct.source_url
+        };
+
+        console.log('[DEBUG PD] 7. mergedProduct:');
+        console.log('[DEBUG PD]    name:', mergedProduct.name);
+        console.log('[DEBUG PD]    slug:', mergedProduct.slug);
+        console.log('[DEBUG PD]    description:', JSON.stringify(mergedProduct.description?.substring(0,100)));
+        console.log('[DEBUG PD]    content:', JSON.stringify(mergedProduct.content?.substring(0,100)));
+        console.log('[DEBUG PD]    source_url:', mergedProduct.source_url);
+        console.log('[DEBUG PD]    content === description:', mergedProduct.content === mergedProduct.description);
+        console.log('[DEBUG PD]    !mergedProduct.content:', !mergedProduct.content);
+
+        setData({
+          product: mergedProduct,
+          documents: documents || [],
+          faqs: faqs || [],
+          troubleshooting_guides: troubleshooting_guides || [],
+          training_courses: training_courses || []
+        });
+
+        console.log('[DEBUG PD] === TRACE END ===');
+
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error('Failed to load product detail'));
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDetail();
+  }, [slug, products, isCatalogLoading]);
+
+  return { data, isLoading, error };
+}

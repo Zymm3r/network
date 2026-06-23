@@ -2,17 +2,17 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { useI18n } from '../i18n';
 import { useAuth } from '../hooks/useAuth';
-import { useEnrollments } from '../hooks/useProgress';
+import { useEnrollments, useUserProgressSummary } from '../hooks/useProgress';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Avatar, AvatarFallback } from '../components/ui/avatar';
 import { Button } from '../components/ui/button';
 import { Progress } from '../components/ui/progress';
 import { Badge } from '../components/ui/badge';
-import { BookOpen, Award, LogOut, Clock, Trophy, Target, Zap } from 'lucide-react';
+import { BookOpen, Award, LogOut, Clock, Trophy, Target, Zap, Play, ChevronRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 export function Profile() {
-  const { language } = useI18n();
+  const { language, t } = useI18n();
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
 
@@ -23,6 +23,7 @@ export function Profile() {
   const [courses, setCourses] = useState<any[]>([]);
   const [lessons, setLessons] = useState<any[]>([]);
   const [userProgress, setUserProgress] = useState<any[]>([]);
+  const [certificates, setCertificates] = useState<any[]>([]);
   const [statsLoading, setStatsLoading] = useState(true);
 
   const getInitials = (email: string | undefined) => {
@@ -55,16 +56,19 @@ export function Profile() {
         const [
           { data: coursesData },
           { data: lessonsData },
-          { data: progressData }
+          { data: progressData },
+          { data: certData }
         ] = await Promise.all([
           supabase.from('courses').select('*'),
           supabase.from('lessons').select('*'),
-          supabase.from('user_progress').select('*').eq('user_id', user.id)
+          supabase.from('user_progress').select('*').eq('user_id', user.id),
+          supabase.from('certificates').select('*').eq('user_id', user.id)
         ]);
 
         setCourses(coursesData || []);
         setLessons(lessonsData || []);
         setUserProgress(progressData || []);
+        setCertificates(certData || []);
       } catch (err) {
         console.error('Error fetching profile data:', err);
       } finally {
@@ -146,6 +150,17 @@ export function Profile() {
 
   const streak = calculateStreak(activityDates);
 
+  // 4.5. Resume Learning (Latest accessed lesson)
+  const latestAccessed = userProgress.length > 0
+    ? [...userProgress]
+        .filter(p => p.status === 'in_progress')
+        .sort((a, b) => new Date(b.last_accessed_at).getTime() - new Date(a.last_accessed_at).getTime())[0]
+      || [...userProgress].sort((a, b) => new Date(b.last_accessed_at).getTime() - new Date(a.last_accessed_at).getTime())[0]
+    : null;
+
+  const latestLessonObj = latestAccessed ? lessons.find(l => l.id === latestAccessed.lesson_id) : null;
+  const latestCourseObj = latestLessonObj ? courses.find(c => c.id === latestLessonObj.course_id) : null;
+
   // 5. Course Completion List & Overall Progress Calculation
   const enrolledCourseProgressList = user
     ? enrollments.map((enrollment) => {
@@ -160,17 +175,16 @@ export function Profile() {
 
         // Resolve course name
         const courseObj = courses.find((c) => c.id === enrollment.course_id);
-        const courseName =
-          language === 'th'
-            ? courseObj?.name_th || enrollment.course_id
-            : courseObj?.name_en || enrollment.course_id;
+        const courseName = courseObj
+          ? (courseObj[`name_${language}` as 'name_th' | 'name_en'] || courseObj.name_th || courseObj.name_en)
+          : enrollment.course_id;
 
         // Status description
-        let statusText = language === 'th' ? 'เริ่มต้น' : 'Enrolled';
+        let statusText = t.profileStats.statusEnrolled;
         if (progressPercent === 100) {
-          statusText = language === 'th' ? 'เสร็จสิ้น' : 'Completed';
+          statusText = t.profileStats.statusCompleted;
         } else if (progressPercent > 0) {
-          statusText = language === 'th' ? 'กำลังเรียน' : 'In Progress';
+          statusText = t.profileStats.statusInProgress;
         }
 
         return {
@@ -200,21 +214,21 @@ export function Profile() {
   const defaultCourses = [
     {
       id: 'ccna-001',
-      name: language === 'th' ? 'พื้นฐานเครือข่ายคอมพิวเตอร์' : 'Computer Networking Fundamentals',
+      name: t.profileStats.defaultCcna,
       progress: 0,
-      status: language === 'th' ? 'ยังไม่เริ่ม' : 'Not Started',
+      status: t.profileStats.statusNotStarted,
     },
     {
       id: 'devnet-001',
-      name: language === 'th' ? 'Python สำหรับ Network Engineer' : 'Python for Network Engineers',
+      name: t.profileStats.defaultDevNet,
       progress: 0,
-      status: language === 'th' ? 'ยังไม่เริ่ม' : 'Not Started',
+      status: t.profileStats.statusNotStarted,
     },
     {
       id: 'sec-001',
-      name: language === 'th' ? 'พื้นฐาน Firewall' : 'Firewall Fundamentals',
+      name: t.profileStats.defaultSec,
       progress: 0,
-      status: language === 'th' ? 'ยังไม่เริ่ม' : 'Not Started',
+      status: t.profileStats.statusNotStarted,
     },
   ];
 
@@ -225,26 +239,26 @@ export function Profile() {
 
   // 6. Dynamic Achievements calculations
   const achievements = [
-    { icon: '🎯', label: language === 'th' ? 'เริ่มต้น' : 'Starter', earned: !!user },
+    { icon: '🎯', label: t.profileStats.starter, earned: !!user },
     {
       icon: '📚',
-      label: language === 'th' ? 'หลักสูตรแรก' : 'First Course',
+      label: t.profileStats.achFirstCourse,
       earned: coursesEnrolled >= 1,
     },
-    { icon: '🔥', label: language === 'th' ? '5 วันติด' : '5 Days Streak', earned: streak >= 5 },
+    { icon: '🔥', label: t.profileStats.achStreak5, earned: streak >= 5 },
     {
       icon: '⭐',
-      label: language === 'th' ? '10 คะแนน' : '10 Points',
+      label: t.profileStats.achPoints10,
       earned: completedLessonsCount >= 2,
     },
     {
       icon: '🏆',
-      label: language === 'th' ? 'เสร็จหลักสูตร' : 'Course Completed',
+      label: t.profileStats.achCourseComp,
       earned: coursesCompletedCount >= 1,
     },
     {
       icon: '💎',
-      label: language === 'th' ? 'Pro User' : 'Pro User',
+      label: t.profileStats.achPro,
       earned: completedLessonsCount >= 5 || coursesEnrolled >= 3,
     },
   ];
@@ -254,7 +268,7 @@ export function Profile() {
       <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
         <p className="text-muted-foreground text-sm">
-          {language === 'th' ? 'กำลังโหลดข้อมูลโปรไฟล์...' : 'Loading profile details...'}
+          {t.profileStats.loading}
         </p>
       </div>
     );
@@ -265,12 +279,10 @@ export function Profile() {
       {/* Header */}
       <div className="flex flex-col gap-2">
         <h1 className="text-2xl font-semibold">
-          {language === 'th' ? 'โปรไฟล์ของฉัน' : 'My Profile'}
+          {t.profileStats.myProfile}
         </h1>
         <p className="text-muted-foreground">
-          {language === 'th'
-            ? 'ติดตามความก้าวหน้าการเรียนรู้ของคุณ'
-            : 'Track your learning progress and achievements'}
+          {t.profileStats.desc}
         </p>
       </div>
 
@@ -285,9 +297,9 @@ export function Profile() {
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 pb-2">
-              <h2 className="text-xl font-semibold">{user?.email || 'Guest User'}</h2>
+              <h2 className="text-xl font-semibold">{user?.email || t.profileStats.guestUser}</h2>
               <p className="text-sm text-muted-foreground">
-                {language === 'th' ? 'นักเรียน' : 'Student'}
+                {t.profileStats.roleStudent}
               </p>
             </div>
             {!user ? (
@@ -297,12 +309,12 @@ export function Profile() {
                 onClick={() => navigate('/auth')}
                 className="mb-2 bg-indigo-600 hover:bg-indigo-700 text-white transition-all shadow-md shadow-indigo-500/10"
               >
-                {language === 'th' ? 'เข้าสู่ระบบ' : 'Sign In'}
+                {t.profileStats.signIn}
               </Button>
             ) : (
               <Button variant="outline" size="sm" onClick={signOut} className="mb-2 transition-all hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200">
                 <LogOut className="w-4 h-4 mr-1" />
-                {language === 'th' ? 'ออกจากระบบ' : 'Sign Out'}
+                {t.profileStats.signOut}
               </Button>
             )}
           </div>
@@ -318,7 +330,7 @@ export function Profile() {
             </div>
             <div className="text-2xl font-bold text-slate-800">{coursesEnrolled}</div>
             <div className="text-xs text-muted-foreground font-medium">
-              {language === 'th' ? 'หลักสูตร' : 'Courses'}
+              {t.profileStats.courses}
             </div>
           </CardContent>
         </Card>
@@ -330,7 +342,7 @@ export function Profile() {
             </div>
             <div className="text-2xl font-bold text-slate-800">{completedLessonsCount}</div>
             <div className="text-xs text-muted-foreground font-medium">
-              {language === 'th' ? 'เสร็จสิ้น' : 'Completed'}
+              {t.profileStats.completed}
             </div>
           </CardContent>
         </Card>
@@ -342,7 +354,7 @@ export function Profile() {
             </div>
             <div className="text-2xl font-bold text-slate-800">{hoursLearned}</div>
             <div className="text-xs text-muted-foreground font-medium">
-              {language === 'th' ? 'ชั่วโมง' : 'Hours'}
+              {t.profileStats.hours}
             </div>
           </CardContent>
         </Card>
@@ -354,18 +366,50 @@ export function Profile() {
             </div>
             <div className="text-2xl font-bold text-slate-800">{streak}</div>
             <div className="text-xs text-muted-foreground font-medium">
-              {language === 'th' ? 'วันติดต่อ' : 'Streak Days'}
+              {t.profileStats.streakDays}
             </div>
           </CardContent>
         </Card>
       </div>
+
+      {/* Resume Learning */}
+      {latestLessonObj && (
+        <Card className="bg-gradient-to-r from-indigo-600 to-purple-600 border-indigo-700 shadow-md text-white overflow-hidden relative">
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIgZmlsbD0id2hpdGUiIGZpbGwtb3BhY2l0eT0iMC4xIi8+PC9zdmc+')] opacity-20" />
+          <CardContent className="p-6 relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center shrink-0">
+                <Play className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold mb-1">
+                  {t.profileStats.resumeTitle}
+                </h3>
+                <p className="text-indigo-100 text-sm mb-1">
+                  {latestLessonObj[`title_${language}` as 'title_th' | 'title_en']}
+                </p>
+                <p className="text-indigo-200 text-xs">
+                  {latestCourseObj ? (latestCourseObj[`name_${language}` as 'name_th' | 'name_en'] || latestCourseObj.name_th || latestCourseObj.name_en) : ''}
+                </p>
+              </div>
+            </div>
+            <Button
+              onClick={() => navigate(`/lessons/${latestLessonObj.id}`)}
+              className="bg-white text-indigo-600 hover:bg-indigo-50 shrink-0 w-full sm:w-auto"
+            >
+              {t.profileStats.continueBtn}
+              <ChevronRight className="w-4 h-4 ml-1" />
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Learning Progress */}
       <Card className="bg-white/60 backdrop-blur-md shadow-sm border-slate-100">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-slate-800">
             <Target className="w-5 h-5 text-indigo-600" />
-            {language === 'th' ? 'ความก้าวหน้า' : 'Learning Progress'}
+            {t.profileStats.progressTitle}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -373,7 +417,7 @@ export function Profile() {
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium text-slate-700">
-                {language === 'th' ? 'ภาพรวม' : 'Overall Completion'}
+                {t.profileStats.overallProgress}
               </span>
               <span className="text-sm font-semibold text-indigo-600">{overallProgress}%</span>
             </div>
@@ -402,7 +446,7 @@ export function Profile() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-slate-800">
             <Trophy className="w-5 h-5 text-amber-600" />
-            {language === 'th' ? 'ความสำเร็จ' : 'Achievements'}
+            {t.profileStats.achTitle}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -426,38 +470,87 @@ export function Profile() {
         </CardContent>
       </Card>
 
+      {/* Certificates */}
+      {certificates.length > 0 && (
+        <Card className="bg-white/60 backdrop-blur-md shadow-sm border-slate-100">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-slate-800">
+              <Award className="w-5 h-5 text-indigo-600" />
+              {t.profileStats.certTitle}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {certificates.map((cert) => {
+                const courseName = courses.find(c => c.id === cert.course_id)?.name_en || 'Course';
+                return (
+                  <div
+                    key={cert.id}
+                    className="flex items-center justify-between p-4 rounded-xl border border-slate-100 bg-white/80 hover:bg-slate-50/50 hover:border-indigo-100 hover:shadow-sm cursor-pointer transition-all duration-200"
+                    onClick={() => navigate(`/verify/${cert.certificate_number}`)}
+                  >
+                    <div className="space-y-1">
+                      <p className="font-semibold text-slate-800 text-sm sm:text-base leading-tight">
+                        {courseName}
+                      </p>
+                      <p className="text-xs text-muted-foreground font-mono">
+                        {cert.certificate_number}
+                      </p>
+                      <p className="text-xs text-indigo-600 font-medium">
+                        {t.profileStats.issuedAt}
+                        {(() => {
+                          const localeMap = { th: 'th-TH', en: 'en-US' } as const;
+                          return new Date(cert.issued_at).toLocaleDateString(localeMap[language], {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric'
+                          });
+                        })()}
+                      </p>
+                    </div>
+                    <Badge variant="default" className="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border-0">
+                      {t.profileStats.viewCert}
+                    </Badge>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* My Courses */}
       <Card className="bg-white/60 backdrop-blur-md shadow-sm border-slate-100">
         <CardHeader>
           <CardTitle className="text-slate-800">
-            {language === 'th' ? 'หลักสูตรของฉัน' : 'My Enrolled Courses'}
+            {t.profileStats.myCoursesTitle}
           </CardTitle>
         </CardHeader>
         <CardContent>
           {!user ? (
             <div className="text-center py-8 text-muted-foreground space-y-3">
               <BookOpen className="w-12 h-12 mx-auto mb-3 opacity-30" />
-              <p>{language === 'th' ? 'กรุณาเข้าสู่ระบบเพื่อบันทึกและจัดการหลักสูตร' : 'Please sign in to save and manage courses'}</p>
+              <p>{t.profileStats.loginPrompt}</p>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => navigate('/auth')}
                 className="mt-2 text-indigo-600 border-indigo-200 hover:bg-indigo-50/50"
               >
-                {language === 'th' ? 'ไปหน้าเข้าสู่ระบบ' : 'Go to Login'}
+                {t.profileStats.goToLoginBtn}
               </Button>
             </div>
           ) : enrolledCourseProgressList.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground space-y-3">
               <BookOpen className="w-12 h-12 mx-auto mb-3 opacity-30" />
-              <p>{language === 'th' ? 'ยังไม่มีหลักสูตรที่ลงทะเบียน' : 'You are not enrolled in any courses yet'}</p>
+              <p>{t.profileStats.noEnrolledCourses}</p>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => navigate('/courses')}
                 className="mt-2 text-indigo-600 border-indigo-200 hover:bg-indigo-50/50"
               >
-                {language === 'th' ? 'ค้นหาหลักสูตร' : 'Explore Courses'}
+                {t.profileStats.exploreCoursesBtn}
               </Button>
             </div>
           ) : (
@@ -473,7 +566,7 @@ export function Profile() {
                       {enrollment.name}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {language === 'th' ? 'ลงทะเบียนเมื่อ: ' : 'Enrolled: '}
+                      {t.profileStats.enrolledAt}
                       {new Date(enrollment.enrolledAt).toLocaleDateString('th-TH', {
                         day: 'numeric',
                         month: 'short',

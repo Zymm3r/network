@@ -1,4 +1,4 @@
-import { createBrowserRouter } from 'react-router';
+import { createBrowserRouter, useParams } from 'react-router';
 import { AppLayout } from './components/layout/AppLayout';
 import { Courses } from './pages/Courses';
 import { CourseDetail } from './pages/CourseDetail';
@@ -8,9 +8,13 @@ import { LessonDetail } from './pages/LessonDetail';
 import { Paths } from './pages/Paths';
 import { PathDetail } from './pages/PathDetail';
 import { Resources } from './pages/Resources';
+import { EquipmentPage } from '../features/equipment/pages/EquipmentPage';
+import { EquipmentDetailPage } from '../features/equipment/pages/EquipmentDetailPage';
 import { Profile } from './pages/Profile';
+import { Dashboard } from './pages/Dashboard';
 import { Auth } from './pages/Auth';
 import { AuthCallback } from './pages/AuthCallback';
+import { VerifyCertificate } from './pages/VerifyCertificate';
 
 function NotFound() {
   return (
@@ -22,6 +26,10 @@ function NotFound() {
   );
 }
 
+function TestDb() {
+  return <EquipmentDetailPage />;
+}
+
 export const router = createBrowserRouter([
   {
     path: '/auth',
@@ -30,6 +38,10 @@ export const router = createBrowserRouter([
   {
     path: '/auth/callback',
     Component: AuthCallback,
+  },
+  {
+    path: '/test-db/:slug',
+    Component: TestDb,
   },
   {
     path: '/',
@@ -44,7 +56,11 @@ export const router = createBrowserRouter([
       { path: 'paths', Component: Paths },
       { path: 'paths/:pathId', Component: PathDetail },
       { path: 'resources', Component: Resources },
+      { path: 'equipment', Component: EquipmentPage },
+      { path: 'equipment/:slug', Component: EquipmentDetailPage },
       { path: 'profile', Component: Profile },
+      { path: 'dashboard', Component: Dashboard },
+      { path: 'verify/:certificateNumber', Component: VerifyCertificate },
       { path: '*', Component: NotFound },
     ],
   },

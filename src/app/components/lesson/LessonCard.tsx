@@ -26,19 +26,14 @@ const lessonTypeColors: Record<string, string> = {
   reading: 'bg-orange-100 text-orange-700 border-orange-200',
 };
 
-const lessonTypeLabels: Record<string, string> = {
-  video: 'วิดีโอ',
-  quiz: 'แบบทดสอบ',
-  exercise: 'แบบฝึกหัด',
-  reading: 'เอกสาร',
-};
+
 
 export function LessonCard({ lesson }: LessonCardProps) {
   const { language, t } = useI18n();
   const [imgError, setImgError] = useState(false);
 
-  const name = language === 'th' ? lesson.title_th : lesson.title_en;
-  const description = language === 'th' ? lesson.content_th : lesson.content_en;
+  const name = lesson[`title_${language}` as 'title_th' | 'title_en'];
+  const description = lesson[`content_${language}` as 'content_th' | 'content_en'];
   const Icon = lessonTypeIcons[lesson.lesson_type] || Video;
 
   const isCompleted = false; // This would come from user progress
@@ -68,7 +63,7 @@ export function LessonCard({ lesson }: LessonCardProps) {
         <Badge
           className={`absolute top-3 right-3 ${lessonTypeColors[lesson.lesson_type]} border`}
         >
-          {lessonTypeLabels[lesson.lesson_type]}
+          {t.lessons[lesson.lesson_type as keyof typeof t.lessons] || lesson.lesson_type}
         </Badge>
         {isCompleted && (
           <div className="absolute top-3 left-3">
@@ -91,7 +86,7 @@ export function LessonCard({ lesson }: LessonCardProps) {
           {lesson.duration_minutes && (
             <div className="flex items-center gap-1">
               <Clock className="w-4 h-4" />
-              <span>{lesson.duration_minutes} นาที</span>
+              <span>{lesson.duration_minutes} {t.lessons.minutes}</span>
             </div>
           )}
           {lesson.difficulty && (
@@ -109,7 +104,7 @@ export function LessonCard({ lesson }: LessonCardProps) {
           className="w-full group"
         >
           <Link to={`/lessons/${lesson.id}`}>
-            {isCompleted ? 'ทบทวน' : 'เริ่มทำ'}
+            {isCompleted ? t.lessons.review : t.lessons.startAction}
             <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
           </Link>
         </Button>
