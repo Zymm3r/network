@@ -472,6 +472,18 @@ export const th = {
       resource: 'แหล่งเรียนรู้',
       equipment: 'อุปกรณ์',
     },
+    categoryMap: {
+      'Accessories': 'อุปกรณ์เสริม (Accessories)',
+      'Access Point': 'แอคเซสพอยต์ (Access Point)',
+      'Switch': 'สวิตช์ (Switch)',
+      'Router': 'เราเตอร์ (Router)',
+      'Gateway': 'เกตเวย์ (Gateway)',
+      'Controller': 'คอนโทรลเลอร์ (Controller)',
+      'Wireless': 'ระบบไร้สาย (Wireless)',
+    },
+    sourceMap: {
+      'Click to view details from dealer': 'คลิกเพื่อดูรายละเอียดจากตัวแทนจำหน่าย',
+    },
   },
 };
 

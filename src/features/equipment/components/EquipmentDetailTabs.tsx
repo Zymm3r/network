@@ -133,16 +133,20 @@ export function EquipmentDetailTabs({ data, isLoading = false, error = null }: E
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-6 border-t border-slate-100">
                <div className="bg-slate-50 rounded-xl p-5 border border-slate-100">
                   <div className="text-sm font-semibold text-slate-500 mb-2 uppercase tracking-wide">{t.equipmentCatalog.categoryLabel}</div>
-                  <div className="font-medium text-slate-800">{data.product?.category || "-"}</div>
+                  <div className="font-medium text-slate-800">
+                    {(t.equipmentCatalog as any).categoryMap?.[data.product?.category || ''] || data.product?.category || "-"}
+                  </div>
                </div>
                <div className="bg-indigo-50 rounded-xl p-5 border border-indigo-100">
                   <div className="text-sm font-semibold text-indigo-500 mb-2 uppercase tracking-wide">{t.equipmentCatalog.sourceLabel}</div>
                   {data.product?.source_url ? (
                     <a href={data.product.source_url} target="_blank" rel="noopener noreferrer" className="font-bold text-indigo-700 hover:underline break-all inline-flex items-center gap-1">
-                      {t.equipmentCatalog.dealerLink}
+                      {(t.equipmentCatalog as any).sourceMap?.[data.product?.source || ''] || data.product?.source || t.equipmentCatalog.dealerLink}
                     </a>
                   ) : (
-                    <span className="text-slate-500">-</span>
+                    <span className="text-slate-500">
+                      {(t.equipmentCatalog as any).sourceMap?.[data.product?.source || ''] || data.product?.source || "-"}
+                    </span>
                   )}
                </div>
             </div>

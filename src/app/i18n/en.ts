@@ -474,5 +474,17 @@ export const en: TranslationKeys = {
       resource: 'Resources',
       equipment: 'Equipment',
     },
+    categoryMap: {
+      'Accessories': 'Accessories',
+      'Access Point': 'Access Point',
+      'Switch': 'Switch',
+      'Router': 'Router',
+      'Gateway': 'Gateway',
+      'Controller': 'Controller',
+      'Wireless': 'Wireless',
+    },
+    sourceMap: {
+      'Click to view details from dealer': 'Click to view details from dealer',
+    },
   },
 };

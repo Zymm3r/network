@@ -64,7 +64,7 @@ export const EquipmentGrid = memo(({ products }: EquipmentGridProps) => {
                   : 'bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100'
               }`}
             >
-              {cat === 'All' ? t.equipmentCatalog.allCategories : cat}
+              {cat === 'All' ? t.equipmentCatalog.allCategories : ((t.equipmentCatalog as any).categoryMap?.[cat] || cat)}
             </button>
           ))}
         </div>

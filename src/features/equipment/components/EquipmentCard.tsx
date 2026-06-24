@@ -25,7 +25,7 @@ export const EquipmentCard = memo(({ product }: EquipmentCardProps) => {
           <div className="text-slate-300 font-medium">{t.equipmentCatalog.noImageFallback}</div>
         )}
         <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-lg text-xs font-semibold text-indigo-600 shadow-sm border border-indigo-50/50">
-          {product.category}
+          {(t.equipmentCatalog as any).categoryMap?.[product.category] || product.category}
         </div>
       </div>
       <div className="p-4 flex flex-col flex-1">
