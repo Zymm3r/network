@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
+import { useI18n } from '../i18n';
 import type { LearningPath } from '../types';
 
 interface UsePathsResult {
@@ -10,6 +11,7 @@ interface UsePathsResult {
 }
 
 export function usePaths(): UsePathsResult {
+  const { language } = useI18n();
   const [paths, setPaths] = useState<LearningPath[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -26,14 +28,19 @@ export function usePaths(): UsePathsResult {
 
       if (fetchError) throw fetchError;
 
-      setPaths(data || []);
+      const mapped = (data || []).map((item: any) => ({
+        ...item,
+        name: item[`name_${language}` as 'name_th' | 'name_en'] || item.name_en || item.name || '',
+        description: item[`description_${language}` as 'description_th' | 'description_en'] || item.description_en || item.description || null,
+      }));
+      setPaths(mapped);
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Failed to fetch learning paths'));
       setPaths([]);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [language]);
 
   useEffect(() => {
     fetchPaths();
@@ -43,6 +50,7 @@ export function usePaths(): UsePathsResult {
 }
 
 export function usePath(id: string) {
+  const { language } = useI18n();
   const [path, setPath] = useState<LearningPath | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -60,7 +68,15 @@ export function usePath(id: string) {
           .single();
 
         if (fetchError) throw fetchError;
-        setPath(data);
+        if (data) {
+          setPath({
+            ...data,
+            name: data[`name_${language}` as 'name_th' | 'name_en'] || data.name_en || data.name || '',
+            description: data[`description_${language}` as 'description_th' | 'description_en'] || data.description_en || data.description || null,
+          });
+        } else {
+          setPath(null);
+        }
       } catch (err) {
         setError(err instanceof Error ? err : new Error('Failed to fetch learning path'));
       } finally {
@@ -69,7 +85,7 @@ export function usePath(id: string) {
     };
 
     fetchPath();
-  }, [id]);
+  }, [id, language]);
 
   return { path, loading, error };
 }

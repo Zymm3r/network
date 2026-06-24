@@ -112,4 +112,60 @@ export const progressApi = {
       completed_at: new Date().toISOString(),
     });
   },
+
+  async getUserProgressSummary(userId: string) {
+    // This provides a summary of all completed lessons/exercises for the user.
+    const response = await supabase
+      .from('user_progress')
+      .select('course_id, lesson_id, status, progress_percentage, completed_at, last_accessed_at')
+      .eq('user_id', userId)
+      .order('last_accessed_at', { ascending: false });
+
+    if (response.error) {
+      throw createApiError(response.error, 'Failed to fetch user progress summary');
+    }
+
+    const progressList = response.data || [];
+    const completedLessons = progressList.filter(p => p.status === 'completed');
+    const inProgressLessons = progressList.filter(p => p.status === 'in_progress');
+    const latestLesson = progressList.length > 0 ? progressList[0] : null;
+    
+    return {
+      totalCompletedLessons: completedLessons.length,
+      inProgressLessons: inProgressLessons.length,
+      latestLesson,
+      courseCompletionCounts: completedLessons.reduce((acc, curr) => {
+        if (curr.course_id) {
+          acc[curr.course_id] = (acc[curr.course_id] || 0) + 1;
+        }
+        return acc;
+      }, {} as Record<string, number>),
+      progressList
+    };
+  },
+
+  async getCourseCompletionPercentage(userId: string, courseId: string): Promise<number> {
+    // Determine the total number of lessons for this course
+    const { data: lessons, error: lessonsError } = await supabase
+      .from('lessons')
+      .select('id')
+      .eq('course_id', courseId);
+
+    if (lessonsError || !lessons || lessons.length === 0) return 0;
+    
+    const totalLessons = lessons.length;
+
+    // Determine how many of those are completed
+    const { data: progress, error: progressError } = await supabase
+      .from('user_progress')
+      .select('lesson_id')
+      .eq('user_id', userId)
+      .eq('course_id', courseId)
+      .eq('status', 'completed');
+
+    if (progressError || !progress) return 0;
+
+    const completedCount = progress.length;
+    return Math.round((completedCount / totalLessons) * 100);
+  }
 };

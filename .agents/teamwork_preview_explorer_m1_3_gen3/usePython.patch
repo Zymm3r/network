@@ -1,0 +1,66 @@
+--- src/hooks/usePython.ts
++++ src/hooks/usePython.ts
+@@ -32,41 +32,46 @@
+         if (!workerRef.current) {
+           initWorker();
+         }
+ 
+         const runId = Math.random().toString(36).substring(7);
++        let timeoutId: ReturnType<typeof setTimeout> | null = null;
+ 
+         const handleMessage = (e: MessageEvent) => {
+           if (e.data.id === runId) {
++            if (e.data.type === 'ready') {
++              // Safety timeout (e.g., infinite loop prevention) starts NOW
++              timeoutId = setTimeout(() => {
++                cleanup();
++                // Terminate the rogue worker
++                if (workerRef.current) {
++                  workerRef.current.terminate();
++                  workerRef.current = null;
++                  // Re-create the worker for future runs
++                  initWorker();
++                }
++                reject(new Error('Timeout: โค้ดใช้เวลาทำงานนานเกินไป (อาจเกิดจาก Infinite Loop)'));
++              }, 5000); // 5 seconds max
++              return;
++            }
+             cleanup();
+             if (e.data.success) {
+               resolve(e.data.results);
+             } else {
+               reject(new Error(e.data.error));
+             }
+           }
+         };
+ 
+         const cleanup = () => {
+           if (workerRef.current) {
+             workerRef.current.removeEventListener('message', handleMessage);
+           }
+           if (timeoutId) {
+             clearTimeout(timeoutId);
+           }
+         };
+ 
+         // Add listener
+         if (workerRef.current) {
+           workerRef.current.addEventListener('message', handleMessage);
+         }
+ 
+-        // Safety timeout (e.g., infinite loop prevention)
+-        const timeoutId = setTimeout(() => {
+-          cleanup();
+-          // Terminate the rogue worker
+-          if (workerRef.current) {
+-            workerRef.current.terminate();
+-            workerRef.current = null;
+-            // Re-create the worker for future runs
+-            initWorker();
+-          }
+-          reject(new Error('Timeout: โค้ดใช้เวลาทำงานนานเกินไป (อาจเกิดจาก Infinite Loop)'));
+-        }, 5000); // 5 seconds max
+-
+         // Post message
+         if (workerRef.current) {
+           workerRef.current.postMessage({

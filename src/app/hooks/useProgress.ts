@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { progressApi } from '../lib/api/progress';
 import { supabase } from '../lib/supabase';
 import type { UserProgress, Enrollment } from '../types';
 
@@ -280,6 +281,25 @@ export function useLessonProgress(userId: string, lessonId: string) {
       if (upsertError) throw upsertError;
 
       console.log(`[Progress DB Log] Successfully marked lesson ${lessonId} complete`);
+      
+      // Auto-issue certificate if course is now 100% complete
+      // We don't have courseId here, so we must fetch it first
+      const { data: lessonData } = await supabase
+        .from('lessons')
+        .select('course_id')
+        .eq('id', lessonId)
+        .single();
+        
+      if (lessonData?.course_id) {
+        // We import certificateApi dynamically to avoid circular dependencies if any
+        import('../lib/api/certificates').then(({ certificateApi }) => {
+          certificateApi.checkAndIssueCourseCertificate(userId, lessonData.course_id).then(cert => {
+            if (cert) {
+              console.log(`[Certificate] Auto-issued certificate:`, cert.certificate_number);
+            }
+          });
+        });
+      }
       setProgress(prev => prev ? {
         ...prev,
         status: 'completed',
@@ -356,4 +376,33 @@ export function useLessonsProgress(userId: string, lessonIds: string[]) {
   }, [userId, lessonIdsStr]);
 
   return { completedLessonIds, loading, error };
+}
+
+export function useUserProgressSummary(userId: string | undefined) {
+  const [summary, setSummary] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  const fetchSummary = useCallback(async () => {
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
+    try {
+      setLoading(true);
+      const data = await progressApi.getUserProgressSummary(userId);
+      setSummary(data);
+    } catch (err) {
+      console.error('[Progress] Failed to fetch summary:', err);
+      setError(err as Error);
+    } finally {
+      setLoading(false);
+    }
+  }, [userId]);
+
+  useEffect(() => {
+    fetchSummary();
+  }, [fetchSummary]);
+
+  return { summary, loading, error, refetch: fetchSummary };
 }

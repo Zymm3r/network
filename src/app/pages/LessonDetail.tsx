@@ -16,16 +16,11 @@ import {
 } from 'lucide-react';
 import QuizCard from '../components/QuizCard';
 import ExerciseCard from '../components/ExerciseCard';
+import { KalturaPlayer } from '../components/KalturaPlayer';
 
 /* ─────────────────────────────────────────
    Static look-up tables
 ───────────────────────────────────────── */
-const lessonTypeLabels: Record<string, string> = {
-  video: 'วิดีโอ',
-  reading: 'บทความ',
-  quiz: 'แบบทดสอบ',
-  exercise: 'แบบฝึกหัด',
-};
 
 const difficultyColors: Record<string, string> = {
   easy: 'bg-green-100 text-green-700 border-green-200',
@@ -454,6 +449,7 @@ export function LessonDetail() {
   const [activeCheckpointIdx, setActiveCheckpointIdx] = useState(0);
   const [videoSeekState, setVideoSeekState] = useState<VideoSeekState | null>(null);
   const [readingProgress, setReadingProgress] = useState(0);
+  const [isVideoCompleted, setIsVideoCompleted] = useState(false);
   const readingContentRef = useRef<HTMLDivElement>(null);
   
   // Concurrent Flight Lock
@@ -495,31 +491,40 @@ export function LessonDetail() {
   const isReadingLesson = lesson?.lesson_type === 'reading';
   const readingContent = useMemo(() => {
     if (!isReadingLesson || !lesson) return '';
-    return (language === 'th' ? lesson.content_th : lesson.content_en) || '';
+    return lesson[`content_${language}` as 'content_th' | 'content_en'] || '';
   }, [isReadingLesson, lesson, language]);
 
   const estimatedReadingMinutes = useMemo(() => {
     if (!readingContent) return 0;
     // Thai text: ~200 words/min, English: ~250 words/min
     // Count words by splitting on whitespace and filtering empty
-    const wordCount = readingContent.split(/\s+/).filter(Boolean).length;
-    const wpm = language === 'th' ? 180 : 230;
+    const wpmMap: Record<'th' | 'en', number> = { th: 180, en: 230 };
+    const wpm = wpmMap[language];
     return Math.max(1, Math.ceil(wordCount / wpm));
   }, [readingContent, language]);
 
   const durationMinutes = isReadingLesson && estimatedReadingMinutes > 0
     ? estimatedReadingMinutes
     : (lesson?.duration_minutes || 0);
-  const requiredSeconds = isPythonLesson
-    ? (activeCheckpoint?.duration ?? 0)
-    : durationMinutes * 60;
+  
+  // Disable page-level timer for video lessons
+  const requiredSeconds = lesson?.lesson_type === 'video'
+    ? 0
+    : isPythonLesson
+      ? (activeCheckpoint?.duration ?? 0)
+      : durationMinutes * 60;
+      
   const isCurrentCheckpointDone = isPythonLesson
     ? completedSet.has(activeCheckpointIdx)
     : progress?.status === 'completed';
   const isFullyCompleted = isPythonLesson
     ? completedCheckpoints.length === PYTHON_CHECKPOINTS.length
     : progress?.status === 'completed';
-  const isTimeMet = elapsedSeconds >= requiredSeconds;
+    
+  // Require video completion for videos, fallback to timer for reading
+  const isTimeMet = lesson?.lesson_type === 'video'
+    ? isVideoCompleted
+    : elapsedSeconds >= requiredSeconds;
 
   /* ── Load/Initialize timer from localStorage when storage key or required duration changes ── */
   useEffect(() => {
@@ -656,9 +661,7 @@ export function LessonDetail() {
 
       if (successCount > 0) {
         toast.success(
-          language === 'th'
-            ? `ซิงค์ข้อมูลความก้าวหน้าที่ค้างอยู่เสร็จสิ้น (${successCount} รายการ)`
-            : `Synced offline progress (${successCount} items)`
+          t.lessonDetail.offlineSyncSuccess.replace('{count}', successCount.toString())
         );
         await refetchProgress();
       }
@@ -764,10 +767,16 @@ export function LessonDetail() {
         
         // Success feedback
         toast.success(
-          language === 'th'
-            ? `บันทึกหัวข้อย่อย "${activeCheckpoint?.title}" สำเร็จ!`
-            : `Successfully completed "${activeCheckpoint?.title}"!`
+          t.lessonDetail.checkpointSaveSuccess.replace('{title}', activeCheckpoint?.title || '')
         );
+
+        if (isAll && lesson?.course_id) {
+          import('../lib/api/certificates').then(({ certificateApi }) => {
+            certificateApi.checkAndIssueCourseCertificate(user.id, lesson.course_id).then(cert => {
+              if (cert) console.log(`[Certificate] Auto-issued certificate:`, cert.certificate_number);
+            });
+          });
+        }
 
         // Clear active checkpoint timer from localStorage upon completion
         if (timerStorageKey) {
@@ -784,11 +793,7 @@ export function LessonDetail() {
           completedCheckpoints: updated,
         });
 
-        toast.warning(
-          language === 'th'
-            ? 'เครือข่ายขัดข้อง ระบบบันทึกข้อมูลแบบออฟไลน์และจะทำข้อมูลให้ตรงกันในภายหลัง'
-            : 'Network error. Progress saved offline and will sync when connection is restored.'
-        );
+        toast.warning(t.lessonDetail.checkpointOfflineWarning);
       }
 
       // Refresh progress data in UI silently
@@ -803,11 +808,7 @@ export function LessonDetail() {
       }
     } catch (err) {
       console.error('[Progress DB Log] Unexpected error during checkpoint completion:', err);
-      toast.error(
-        language === 'th'
-          ? 'เกิดข้อผิดพลาดไม่คาดคิด กรุณาลองใหม่อีกครั้ง'
-          : 'An unexpected error occurred. Please try again.'
-      );
+      toast.error(t.lessonDetail.unexpectedError);
     } finally {
       setIsSubmitting(false);
       isSavingRef.current = false;
@@ -859,11 +860,15 @@ export function LessonDetail() {
 
         if (saveError) throw saveError;
 
-        toast.success(
-          language === 'th'
-            ? 'ยินดีด้วย! บันทึกการเรียนรู้บทเรียนนี้เสร็จสมบูรณ์ 🎉'
-            : 'Congratulations! Completed this lesson successfully 🎉'
-        );
+        toast.success(t.lessonDetail.standardLessonCompleteSuccess);
+
+        if (lesson?.course_id) {
+          import('../lib/api/certificates').then(({ certificateApi }) => {
+            certificateApi.checkAndIssueCourseCertificate(user.id, lesson.course_id).then(cert => {
+              if (cert) console.log(`[Certificate] Auto-issued certificate:`, cert.certificate_number);
+            });
+          });
+        }
 
         // Clear stay-timer from localStorage upon completion
         if (timerStorageKey) {
@@ -880,22 +885,14 @@ export function LessonDetail() {
           completedCheckpoints: [],
         });
 
-        toast.warning(
-          language === 'th'
-            ? 'เครือข่ายขัดข้อง ระบบบันทึกข้อมูลแบบออฟไลน์และจะซิงค์ใหม่อัตโนมัติเมื่อออนไลน์'
-            : 'Network error. Lesson completed offline. Will sync when back online.'
-        );
+        toast.warning(t.lessonDetail.offlineQueueWarning);
       }
 
       // Refresh progress data in UI silently
       await refetchProgress();
     } catch (err) {
       console.error('[Progress DB Log] Unexpected error during lesson completion:', err);
-      toast.error(
-        language === 'th'
-          ? 'เกิดข้อผิดพลาดในการบันทึกการเรียนรู้ กรุณาลองใหม่อีกครั้ง'
-          : 'Failed to save lesson progress. Please try again.'
-      );
+      toast.error(t.lessonDetail.saveProgressError);
     } finally {
       setIsSubmitting(false);
       isSavingRef.current = false;
@@ -917,18 +914,18 @@ export function LessonDetail() {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
         <div className="text-6xl mb-4">🔍</div>
-        <h2 className="text-xl font-semibold mb-2">ไม่พบบทเรียน</h2>
-        <p className="text-muted-foreground mb-4">บทเรียนที่คุณกำลังค้นหาอาจถูกลบหรือย้ายไปแล้ว</p>
+        <h2 className="text-xl font-semibold mb-2">{t.lessonDetail.notFound}</h2>
+        <p className="text-muted-foreground mb-4">{t.lessonDetail.notFoundDesc}</p>
         <Button onClick={() => navigate('/lessons')}>
           <ArrowLeft className="w-4 h-4 mr-2" />
-          กลับไปหน้าบทเรียน
+          {t.lessonDetail.backToLessonsBtn}
         </Button>
       </div>
     );
   }
 
-  const title = language === 'th' ? lesson.title_th : lesson.title_en;
-  const content = language === 'th' ? lesson.content_th : lesson.content_en;
+  const title = lesson[`title_${language}` as 'title_th' | 'title_en'];
+  const content = lesson[`content_${language}` as 'content_th' | 'content_en'];
 
   /* ────────────────────────────────────────────────────
      Checkpoint-specific variables (Python lesson only)
@@ -949,7 +946,7 @@ export function LessonDetail() {
         className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
-        กลับไปหลักสูตร
+        {t.lessonDetail.backToCourseBtn}
       </Link>
 
       {/* Lesson Header */}
@@ -958,7 +955,7 @@ export function LessonDetail() {
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-4">
             <Badge className="bg-white/20 text-white border-0">
-              {lessonTypeLabels[lesson.lesson_type]}
+              {t.lessons[lesson.lesson_type as keyof typeof t.lessons] || lesson.lesson_type}
             </Badge>
             {lesson.difficulty && (
               <Badge className={`${difficultyColors[lesson.difficulty]} border`}>
@@ -967,7 +964,7 @@ export function LessonDetail() {
             )}
             {isPythonLesson && (
               <Badge className="bg-amber-400/90 text-amber-900 border-0 font-bold">
-                🐍 35 หัวข้อย่อย
+                {t.lessonDetail.pythonSubTopicsCount}
               </Badge>
             )}
           </div>
@@ -975,8 +972,8 @@ export function LessonDetail() {
           {isPythonLesson ? (
             <div className="flex flex-col gap-2 mt-3">
               <div className="flex items-center justify-between text-sm text-indigo-100">
-                <span>ความก้าวหน้าโดยรวม</span>
-                <span className="font-bold text-white">{completedCheckpoints.length} / {PYTHON_CHECKPOINTS.length} หัวข้อ ({overallPct}%)</span>
+                <span>{t.lessonDetail.overallProgressLabel}</span>
+                <span className="font-bold text-white">{t.lessonDetail.pythonProgressText.replace('{completed}', completedCheckpoints.length.toString()).replace('{total}', PYTHON_CHECKPOINTS.length.toString()).replace('{percent}', overallPct.toString())}</span>
               </div>
               <div className="w-full bg-white/20 rounded-full h-2.5 overflow-hidden">
                 <div
@@ -987,7 +984,7 @@ export function LessonDetail() {
               {isFullyCompleted && (
                 <div className="flex items-center gap-2 text-emerald-300 font-semibold text-sm mt-1">
                   <Trophy className="w-4 h-4" />
-                  เรียนครบ 35 หัวข้อแล้ว! ยอดเยี่ยมมาก 🎉
+                  {t.lessonDetail.pythonAllCompleted}
                 </div>
               )}
             </div>
@@ -997,14 +994,14 @@ export function LessonDetail() {
                 <Clock className="w-4 h-4" />
                 <span>
                   {isReadingLesson
-                    ? `อ่านประมาณ ${durationMinutes} นาที`
-                    : `${durationMinutes} นาที`
+                    ? t.lessonDetail.estReadingTime.replace('{minutes}', durationMinutes.toString())
+                    : t.lessonDetail.readingTime.replace('{minutes}', durationMinutes.toString())
                   }
                 </span>
                 {isReadingLesson && (
                   <span className="flex items-center gap-1 ml-2 text-indigo-200">
                     <Eye className="w-3.5 h-3.5" />
-                    <span className="text-xs">{readingContent.split(/\s+/).filter(Boolean).length.toLocaleString()} คำ</span>
+                    <span className="text-xs">{t.lessonDetail.wordCountText.replace('{count}', readingContent.split(/\s+/).filter(Boolean).length.toLocaleString())}</span>
                   </span>
                 )}
               </div>
@@ -1018,7 +1015,17 @@ export function LessonDetail() {
         <Card className="border-slate-100">
           <CardContent className="pt-6">
               <div className="aspect-video w-full mb-6">
-                <VideoPlayer url={lesson.video_url} seekState={videoSeekState} />
+                <KalturaPlayer
+                  source={{ url: lesson.video_url }}
+                  enforceNoSkip={true}
+                  seekToSeconds={videoSeekState?.time}
+                  showLockIndicator={true}
+                  onComplete={() => {
+                    console.log('[Lesson] Video completed!');
+                    setIsVideoCompleted(true);
+                  }}
+                  onProgress={(p) => console.log(`[Lesson] Progress: ${p}%`)}
+                />
               </div>
           </CardContent>
         </Card>
@@ -1030,7 +1037,7 @@ export function LessonDetail() {
             <div className="aspect-video bg-slate-100 rounded-xl flex items-center justify-center">
               <div className="text-center">
                 <Play className="w-12 h-12 text-muted-foreground mx-auto mb-2" />
-                <p className="text-muted-foreground">วิดีโอจะแสดงเมื่อพร้อมใช้งาน</p>
+                <p className="text-muted-foreground">{t.lessonDetail.videoPlaceholderText}</p>
               </div>
             </div>
           </CardContent>
@@ -1041,7 +1048,7 @@ export function LessonDetail() {
       {content && !isReadingLesson && (
         <Card className="border-slate-100">
           <CardHeader>
-            <CardTitle>เนื้อหา</CardTitle>
+            <CardTitle>{t.lessonDetail.contentHeader}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground leading-relaxed">{content}</p>
@@ -1074,12 +1081,12 @@ export function LessonDetail() {
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2 text-slate-800">
                   <BookOpen className="w-5 h-5 text-indigo-600" />
-                  บทความ
+                  {t.lessonDetail.articleHeader}
                 </CardTitle>
                 <div className="flex items-center gap-3 text-sm text-slate-500">
                   <span className="flex items-center gap-1">
                     <Clock className="w-3.5 h-3.5" />
-                    อ่านประมาณ {durationMinutes} นาที
+                    {t.lessonDetail.estReadingTime.replace('{minutes}', durationMinutes.toString())}
                   </span>
                   <span className="font-medium text-indigo-600">
                     {Math.round(readingProgress)}%
@@ -1108,11 +1115,11 @@ export function LessonDetail() {
       {/* Reading lesson with no content yet */}
       {isReadingLesson && !readingContent && (
         <Card className="border-slate-100">
-          <CardHeader><CardTitle>บทความ</CardTitle></CardHeader>
+          <CardHeader><CardTitle>{t.lessonDetail.articleHeader}</CardTitle></CardHeader>
           <CardContent>
             <div className="text-center py-10">
               <BookOpen className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-              <p className="text-muted-foreground">เนื้อหาบทความกำลังจัดเตรียม</p>
+              <p className="text-muted-foreground">{t.lessonDetail.articleNotAvailable}</p>
             </div>
           </CardContent>
         </Card>
@@ -1143,7 +1150,7 @@ export function LessonDetail() {
                 <div>
                   <div className="font-semibold text-slate-800 text-sm group-hover:text-indigo-700 transition-colors">{activeCheckpoint.title}</div>
                   <div className="text-xs text-slate-500 mt-0.5">
-                    ⌨️ {activeCheckpoint.startTime} · ต้องสะสม {formatDuration(activeCheckpoint.duration)}
+                    ⌨️ {activeCheckpoint.startTime} · {t.lessonDetail.pythonRequiredTime.replace('{duration}', formatDuration(activeCheckpoint.duration))}
                   </div>
                 </div>
                 {isCurrentCheckpointDone && (
@@ -1166,18 +1173,18 @@ export function LessonDetail() {
                 <div>
                   <div className="font-semibold text-slate-800">
                     {isFullyCompleted
-                      ? '🎉 เรียนครบทั้ง 35 หัวข้อแล้ว!'
+                      ? t.lessonDetail.pythonFullyCompletedTitle
                       : isCurrentCheckpointDone
-                      ? `✅ หัวข้อ "${activeCheckpoint?.title}" เสร็จสิ้นแล้ว`
-                      : `📚 กำลังสะสมเวลา: ${activeCheckpoint?.title}`
+                      ? t.lessonDetail.pythonCheckpointDoneTitle.replace('{title}', activeCheckpoint?.title || '')
+                      : t.lessonDetail.pythonAccumulatingTitle.replace('{title}', activeCheckpoint?.title || '')
                     }
                   </div>
                   <div className="text-sm text-muted-foreground mt-0.5">
                     {isFullyCompleted
-                      ? `ยินดีด้วย! คุณเรียนจบบทเรียน Python Basics ครบถ้วนสมบูรณ์แล้ว ${formatCompletedAt(progress?.completed_at)}`
+                      ? t.lessonDetail.pythonFullyCompletedDesc.replace('{completedAt}', formatCompletedAt(progress?.completed_at))
                       : isCurrentCheckpointDone
-                      ? 'คลิกหัวข้ออื่นด้านบนเพื่อเริ่มสะสมเวลาหัวข้อถัดไป'
-                      : 'กรุณาเปิดและรับชมวิดีโอในหัวข้อนี้เพื่อสะสมเวลาและบันทึกความก้าวหน้า'
+                      ? t.lessonDetail.pythonCheckpointDoneDesc
+                      : t.lessonDetail.pythonAccumulatingDesc
                     }
                   </div>
                 </div>
@@ -1188,11 +1195,11 @@ export function LessonDetail() {
                 <div className="w-full md:w-auto flex flex-col md:flex-row items-stretch md:items-center gap-3 shrink-0">
                   {!isCurrentCheckpointDone && requiredSeconds > 0 && (
                     <div className="text-left md:text-right shrink-0">
-                      <div className="text-xs text-muted-foreground font-medium">เวลาที่ต้องสะสม</div>
+                      <div className="text-xs text-muted-foreground font-medium">{t.lessonDetail.requiredAccumulatedTime}</div>
                       <div className="text-sm font-semibold text-indigo-600 mt-0.5">
                         {isTimeMet
-                          ? '✅ สะสมเวลาครบแล้ว!'
-                          : `เหลืออีก ${formatCountdown(requiredSeconds - elapsedSeconds)}`
+                          ? t.lessonDetail.timeAccumulatedDone
+                          : t.lessonDetail.timeRemainingText.replace('{time}', formatCountdown(requiredSeconds - elapsedSeconds))
                         }
                       </div>
                     </div>
@@ -1211,14 +1218,14 @@ export function LessonDetail() {
                     {isSubmitting ? (
                       <span className="flex items-center gap-2 justify-center">
                         <span className="animate-spin rounded-full h-4 w-4 border-2 border-slate-300 border-t-white" />
-                        กำลังบันทึก...
+                        {t.lessonDetail.savingProgress}
                       </span>
                     ) : isCurrentCheckpointDone ? (
-                      'เสร็จสิ้นแล้ว'
+                      t.lessonDetail.completedLabel
                     ) : isTimeMet ? (
-                      'ทำเครื่องหมายเสร็จ'
+                      t.lessonDetail.markAsCompletedLabel
                     ) : (
-                      'รอสะสมเวลา...'
+                      t.lessonDetail.waitingForTime
                     )}
                   </Button>
                 </div>
@@ -1229,7 +1236,7 @@ export function LessonDetail() {
             {!isCurrentCheckpointDone && !isFullyCompleted && requiredSeconds > 0 && (
               <div className="mt-4 space-y-1.5">
                 <div className="flex justify-between text-xs text-slate-400">
-                  <span>เวลาสะสม</span>
+                  <span>{t.lessonDetail.accumulatedTimeHeader}</span>
                   <span>{formatCountdown(elapsedSeconds)} / {formatCountdown(requiredSeconds)}</span>
                 </div>
                 <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
@@ -1244,7 +1251,7 @@ export function LessonDetail() {
             {/* Checkpoint mini progress dots (visual summary) */}
             <div className="mt-5 pt-4 border-t border-slate-100">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs text-slate-500 font-medium">ภาพรวมความก้าวหน้า</span>
+                <span className="text-xs text-slate-500 font-medium">{t.lessonDetail.progressOverviewHeader}</span>
                 <span className="text-xs text-slate-400">{overallPct}%</span>
               </div>
               <div className="flex flex-wrap gap-1">
@@ -1277,12 +1284,12 @@ export function LessonDetail() {
                 </div>
                 <div>
                   <div className="font-semibold text-slate-800">
-                    {isFullyCompleted ? 'เรียนรู้บทเรียนนี้เสร็จสิ้นแล้ว' : 'ทำเครื่องหมายว่าเสร็จสิ้น'}
+                    {isFullyCompleted ? t.lessonDetail.standardCompletedTitle : t.lessonDetail.standardMarkCompleteTitle}
                   </div>
                   <div className="text-sm text-muted-foreground mt-0.5">
                     {isFullyCompleted
-                      ? `ยินดีด้วย! คุณเรียนบทเรียนนี้ครบถ้วนแล้ว ${formatCompletedAt(progress?.completed_at)}`
-                      : 'กรุณาใช้เวลาศึกษาเนื้อหาบทเรียนนี้ให้ครบถ้วนเพื่อบันทึกความก้าวหน้าของคุณ'
+                      ? t.lessonDetail.standardCompletedDesc.replace('{completedAt}', formatCompletedAt(progress?.completed_at))
+                      : t.lessonDetail.standardAccumulateTimeDesc
                     }
                   </div>
                 </div>
@@ -1291,9 +1298,9 @@ export function LessonDetail() {
               <div className="w-full md:w-auto flex flex-col md:flex-row items-stretch md:items-center gap-3 shrink-0">
                 {!isFullyCompleted && requiredSeconds > 0 && (
                   <div className="text-left md:text-right shrink-0">
-                    <div className="text-xs text-muted-foreground font-medium">เวลาที่ต้องศึกษา</div>
+                    <div className="text-xs text-muted-foreground font-medium">{t.lessonDetail.requiredStudyTimeLabel}</div>
                     <div className="text-sm font-semibold text-indigo-600 mt-0.5">
-                      {isTimeMet ? 'สะสมเวลาครบถ้วนแล้ว!' : `เหลืออีก ${Math.floor((requiredSeconds - elapsedSeconds) / 60)} นาที ${((requiredSeconds - elapsedSeconds) % 60)} วินาที`}
+                      {isTimeMet ? t.lessonDetail.studyTimeAccumulatedDone : t.lessonDetail.studyTimeRemainingText.replace('{minutes}', Math.floor((requiredSeconds - elapsedSeconds) / 60).toString()).replace('{seconds}', ((requiredSeconds - elapsedSeconds) % 60).toString())}
                     </div>
                   </div>
                 )}
@@ -1311,9 +1318,9 @@ export function LessonDetail() {
                   {isSubmitting ? (
                     <span className="flex items-center gap-2 justify-center">
                       <span className="animate-spin rounded-full h-4 w-4 border-2 border-slate-300 border-t-white" />
-                      กำลังบันทึก...
+                      {t.lessonDetail.savingProgress}
                     </span>
-                  ) : isFullyCompleted ? 'เสร็จสิ้นแล้ว' : isTimeMet ? 'ทำเครื่องหมายเสร็จ' : 'รอสะสมเวลา...'}
+                  ) : isFullyCompleted ? t.lessonDetail.completedLabel : isTimeMet ? t.lessonDetail.markAsCompletedLabel : t.lessonDetail.waitingForTime}
                 </Button>
               </div>
             </div>
@@ -1339,11 +1346,11 @@ export function LessonDetail() {
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2 text-slate-800">
                 <BookOpen className="w-5 h-5 text-indigo-600" />
-                หัวข้อย่อยทั้งหมด
+                {t.lessonDetail.allSubtopicsTitle}
               </CardTitle>
               <div className="flex items-center gap-2">
                 <span className="text-sm text-slate-500">
-                  <span className="font-bold text-emerald-600">{completedCheckpoints.length}</span>/{PYTHON_CHECKPOINTS.length} เสร็จสิ้น
+                  <span className="font-bold text-emerald-600">{completedCheckpoints.length}</span>/{PYTHON_CHECKPOINTS.length} {t.lessonDetail.subtopicsCompletedStatus.replace('{completed}', completedCheckpoints.length.toString()).replace('{total}', PYTHON_CHECKPOINTS.length.toString())}
                 </span>
               </div>
             </div>
@@ -1368,9 +1375,9 @@ export function LessonDetail() {
                 className="mt-3 w-full flex items-center justify-center gap-2 text-sm text-indigo-600 hover:text-indigo-700 font-medium py-2 rounded-lg hover:bg-indigo-50 transition-colors"
               >
                 {showAllCheckpoints ? (
-                  <>แสดงน้อยลง <ChevronDown className="w-4 h-4 rotate-180 transition-transform" /></>
+                  <>{t.lessonDetail.showLessBtn} <ChevronDown className="w-4 h-4 rotate-180 transition-transform" /></>
                 ) : (
-                  <>ดูหัวข้ออีก {PYTHON_CHECKPOINTS.length - 10} รายการ <ChevronDown className="w-4 h-4 transition-transform" /></>
+                  <>{t.lessonDetail.showMoreSubtopicsBtn.replace('{count}', (PYTHON_CHECKPOINTS.length - 10).toString())} <ChevronDown className="w-4 h-4 transition-transform" /></>
                 )}
               </button>
             )}

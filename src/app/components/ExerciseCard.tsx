@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, Component, ErrorInfo, ReactNode } from 'react';
 import { Card, CardContent } from './ui/card';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
@@ -10,8 +10,11 @@ import {
 import { useAuth } from '../hooks/useAuth';
 import { useDailyStreak } from '../hooks/useDailyStreak';
 import { useActivity } from '../contexts/ActivityContext';
+import { useExerciseProgress } from '../hooks/useExerciseProgress';
 import { playFeedback } from '../utils/feedback';
+import { usePython } from "../../application/hooks/usePython";
 import { getExerciseForCourse, ExerciseData, TestCase } from '../data/courseQuizData';
+import { gradingService } from '../lib/api/grading';
 
 /* ─────────────────────────────────────────
    Terminal Output Line
@@ -33,7 +36,7 @@ function TerminalLine({ text, type, delay }: { text: string; type: 'info' | 'suc
   };
 
   return (
-    <div className={`${colors[type]} terminal-line-enter`}>
+    <div className={`${colors[type]} terminal-line-enter whitespace-pre-wrap`}>
       {type === 'info' && <span className="text-slate-500">$ </span>}
       {type === 'success' && <span className="text-emerald-500">✓ </span>}
       {type === 'error' && <span className="text-red-500">✗ </span>}
@@ -55,6 +58,42 @@ function getRandomItem<T>(arr: T[]): T {
 }
 
 /* ─────────────────────────────────────────
+   ErrorBoundary Component
+───────────────────────────────────────── */
+class ExerciseErrorBoundary extends Component<{children: ReactNode}, {hasError: boolean, error: Error | null}> {
+  constructor(props: {children: ReactNode}) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error("Exercise Execution UI crashed:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="p-6 bg-red-50 text-red-700 rounded-xl border border-red-200 m-4">
+          <h3 className="font-bold mb-2">Something went wrong in the execution UI.</h3>
+          <p className="text-sm">{this.state.error?.message}</p>
+          <button 
+            className="mt-4 px-4 py-2 bg-red-600 text-white rounded shadow hover:bg-red-700 transition"
+            onClick={() => this.setState({ hasError: false, error: null })}
+          >
+            Try Again
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+/* ─────────────────────────────────────────
    ExerciseCard Component
 ───────────────────────────────────────── */
 interface ExerciseCardProps {
@@ -68,6 +107,11 @@ export default function ExerciseCard({ courseName, courseId }: ExerciseCardProps
   const { totalSeconds } = useActivity();
 
   const exercise = getExerciseForCourse(courseId);
+  const { recordAttempt, isQueuedAttempts } = useExerciseProgress(
+    exercise.id || courseId || 'unknown',
+    exercise.lessonId || '',
+    courseId || ''
+  );
 
   const [code, setCode] = useState(exercise.starterCode);
   
@@ -90,6 +134,14 @@ export default function ExerciseCard({ courseName, courseId }: ExerciseCardProps
   const [showConfetti, setShowConfetti] = useState(false);
   const [showAchievement, setShowAchievement] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const terminalRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll terminal to bottom
+  useEffect(() => {
+    if (terminalRef.current) {
+      terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
+    }
+  }, [testResults, runPhase, isRunning, runComplete, allPassed]);
 
   // Get motivational helper text based on state
   const getHelperText = () => {
@@ -99,7 +151,59 @@ export default function ExerciseCard({ courseName, courseId }: ExerciseCardProps
     return '💻 เขียนโค้ดและกดรันโค้ด';
   };
 
-  const handleRun = useCallback(() => {
+  const { runPythonTests, isInitializing, initWorker } = usePython();
+
+  // Parse Python error messages to extract error type and details
+  const parsePythonError = (errorText: string): { type: string; message: string; line?: number } => {
+    // Match: "SyntaxError: invalid syntax (<string>, line 5)"
+    const syntaxMatch = errorText.match(/SyntaxError: (.*) \(<string>, line (\d+)\)/);
+    if (syntaxMatch) {
+      return { type: 'SyntaxError', message: syntaxMatch[1], line: parseInt(syntaxMatch[2]) };
+    }
+
+    // Match: "NameError: name 'x' is not defined"
+    const nameMatch = errorText.match(/NameError: (.*)/);
+    if (nameMatch) {
+      return { type: 'NameError', message: nameMatch[1] };
+    }
+
+    // Match: "IndentationError: expected an indented block"
+    const indentMatch = errorText.match(/IndentationError: (.*)/);
+    if (indentMatch) {
+      return { type: 'IndentationError', message: indentMatch[1] };
+    }
+
+    // Match: "TypeError: ..."
+    const typeMatch = errorText.match(/TypeError: (.*)/);
+    if (typeMatch) {
+      return { type: 'TypeError', message: typeMatch[1] };
+    }
+
+    // Match: "RuntimeError: ..."
+    const runtimeMatch = errorText.match(/RuntimeError: (.*)/);
+    if (runtimeMatch) {
+      return { type: 'RuntimeError', message: runtimeMatch[1] };
+    }
+
+    // Match: "AttributeError: ..."
+    const attrMatch = errorText.match(/AttributeError: (.*)/);
+    if (attrMatch) {
+      return { type: 'AttributeError', message: attrMatch[1] };
+    }
+
+    // Match: "KeyError: ..."
+    const keyMatch = errorText.match(/KeyError: (.*)/);
+    if (keyMatch) {
+      return { type: 'KeyError', message: keyMatch[1] };
+    }
+
+    // Default: extract first line
+    const firstLine = errorText.split('\n')[0];
+    return { type: 'Error', message: firstLine };
+  };
+
+
+  const handleRun = useCallback(async () => {
     setIsRunning(true);
     setRunComplete(false);
     setTestResults([]);
@@ -108,41 +212,108 @@ export default function ExerciseCard({ courseName, courseId }: ExerciseCardProps
     setRunPhase('compiling');
     playFeedback('run');
 
-    // Simulate compiling phase
-    setTimeout(() => {
+    try {
+      const startTime = performance.now();
+      const runResponse = await runPythonTests(code, exercise.testCases);
+      const executionTimeMs = Math.round(performance.now() - startTime);
+
       setRunPhase('testing');
-    }, 500);
 
-    // Simulate running with delays for each test case
-    // For mock evaluation, we just check if they modified the starter code
-    const isCorrectCode = code.trim() !== exercise.starterCode.trim() && code.length > 10;
-
-    const results = exercise.testCases.map(tc => ({
-      ...tc,
-      passed: isCorrectCode,
-    }));
-
-    // Simulate progressive test results (start after compiling)
-    let idx = 0;
-    const interval = setInterval(() => {
-      if (idx < results.length) {
-        setTestResults(prev => [...prev, results[idx]]);
-        idx++;
-      } else {
-        clearInterval(interval);
-        const passed = results.every(r => r.passed);
-        setAllPassed(passed);
+      if (!runResponse.success) {
         setRunComplete(true);
         setIsRunning(false);
         setRunPhase('done');
-        if (passed && xpEarned === 0) {
-          setXpEarned(exercise.xpReward);
-          setShowXpPopup(true);
-          setShowConfetti(true);
-          playFeedback('complete');
-          recordActivity(); // Record daily streak
-          // Achievement badges
-          if (idx === results.length && passed) {
+
+        const errorMessage = runResponse.error || "Unknown Error";
+        const friendlyMessage = "Python execution failed. Please review your code and try again.";
+        
+        setTestResults(exercise.testCases.map(tc => ({
+          ...tc,
+          passed: false,
+          actual: `Error: ${friendlyMessage}\n\n${errorMessage}`
+        })));
+
+        if (user?.id) {
+          recordAttempt({
+            user_id: user.id,
+            exercise_id: exercise.id || courseId || 'unknown',
+            lesson_id: exercise.lessonId || '',
+            course_id: courseId || '',
+            passed: false,
+            score: null,
+            attempts_count: attempts + 1,
+            stdout: null,
+            error_message: errorMessage,
+            submitted_code: code,
+            passed_tests: 0,
+            total_tests: exercise.testCases.length,
+            execution_time: executionTimeMs,
+            status: 'error',
+            execution_timestamp: new Date().toISOString(),
+          }).catch(err => console.error('[Exercise Tracking] Failed to persist failed attempt:', err));
+        }
+        return;
+      }
+
+      const results = runResponse.testResults || [];
+      // Evaluate results with grading service
+      const gradingResult = gradingService.evaluateResults(results);
+
+      // Simulate progressive UI feedback using ONLY visible results
+      const visibleResults = gradingResult.visibleResults || [];
+      let idx = 0;
+      const interval = setInterval(() => {
+        if (idx < visibleResults.length) {
+          if (visibleResults[idx]) {
+            setTestResults(prev => [...prev, visibleResults[idx]]);
+          }
+          idx++;
+        } else {
+          clearInterval(interval);
+          setAllPassed(gradingResult.passed);
+          setRunComplete(true);
+          setIsRunning(false);
+          setRunPhase('done');
+
+          // Persist attempt to database (non-blocking)
+          if (user?.id) {
+            // Only join visible test results for stdout
+            const stdout = visibleResults.map(r => r.actual || '').join('\n');
+            recordAttempt({
+              user_id: user.id,
+              exercise_id: exercise.id || courseId || 'unknown',
+              lesson_id: exercise.lessonId || '',
+              course_id: courseId || '',
+              passed: gradingResult.passed,
+              score: gradingResult.score,
+              attempts_count: attempts + 1,
+              stdout: stdout || null,
+              error_message: null,
+              submitted_code: code,
+              passed_tests: gradingResult.passedTests,
+              total_tests: gradingResult.totalTests,
+              execution_time: executionTimeMs,
+              status: gradingResult.passed ? 'passed' : 'failed',
+              execution_timestamp: new Date().toISOString(),
+            }).catch(err => console.error('[Exercise Tracking] Failed to persist attempt:', err));
+          }
+
+          if (gradingResult.passed && xpEarned === 0) {
+            setXpEarned(exercise.xpReward);
+            setShowXpPopup(true);
+            setShowConfetti(true);
+            playFeedback('complete');
+            recordActivity(); // Record daily streak
+
+            if (courseId) {
+              import('../lib/api/certificates').then(({ certificateApi }) => {
+                certificateApi.checkAndIssueCourseCertificate(user.id, courseId).then(cert => {
+                  if (cert) console.log(`[Certificate] Auto-issued certificate:`, cert.certificate_number);
+                });
+              });
+            }
+
+            // Achievement badges
             const achievementMsg = attempts === 0
               ? '⚡ First Try!'
               : attempts >= 3
@@ -153,13 +324,48 @@ export default function ExerciseCard({ courseName, courseId }: ExerciseCardProps
               setShowAchievement(achievementMsg);
               setTimeout(() => setShowAchievement(null), 3000);
             }
+
+            setTimeout(() => setShowXpPopup(false), 2000);
+            setTimeout(() => setShowConfetti(false), 1500);
           }
-          setTimeout(() => setShowXpPopup(false), 2000);
-          setTimeout(() => setShowConfetti(false), 1500);
         }
+      }, 500); // 500ms delay between showing each test result for UI effect
+
+    } catch (error: any) {
+      // Timeout or critical Pyodide failure
+      setRunComplete(true);
+      setIsRunning(false);
+      setRunPhase('done');
+
+      const errorMessage = error.message || String(error);
+      setTestResults(exercise.testCases.map(tc => ({
+        ...tc,
+        passed: false,
+        actual: `Error: ${errorMessage}`
+      })));
+
+      // Persist failed attempt to database (non-blocking)
+      if (user?.id) {
+        recordAttempt({
+          user_id: user.id,
+          exercise_id: exercise.id || courseId || 'unknown',
+          lesson_id: exercise.lessonId || '',
+          course_id: courseId || '',
+          passed: false,
+          score: null,
+          attempts_count: attempts + 1,
+          stdout: null,
+          error_message: errorMessage,
+          submitted_code: code,
+          passed_tests: 0,
+          total_tests: exercise.testCases.length,
+          execution_time: null,
+          status: errorMessage.includes('Timeout') ? 'timeout' : 'error',
+          execution_timestamp: new Date().toISOString(),
+        }).catch(err => console.error('[Exercise Tracking] Failed to persist failed attempt:', err));
       }
-    }, 800); // slightly longer for more realistic feeling
-  }, [code, xpEarned]);
+    }
+  }, [code, exercise, xpEarned, attempts, runPythonTests, recordActivity, user?.id, courseId, recordAttempt]);
 
   const handleReset = useCallback(() => {
     setCode(exercise.starterCode);
@@ -185,11 +391,31 @@ export default function ExerciseCard({ courseName, courseId }: ExerciseCardProps
   // Syntax highlighting for display
   const highlightCode = (raw: string) => {
     return raw.split('\n').map((line, i) => {
-      let highlighted = line
-        .replace(/(def |return |pass|if |else:|for |in |while |import |from |class |print|True|False|None)/g, '<span class="code-keyword">$1</span>')
-        .replace(/(#.*$)/gm, '<span class="code-comment">$1</span>')
-        .replace(/("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')/g, '<span class="code-string">$1</span>')
-        .replace(/\b(\w+)\s*\(/g, '<span class="code-function">$1</span>(');
+      const tokens: string[] = [];
+      let tokenIndex = 0;
+
+      // Extract strings
+      let highlighted = line.replace(/("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')/g, (match) => {
+        tokens.push(`<span class="code-string">${match}</span>`);
+        return `__TOKEN_${tokenIndex++}__`;
+      });
+
+      // Extract comments
+      highlighted = highlighted.replace(/(#.*$)/g, (match) => {
+        tokens.push(`<span class="code-comment">${match}</span>`);
+        return `__TOKEN_${tokenIndex++}__`;
+      });
+
+      // Highlight keywords
+      highlighted = highlighted.replace(/\b(def|return|pass|if|elif|else|for|in|while|import|from|class|print|True|False|None)\b/g, '<span class="code-keyword">$1</span>');
+      
+      // Highlight functions
+      highlighted = highlighted.replace(/\b(\w+)\s*\(/g, '<span class="code-function">$1</span>(');
+
+      // Restore tokens
+      tokens.forEach((tokenHtml, idx) => {
+        highlighted = highlighted.replace(`__TOKEN_${idx}__`, tokenHtml);
+      });
       return (
         <div key={i} className="flex">
           <span className="text-slate-600 select-none w-8 text-right pr-3 shrink-0 border-r border-slate-700/30">
@@ -212,6 +438,28 @@ export default function ExerciseCard({ courseName, courseId }: ExerciseCardProps
 
   // Line count for status bar
   const lineCount = code.split('\n').length;
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      const target = e.target as HTMLTextAreaElement;
+      const start = target.selectionStart;
+      const end = target.selectionEnd;
+
+      // Insert 4 spaces for Python
+      const spaces = '    ';
+      const newCode = code.substring(0, start) + spaces + code.substring(end);
+      
+      setCode(newCode);
+      
+      // Move cursor forward
+      setTimeout(() => {
+        if (textareaRef.current) {
+          textareaRef.current.selectionStart = textareaRef.current.selectionEnd = start + spaces.length;
+        }
+      }, 0);
+    }
+  };
 
   return (
     <Card className="border-slate-100 shadow-sm overflow-hidden relative">
@@ -327,17 +575,18 @@ export default function ExerciseCard({ courseName, courseId }: ExerciseCardProps
             <div className="space-y-3 pt-2">
               <Button
                 onClick={handleRun}
-                disabled={isRunning}
+                disabled={isRunning || isInitializing}
+                title={isInitializing ? 'Initializing Python runtime...' : ''}
                 className={`w-full font-semibold transition-all duration-300 ${
-                  isRunning
+                  isRunning || isInitializing
                     ? 'bg-emerald-400 cursor-wait'
                     : 'bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-200 exercise-run-btn'
                 }`}
               >
-                {isRunning ? (
+                {isRunning || isInitializing ? (
                   <span className="flex items-center gap-2">
                     <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    {runPhase === 'compiling' ? 'กำลังคอมไพล์...' : 'กำลังทดสอบ...'}
+                    {isInitializing ? 'Initializing...' : (runPhase === 'compiling' ? 'กำลังคอมไพล์...' : 'กำลังทดสอบ...')}
                   </span>
                 ) : (
                   <span className="flex items-center gap-2">
@@ -359,7 +608,8 @@ export default function ExerciseCard({ courseName, courseId }: ExerciseCardProps
           </div>
 
           {/* Code Editor + Terminal Side */}
-          <div className="flex flex-col">
+          <ExerciseErrorBoundary>
+            <div className="flex flex-col">
             {/* Motivational helper text */}
             <div className="bg-white px-4 py-2 border-b border-slate-100 text-sm font-medium text-slate-600 flex items-center exercise-motivational-text">
                {getHelperText()}
@@ -382,21 +632,27 @@ export default function ExerciseCard({ courseName, courseId }: ExerciseCardProps
               {/* Code Area */}
               <div className="p-4 font-mono text-sm text-slate-300 relative min-h-[200px]">
                 {/* Syntax-highlighted display */}
-                <div className="space-y-0.5 leading-relaxed">
+                <div className="leading-relaxed">
                   {highlightCode(code)}
                 </div>
-                {/* Hidden textarea for editing */}
+                {/* Transparent textarea for editing with visible caret */}
                 <textarea
                   ref={textareaRef}
                   value={code}
                   onChange={(e) => setCode(e.target.value)}
-                  className="absolute inset-0 opacity-0 w-full h-full resize-none cursor-text"
+                  className="absolute inset-0 w-full h-full resize-none cursor-text bg-transparent text-transparent caret-white outline-none"
+                  style={{
+                    paddingTop: '1rem',
+                    paddingLeft: '3.75rem',
+                    lineHeight: '1.625'
+                  }}
                   spellCheck={false}
+                  onKeyDown={handleKeyDown}
                   onFocus={() => setCursorBlink(false)}
                   onBlur={() => setCursorBlink(true)}
                 />
                 {cursorBlink && (
-                  <div className="absolute bottom-4 right-4 text-xs text-slate-600">
+                  <div className="absolute bottom-4 right-4 text-xs text-slate-600 pointer-events-none">
                     คลิกเพื่อแก้ไขโค้ด ✏️
                   </div>
                 )}
@@ -428,27 +684,78 @@ export default function ExerciseCard({ courseName, courseId }: ExerciseCardProps
                 {runComplete && allPassed && <span className="w-2 h-2 bg-emerald-400 rounded-full" />}
                 {runComplete && !allPassed && <span className="w-2 h-2 bg-red-400 rounded-full" />}
               </div>
-              <div className="p-4 font-mono text-xs space-y-1 min-h-[120px] max-h-[200px] overflow-y-auto">
-                {!isRunning && testResults.length === 0 && (
+              <div 
+                ref={terminalRef}
+                className="p-4 font-mono text-xs space-y-1 min-h-[120px] max-h-[200px] overflow-y-auto overscroll-contain scroll-smooth"
+              >
+                {!isRunning && !isInitializing && testResults.length === 0 && (
                   <div className="text-slate-600 flex items-center gap-2">
                     <span className="text-slate-700">$</span> กดปุ่ม "รันโค้ด" เพื่อทดสอบ...
                   </div>
                 )}
-                {isRunning && testResults.length === 0 && (
+                {isInitializing && testResults.length === 0 && (
+                  <TerminalLine text="⏳ Initializing Python runtime (Pyodide)..." type="info" delay={0} />
+                )}
+                {isRunning && testResults.length === 0 && !isInitializing && (
                   <TerminalLine text="python main.py" type="info" delay={0} />
                 )}
-                {testResults.map((tc, i) => (
+                {testResults.filter(Boolean).map((tc, i) => (
                   <div key={i} className="terminal-line-enter" style={{ animationDelay: `${i * 100}ms` }}>
                     <TerminalLine
-                      text={`Test ${i + 1}: ${tc.input}`}
+                      text={`Test ${i + 1}: ${tc?.input ?? ''}`}
                       type="info"
                       delay={0}
                     />
-                    <TerminalLine
-                      text={tc.passed ? `${tc.expected} ✓` : `Expected "${tc.expected}" but got error`}
-                      type={tc.passed ? 'success' : 'error'}
-                      delay={100}
-                    />
+                    {tc?.passed ? (
+                      <TerminalLine
+                        text={`${tc?.expected ?? ''} ✓`}
+                        type="success"
+                        delay={100}
+                      />
+                    ) : (
+                      <>
+                        {tc?.actual?.includes('Error:') ? (
+                          (() => {
+                            const error = parsePythonError(tc.actual);
+                            const isTimeout = tc.actual.includes('Timeout');
+                            return (
+                              <>
+                                {tc.actual.includes('Python execution failed.') && (
+                                  <TerminalLine
+                                    text="Python execution failed. Please review your code and try again."
+                                    type="error"
+                                    delay={50}
+                                  />
+                                )}
+                                <TerminalLine
+                                  text={isTimeout ? '⏱️ ' + error.type : error.type}
+                                  type="error"
+                                  delay={100}
+                                />
+                                <TerminalLine
+                                  text={error.message}
+                                  type="error"
+                                  delay={150}
+                                />
+                                {error.line && (
+                                  <TerminalLine
+                                    text={`at line ${error.line}`}
+                                    type="error"
+                                    delay={200}
+                                  />
+                                )}
+                              </>
+                            );
+                          })()
+                        ) : (
+                          <TerminalLine
+                            text={`Expected "${tc?.expected ?? ''}" but got: ${tc?.actual ?? 'error'}`}
+                            type="error"
+                            delay={100}
+                          />
+                        )}
+                      </>
+                    )}
                   </div>
                 ))}
                 {runComplete && (
@@ -459,10 +766,25 @@ export default function ExerciseCard({ courseName, courseId }: ExerciseCardProps
                       </div>
                     ) : (
                       <div className="text-red-400 font-semibold space-y-1">
-                        <div>❌ {testResults.filter(t => !t.passed).length} test(s) failed.</div>
-                        <div className="text-amber-400 font-normal flex items-center gap-1.5 pt-1">
-                          {getRandomItem(RETRY_ENCOURAGEMENTS)}
-                        </div>
+                        {testResults.some(t => t?.actual?.includes('Timeout')) ? (
+                          <>
+                            <div>⏱️ Code execution timed out</div>
+                            <div className="text-amber-400 font-normal text-xs pt-1">
+                              This usually means your code has an infinite loop. Check your while loops and recursion.
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            {testResults.filter(t => t && !t.passed).length > 0 ? (
+                              <div>❌ {testResults.filter(t => t && !t.passed).length} test(s) failed.</div>
+                            ) : (
+                              <div>❌ Your code did not meet all requirements. Please check for edge cases.</div>
+                            )}
+                            <div className="text-amber-400 font-normal flex items-center gap-1.5 pt-1">
+                              {getRandomItem(RETRY_ENCOURAGEMENTS)}
+                            </div>
+                          </>
+                        )}
                       </div>
                     )}
                   </div>
@@ -470,7 +792,8 @@ export default function ExerciseCard({ courseName, courseId }: ExerciseCardProps
               </div>
             </div>
           </div>
-        </div>
+        </ExerciseErrorBoundary>
+      </div>
 
         {/* Success Banner */}
         {allPassed && (

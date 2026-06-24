@@ -25,22 +25,23 @@ const resourceTypeColors: Record<string, string> = {
   external_link: 'bg-orange-100 text-orange-700 border-orange-200',
 };
 
-const resourceTypeLabels: Record<string, string> = {
-  tool: 'เครื่องมือ',
-  tutorial: 'บทช่วยสอน',
-  documentation: 'เอกสาร',
-  video: 'วิดีโอ',
-  external_link: 'ลิงก์',
-  library: 'ห้องสมุด',
-  cafe: 'คาเฟ่',
+const resourceLabelKeyMap: Record<string, string> = {
+  tool: 'tools',
+  tutorial: 'tutorials',
+  documentation: 'documentation',
+  video: 'videos',
+  external_link: 'externalLinks',
+  library: 'libraries',
+  cafe: 'cafes',
 };
+
 
 export function ResourceCard({ resource }: ResourceCardProps) {
   const { language, t } = useI18n();
 
-  const name = language === 'th' ? resource.name_th : resource.name_en;
-  const description = language === 'th' ? resource.description_th : resource.description_en;
-  const address = language === 'th' ? resource.address_th : resource.address_en;
+  const name = resource[`name_${language}` as 'name_th' | 'name_en'];
+  const description = resource[`description_${language}` as 'description_th' | 'description_en'];
+  const address = resource[`address_${language}` as 'address_th' | 'address_en'];
 
   const typeKey = resource.resource_type === 'library' || resource.resource_type === 'cafe'
     ? resource.resource_type
@@ -66,7 +67,7 @@ export function ResourceCard({ resource }: ResourceCardProps) {
         <Badge
           className={`absolute top-3 right-3 ${resourceTypeColors[typeKey]} border`}
         >
-          {resourceTypeLabels[typeKey]}
+          {t.resources[resourceLabelKeyMap[typeKey] as keyof typeof t.resources] || typeKey}
         </Badge>
       </div>
 
@@ -92,13 +93,13 @@ export function ResourceCard({ resource }: ResourceCardProps) {
         {resource.location ? (
           <Button asChild className="w-full group">
             <a href={resource.location} target="_blank" rel="noopener noreferrer">
-              เปิด
+              {t.common.open}
               <ExternalLink className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
             </a>
           </Button>
         ) : (
           <Button className="w-full" variant="outline">
-            ดูรายละเอียด
+            {t.common.viewDetails}
           </Button>
         )}
       </CardFooter>

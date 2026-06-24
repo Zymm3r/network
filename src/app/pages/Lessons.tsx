@@ -12,11 +12,11 @@ import QuizCard from '../components/QuizCard';
 import ExerciseCard from '../components/ExerciseCard';
 
 const lessonTypes = [
-  { key: 'all', label: 'ทั้งหมด', icon: FlaskConical },
-  { key: 'video', label: 'วิดีโอ', icon: Video },
-  { key: 'quiz', label: 'แบบทดสอบ', icon: FileQuestion },
-  { key: 'exercise', label: 'แบบฝึกหัด', icon: PenTool },
-  { key: 'reading', label: 'เอกสาร', icon: BookOpen },
+  { key: 'all', labelKey: 'typeAll', icon: FlaskConical },
+  { key: 'video', labelKey: 'typeVideo', icon: Video },
+  { key: 'quiz', labelKey: 'typeQuiz', icon: FileQuestion },
+  { key: 'exercise', labelKey: 'typeExercise', icon: PenTool },
+  { key: 'reading', labelKey: 'typeReading', icon: BookOpen },
 ];
 
 export function Lessons() {
@@ -71,8 +71,8 @@ export function Lessons() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-2">
-        <h1 className="text-2xl font-semibold">แบบฝึกหัด</h1>
-        <p className="text-muted-foreground">ฝึกฝนทักษะการสร้างเครือข่าย</p>
+        <h1 className="text-2xl font-semibold">{t.lessons.practiceHeader}</h1>
+        <p className="text-muted-foreground">{t.lessons.practiceDesc}</p>
       </div>
 
       {/* Stats */}
@@ -84,7 +84,7 @@ export function Lessons() {
             </div>
             <div>
               <div className="text-xl font-bold">{stats.total}</div>
-              <div className="text-xs text-muted-foreground">ทั้งหมด</div>
+              <div className="text-xs text-muted-foreground">{t.lessons.statusAll}</div>
             </div>
           </CardContent>
         </Card>
@@ -95,7 +95,7 @@ export function Lessons() {
             </div>
             <div>
               <div className="text-xl font-bold">{stats.completed}</div>
-              <div className="text-xs text-muted-foreground">เสร็จสิ้น</div>
+              <div className="text-xs text-muted-foreground">{t.lessons.statusCompleted}</div>
             </div>
           </CardContent>
         </Card>
@@ -106,7 +106,7 @@ export function Lessons() {
             </div>
             <div>
               <div className="text-xl font-bold">{stats.inProgress}</div>
-              <div className="text-xs text-muted-foreground">กำลังทำ</div>
+              <div className="text-xs text-muted-foreground">{t.lessons.statusInProgress}</div>
             </div>
           </CardContent>
         </Card>
@@ -118,7 +118,7 @@ export function Lessons() {
           {lessonTypes.map((type) => (
             <TabsTrigger key={type.key} value={type.key} className="gap-1.5">
               <type.icon className="w-4 h-4" />
-              {type.label}
+              {t.lessons[type.labelKey as keyof typeof t.lessons]}
             </TabsTrigger>
           ))}
         </TabsList>
@@ -151,7 +151,7 @@ export function Lessons() {
         <Card className="border-dashed">
           <CardContent className="py-12 text-center">
             <FlaskConical className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">ไม่พบเนื้อหา</p>
+            <p className="text-muted-foreground">{t.lessons.noContent}</p>
           </CardContent>
         </Card>
       ) : (

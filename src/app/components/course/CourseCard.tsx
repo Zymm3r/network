@@ -13,8 +13,8 @@ interface CourseCardProps {
 export function CourseCard({ course }: CourseCardProps) {
   const { language, t } = useI18n();
 
-  const name = language === 'th' ? course.name_th : course.name_en;
-  const description = language === 'th' ? course.description_th : course.description_en;
+  const name = course[`name_${language}` as 'name_th' | 'name_en'];
+  const description = course[`description_${language}` as 'description_th' | 'description_en'];
 
   const levelColors: Record<string, string> = {
     beginner: 'bg-green-100 text-green-700 border-green-200',
@@ -67,7 +67,7 @@ export function CourseCard({ course }: CourseCardProps) {
         <div className="flex items-center gap-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-1">
             <Clock className="w-4 h-4" />
-            <span>{course.min_modules || 1} บท</span>
+            <span>{t.coursesList.lessonsCountText.replace('{count}', (course.min_modules || 1).toString())}</span>
           </div>
           {course.review_count !== null && course.review_count > 0 && (
             <div className="flex items-center gap-1">
@@ -78,11 +78,11 @@ export function CourseCard({ course }: CourseCardProps) {
         </div>
         {course.minutes_per_lesson ? (
           <div className="text-lg font-bold text-indigo-600">
-            {course.minutes_per_lesson} นาที
-            <span className="text-sm font-normal text-muted-foreground ml-1">/บท</span>
+            {t.coursesList.minutesCountText.replace('{count}', course.minutes_per_lesson.toString())}
+            <span className="text-sm font-normal text-muted-foreground ml-1">{t.coursesList.perLesson}</span>
           </div>
         ) : (
-          <div className="text-lg font-bold text-green-600">ฟรี</div>
+          <div className="text-lg font-bold text-green-600">{t.coursesList.free}</div>
         )}
       </CardContent>
 

@@ -9,16 +9,19 @@ import {
   LogOut,
   ChevronRight,
   Network,
+  PackageSearch,
 } from 'lucide-react';
 import { LanguageSwitcher } from '../LanguageSwitcher';
 import { useI18n } from '../../i18n';
 import { useAuth } from '../../hooks/useAuth';
 
 const navItems = [
+  { to: '/dashboard', labelKey: 'nav.dashboard', icon: LayoutDashboard, end: false },
   { to: '/courses', labelKey: 'nav.courses', icon: BookOpen, end: false },
   { to: '/lessons', labelKey: 'nav.lessons', icon: FlaskConical, end: false },
   { to: '/paths', labelKey: 'nav.paths', icon: Route, end: false },
   { to: '/resources', labelKey: 'nav.resources', icon: MapPin, end: false },
+  { to: '/equipment', labelKey: 'nav.equipment', icon: PackageSearch, end: false },
   { to: '/profile', labelKey: 'nav.profile', icon: Settings, end: false },
 ];
 
@@ -77,8 +80,8 @@ export function Sidebar({ onClose }: SidebarProps) {
             <Network className="text-white w-5 h-5" />
           </div>
           <div>
-            <div className="text-white font-semibold text-sm">Network 101</div>
-            <div className="text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>การสร้างเครือข่าย</div>
+            <div className="text-white font-semibold text-sm">{t.brand.name}</div>
+            <div className="text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>{t.brand.subtitle}</div>
           </div>
         </div>
       </div>
@@ -120,7 +123,7 @@ export function Sidebar({ onClose }: SidebarProps) {
         {/* Role Badge */}
         <div className="flex items-center gap-2 px-3 py-2 rounded-xl" style={{ backgroundColor: 'rgba(255,255,255,0.05)' }}>
           <BookOpen size={14} className="text-white/40" />
-          <span className="text-xs text-white/40">สถานะ:</span>
+          <span className="text-xs text-white/40">{t.profileStats.roleLabel}</span>
           <div className="flex items-center gap-1.5">
             <span className={`w-2 h-2 rounded-full ${levelColors[user?.role || 'student']}`} />
             <span className="text-xs text-white/70 capitalize font-medium">{user?.role || 'student'}</span>
@@ -133,8 +136,8 @@ export function Sidebar({ onClose }: SidebarProps) {
             <span className="text-white text-xs font-semibold">{getConsonantInitials(user?.email)}</span>
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-sm text-white font-medium truncate">{user?.email || 'Guest'}</div>
-            <div className="text-xs text-white/40 truncate">เรียนรู้การสร้างเครือข่าย</div>
+            <div className="text-sm text-white font-medium truncate">{user?.email || t.profileStats.guestUser}</div>
+            <div className="text-xs text-white/40 truncate">{t.brand.learnNetworking}</div>
           </div>
           <button
             onClick={handleSignOut}

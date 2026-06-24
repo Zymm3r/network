@@ -16,6 +16,8 @@ export interface TestCase {
   input: string;
   expected: string;
   passed?: boolean;
+  isHidden?: boolean;
+  weight?: number;
 }
 
 export interface ExerciseData {
@@ -93,9 +95,10 @@ print(calc_hosts(24))`,
 
 print(calc_hosts(24))`,
   testCases: [
-    { input: 'calc_hosts(24)', expected: '254' },
-    { input: 'calc_hosts(30)', expected: '2' },
-    { input: 'calc_hosts(16)', expected: '65534' },
+    { input: 'calc_hosts(24)', expected: '254', weight: 1 },
+    { input: 'calc_hosts(30)', expected: '2', weight: 1 },
+    { input: 'calc_hosts(16)', expected: '65534', weight: 1 },
+    { input: 'calc_hosts(8)', expected: '16777214', isHidden: true, weight: 2 },
   ],
   hint: 'จำนวน host = 2^(32-prefix) - 2 (ลบ network address และ broadcast)',
   xpReward: 25,

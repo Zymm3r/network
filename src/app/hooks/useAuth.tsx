@@ -37,7 +37,7 @@ function buildUser(su: { id: string; email?: string; user_metadata?: Record<stri
     full_name_th: (su.user_metadata?.full_name_th as string) || null,
     full_name_en: (su.user_metadata?.full_name_en as string) || null,
     avatar_url: (su.user_metadata?.avatar_url as string) || null,
-    role: 'student',
+    role: (su.user_metadata?.role as 'student' | 'instructor' | 'admin') || 'student',
     created_at: new Date().toISOString(),
   };
 }
