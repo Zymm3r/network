@@ -21,12 +21,6 @@ import { KalturaPlayer } from '../components/KalturaPlayer';
 /* ─────────────────────────────────────────
    Static look-up tables
 ───────────────────────────────────────── */
-const lessonTypeLabels: Record<string, string> = {
-  video: 'วิดีโอ',
-  reading: 'บทความ',
-  quiz: 'แบบทดสอบ',
-  exercise: 'แบบฝึกหัด',
-};
 
 const difficultyColors: Record<string, string> = {
   easy: 'bg-green-100 text-green-700 border-green-200',

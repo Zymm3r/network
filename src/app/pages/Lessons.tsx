@@ -12,11 +12,11 @@ import QuizCard from '../components/QuizCard';
 import ExerciseCard from '../components/ExerciseCard';
 
 const lessonTypes = [
-  { key: 'all', label: 'ทั้งหมด', icon: FlaskConical },
-  { key: 'video', label: 'วิดีโอ', icon: Video },
-  { key: 'quiz', label: 'แบบทดสอบ', icon: FileQuestion },
-  { key: 'exercise', label: 'แบบฝึกหัด', icon: PenTool },
-  { key: 'reading', label: 'เอกสาร', icon: BookOpen },
+  { key: 'all', labelKey: 'typeAll', icon: FlaskConical },
+  { key: 'video', labelKey: 'typeVideo', icon: Video },
+  { key: 'quiz', labelKey: 'typeQuiz', icon: FileQuestion },
+  { key: 'exercise', labelKey: 'typeExercise', icon: PenTool },
+  { key: 'reading', labelKey: 'typeReading', icon: BookOpen },
 ];
 
 export function Lessons() {
@@ -118,7 +118,7 @@ export function Lessons() {
           {lessonTypes.map((type) => (
             <TabsTrigger key={type.key} value={type.key} className="gap-1.5">
               <type.icon className="w-4 h-4" />
-              {t.lessons[`type${type.key.charAt(0).toUpperCase() + type.key.slice(1)}` as keyof typeof t.lessons] || type.label}
+              {t.lessons[type.labelKey as keyof typeof t.lessons]}
             </TabsTrigger>
           ))}
         </TabsList>

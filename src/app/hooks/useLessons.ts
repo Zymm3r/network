@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
+import { useI18n } from '../i18n';
 import type { Lesson } from '../types';
 
 interface UseLessonsOptions {
@@ -16,6 +17,7 @@ interface UseLessonsResult {
 
 export function useLessons(options: UseLessonsOptions = {}): UseLessonsResult {
   const { courseId, limit = 100 } = options;
+  const { language } = useI18n();
 
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,14 +47,19 @@ export function useLessons(options: UseLessonsOptions = {}): UseLessonsResult {
         throw fetchError;
       }
 
-      setLessons(data || []);
+      const mapped = (data || []).map((item: any) => ({
+        ...item,
+        title: item[`title_${language}` as 'title_th' | 'title_en'] || item.title_en || item.title || '',
+        content: item[`content_${language}` as 'content_th' | 'content_en'] || item.content_en || item.content || null,
+      }));
+      setLessons(mapped);
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Failed to fetch lessons'));
       setLessons([]);
     } finally {
       setLoading(false);
     }
-  }, [courseId, limit]);
+  }, [courseId, limit, language]);
 
   useEffect(() => {
     fetchLessons();
@@ -67,6 +74,7 @@ export function useLessons(options: UseLessonsOptions = {}): UseLessonsResult {
 }
 
 export function useLesson(id: string) {
+  const { language } = useI18n();
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -92,7 +100,15 @@ export function useLesson(id: string) {
           throw fetchError;
         }
 
-        setLesson(data);
+        if (data) {
+          setLesson({
+            ...data,
+            title: data[`title_${language}` as 'title_th' | 'title_en'] || data.title_en || data.title || '',
+            content: data[`content_${language}` as 'content_th' | 'content_en'] || data.content_en || data.content || null,
+          });
+        } else {
+          setLesson(null);
+        }
       } catch (err) {
         setError(err instanceof Error ? err : new Error('Failed to fetch lesson'));
         setLesson(null);
@@ -102,7 +118,7 @@ export function useLesson(id: string) {
     };
 
     fetchLesson();
-  }, [id]);
+  }, [id, language]);
 
   return { lesson, loading, error };
 }

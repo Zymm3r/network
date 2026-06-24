@@ -112,7 +112,7 @@ export function Profile() {
     });
     enrollments.forEach((e) => {
       if (e.enrolled_at) {
-        activityDates.push(new Date(e.enrolled_at).toLocaleDateString('en-CA'));
+    activityDates.push(new Date(e.enrolled_at).toLocaleDateString('en-CA'));
       }
     });
   }
@@ -482,7 +482,9 @@ export function Profile() {
           <CardContent>
             <div className="grid gap-4 sm:grid-cols-2">
               {certificates.map((cert) => {
-                const courseName = courses.find(c => c.id === cert.course_id)?.name_en || 'Course';
+                const courseName = courses.find(c => c.id === cert.course_id)
+                  ? (courses.find(c => c.id === cert.course_id)![`name_${language}` as 'name_th' | 'name_en'] || courses.find(c => c.id === cert.course_id)!.name_en || 'Course')
+                  : 'Course';
                 return (
                   <div
                     key={cert.id}

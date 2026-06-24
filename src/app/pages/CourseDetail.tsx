@@ -29,11 +29,11 @@ const levelColors: Record<string, string> = {
 };
 
 const lessonTypesTab = [
-  { key: 'all', label: 'ทั้งหมด', icon: FlaskConical },
-  { key: 'video', label: 'วิดีโอ', icon: Video },
-  { key: 'quiz', label: 'แบบทดสอบ', icon: HelpCircle },
-  { key: 'exercise', label: 'แบบฝึกหัด', icon: PenTool },
-  { key: 'reading', label: 'เอกสาร', icon: FileText },
+  { key: 'all', labelKey: 'lessonTypeAll', icon: FlaskConical },
+  { key: 'video', labelKey: 'lessonTypeVideo', icon: Video },
+  { key: 'quiz', labelKey: 'lessonTypeQuiz', icon: HelpCircle },
+  { key: 'exercise', labelKey: 'lessonTypeExercise', icon: PenTool },
+  { key: 'reading', labelKey: 'lessonTypeReading', icon: FileText },
 ];
 
 export function CourseDetail() {
@@ -96,7 +96,7 @@ export function CourseDetail() {
         className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
-        {t.common.back || 'กลับ'}
+        {t.common.back}
       </Link>
 
       {/* Course Header */}
@@ -114,12 +114,12 @@ export function CourseDetail() {
           <div className="flex flex-wrap items-center gap-4 text-sm">
             <div className="flex items-center gap-1.5">
               <BookOpen className="w-4 h-4" />
-              <span>{course.min_modules || 1} บท</span>
+              <span>{course.min_modules || 1} {t.courseDetail.modules}</span>
             </div>
             {course.review_count !== null && course.review_count > 0 && (
               <div className="flex items-center gap-1.5">
                 <Users className="w-4 h-4" />
-                <span>{course.review_count}+ รีวิว</span>
+                <span>{course.review_count}+ {t.courseDetail.reviews}</span>
               </div>
             )}
             {course.rating !== null && (
@@ -135,11 +135,11 @@ export function CourseDetail() {
       <Card className="border-slate-100">
         <CardContent className="pt-6 flex items-center justify-between">
           <div>
-            <div className="text-sm text-muted-foreground">บทเรียน</div>
+            <div className="text-sm text-muted-foreground">{t.courseDetail.lessons}</div>
             <div className="text-3xl font-bold text-indigo-600">
-              {course.minutes_per_lesson ? `${course.minutes_per_lesson} นาที` : 'ฟรี'}
+              {course.minutes_per_lesson ? `${course.minutes_per_lesson} ${t.courseDetail.minutes}` : t.coursesList.free}
               {course.minutes_per_lesson && (
-                <span className="text-sm font-normal text-muted-foreground">/บท</span>
+                <span className="text-sm font-normal text-muted-foreground">{t.courseDetail.perLesson}</span>
               )}
             </div>
           </div>
@@ -165,13 +165,13 @@ export function CourseDetail() {
                 }
               }}
             >
-              เริ่มเรียน
-              <ChevronRight className="w-4 h-4 ml-1" />
+                {t.courseDetail.startLearning}
+                <ChevronRight className="w-4 h-4 ml-1" />
             </Button>
           ) : (
             <Link to={`/courses/${course.id}/learn`}>
               <Button size="lg" className="bg-indigo-600 hover:bg-indigo-700">
-                เริ่มเรียน
+                {t.courseDetail.startLearning}
                 <ChevronRight className="w-4 h-4 ml-1" />
               </Button>
             </Link>
@@ -183,7 +183,7 @@ export function CourseDetail() {
       {highlights.length > 0 && (
         <Card className="border-slate-100">
           <CardHeader>
-            <CardTitle>สิ่งที่คุณจะได้เรียนรู้</CardTitle>
+            <CardTitle>{t.courseDetail.whatYouWillLearn}</CardTitle>
           </CardHeader>
           <CardContent>
             <ul className="grid gap-3 md:grid-cols-2">
@@ -202,7 +202,7 @@ export function CourseDetail() {
       {includes.length > 0 && (
         <Card className="border-slate-100">
           <CardHeader>
-            <CardTitle>มีอะไรบ้าง</CardTitle>
+            <CardTitle>{t.courseDetail.whatsIncluded}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
@@ -220,7 +220,7 @@ export function CourseDetail() {
       {/* Lessons Filter Tabs & List */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">เนื้อหาในหลักสูตร ({lessons.length})</h2>
+          <h2 className="text-lg font-semibold">{t.courseDetail.courseContent.replace('{count}', lessons.length.toString())}</h2>
         </div>
         
         {/* Filter Tabs */}
@@ -229,7 +229,7 @@ export function CourseDetail() {
             {lessonTypesTab.map((type) => (
               <TabsTrigger key={type.key} value={type.key} className="gap-1.5 min-w-[80px]">
                 <type.icon className="w-4 h-4" />
-                {type.label}
+                {t.courseDetail[type.labelKey as keyof typeof t.courseDetail]}
               </TabsTrigger>
             ))}
           </TabsList>
@@ -282,7 +282,7 @@ export function CourseDetail() {
                           <span className={`font-medium ${isCompleted ? 'text-slate-600' : ''}`}>{lessonName}</span>
                           {isCompleted && (
                             <Badge className="bg-green-100/80 hover:bg-green-100 text-green-700 border-green-200 border text-[10px] font-semibold px-1.5 py-0 rounded-full shrink-0 flex items-center gap-0.5">
-                              <span>เรียนแล้ว</span>
+                              <span>{t.courseDetail.completedBadge}</span>
                             </Badge>
                           )}
                         </div>
@@ -291,7 +291,7 @@ export function CourseDetail() {
                           {lesson.duration_minutes && (
                             <>
                               <span>•</span>
-                              <span>{lesson.duration_minutes} นาที</span>
+                              <span>{lesson.duration_minutes} {t.courseDetail.minutes}</span>
                             </>
                           )}
                         </div>

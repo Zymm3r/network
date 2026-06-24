@@ -53,7 +53,7 @@ export function Dashboard() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
+        <h1 className="text-3xl font-bold mb-6">{t.dashboardAnalytics.title}</h1>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {Array.from({ length: 6 }).map((_, i) => (
             <Skeleton key={i} className="h-32 w-full rounded-xl" />
@@ -80,7 +80,7 @@ export function Dashboard() {
       {error && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
+          <AlertTitle>{t.common.error}</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}

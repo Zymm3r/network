@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
+import { useI18n } from '../i18n';
 import type { Course, CourseLevel, AvailabilityStatus } from '../types';
 
 interface UseCoursesOptions {
@@ -17,6 +18,7 @@ interface UseCoursesResult {
 
 export function useCourses(options: UseCoursesOptions = {}): UseCoursesResult {
   const { level, availability, limit = 50 } = options;
+  const { language } = useI18n();
 
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,7 +51,12 @@ export function useCourses(options: UseCoursesOptions = {}): UseCoursesResult {
         }
         setCourses([]);
       } else {
-        setCourses(data || []);
+        const mapped = (data || []).map((item: any) => ({
+          ...item,
+          name: item[`name_${language}` as 'name_th' | 'name_en'] || item.name_en || item.name || '',
+          description: item[`description_${language}` as 'description_th' | 'description_en'] || item.description_en || item.description || null,
+        }));
+        setCourses(mapped);
       }
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Failed to fetch courses'));
@@ -57,7 +64,7 @@ export function useCourses(options: UseCoursesOptions = {}): UseCoursesResult {
     } finally {
       setLoading(false);
     }
-  }, [level, availability, limit]);
+  }, [level, availability, limit, language]);
 
   useEffect(() => {
     fetchCourses();
@@ -72,6 +79,7 @@ export function useCourses(options: UseCoursesOptions = {}): UseCoursesResult {
 }
 
 export function useCourse(id: string) {
+  const { language } = useI18n();
   const [course, setCourse] = useState<Course | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -87,7 +95,15 @@ export function useCourse(id: string) {
           .single();
 
         if (fetchError) throw fetchError;
-        setCourse(data);
+        if (data) {
+          setCourse({
+            ...data,
+            name: data[`name_${language}` as 'name_th' | 'name_en'] || data.name_en || data.name || '',
+            description: data[`description_${language}` as 'description_th' | 'description_en'] || data.description_en || data.description || null,
+          });
+        } else {
+          setCourse(null);
+        }
       } catch (err) {
         setError(err instanceof Error ? err : new Error('Failed to fetch course'));
       } finally {
@@ -98,7 +114,7 @@ export function useCourse(id: string) {
     if (id) {
       fetchCourse();
     }
-  }, [id]);
+  }, [id, language]);
 
   return { course, loading, error };
 }

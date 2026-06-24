@@ -9,12 +9,12 @@ import { Wrench, BookMarked, FileText, Video, Link2, MapPin, Coffee } from 'luci
 import type { Resource, ResourceType } from '../types';
 
 const resourceCategories = [
-  { key: 'all', label: 'ทั้งหมด', icon: null },
-  { key: 'tool', label: 'เครื่องมือ', icon: Wrench },
-  { key: 'tutorial', label: 'บทช่วยสอน', icon: BookMarked },
-  { key: 'documentation', label: 'เอกสาร', icon: FileText },
-  { key: 'video', label: 'วิดีโอ', icon: Video },
-  { key: 'external_link', label: 'ลิงก์', icon: Link2 },
+  { key: 'all', labelKey: 'all', icon: null },
+  { key: 'tool', labelKey: 'tool', icon: Wrench },
+  { key: 'tutorial', labelKey: 'tutorial', icon: BookMarked },
+  { key: 'documentation', labelKey: 'documentation', icon: FileText },
+  { key: 'video', labelKey: 'video', icon: Video },
+  { key: 'external_link', labelKey: 'external_link', icon: Link2 },
 ];
 
 const mockLocalResources = [
@@ -79,8 +79,8 @@ export function Resources() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-2">
-        <h1 className="text-2xl font-semibold">แหล่งเรียนรู้</h1>
-        <p className="text-muted-foreground">เครื่องมือและแหล่งข้อมูลสำหรับการเรียนรู้การสร้างเครือข่าย</p>
+        <h1 className="text-2xl font-semibold">{t.resources.pageTitle}</h1>
+        <p className="text-muted-foreground">{t.resources.pageDesc}</p>
       </div>
 
       {/* Categories */}
@@ -94,7 +94,7 @@ export function Resources() {
             className="gap-1.5"
           >
             {cat.icon && <cat.icon className="w-4 h-4" />}
-            {cat.label}
+            {t.resources[cat.labelKey as keyof typeof t.resources]}
           </Button>
         ))}
       </div>
@@ -107,14 +107,14 @@ export function Resources() {
               <MapPin className="w-6 h-6 text-amber-600" />
             </div>
             <div>
-              <h3 className="font-semibold text-lg">สถานที่เรียนรู้ใกล้คุณ</h3>
-              <p className="text-sm text-muted-foreground mt-1">ห้องสมุดและ Co-working Space ที่เหมาะสำหรับการเรียนรู้</p>
+              <h3 className="font-semibold text-lg">{t.resources.nearbyTitle}</h3>
+              <p className="text-sm text-muted-foreground mt-1">{t.resources.nearbyDesc}</p>
               <div className="flex gap-2 mt-3">
                 <div className="px-2 py-1 bg-amber-100 rounded text-xs text-amber-800 flex items-center gap-1">
-                  <MapPin className="w-3 h-3" /> ห้องสมุด
+                  <MapPin className="w-3 h-3" /> {t.resources.library}
                 </div>
                 <div className="px-2 py-1 bg-orange-100 rounded text-xs text-orange-800 flex items-center gap-1">
-                  <Coffee className="w-3 h-3" /> Co-working
+                  <Coffee className="w-3 h-3" /> {t.resources.coworking}
                 </div>
               </div>
             </div>
@@ -144,7 +144,7 @@ export function Resources() {
         <Card className="border-dashed">
           <CardContent className="py-12 text-center">
             <Wrench className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">ไม่พบแหล่งเรียนรู้</p>
+            <p className="text-muted-foreground">{t.resources.notFound}</p>
           </CardContent>
         </Card>
       ) : (

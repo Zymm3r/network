@@ -76,7 +76,7 @@ export function CourseLearn() {
               <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-6 text-indigo-900 text-lg leading-relaxed shadow-sm">
                 <h3 className="text-indigo-800 font-semibold mb-3 flex items-center gap-2">
                   <BookOpen className="w-5 h-5" />
-                  เนื้อหาที่ต้องเรียนรู้ (Course Description)
+                  {t.courseLearn.courseDescription}
                 </h3>
                 <p>{description}</p>
               </div>
@@ -87,7 +87,7 @@ export function CourseLearn() {
           {course.prerequisites && course.prerequisites.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">ความรู้พื้นฐานที่ควรมี (Prerequisites)</CardTitle>
+                <CardTitle className="text-lg">{t.courseLearn.prerequisites}</CardTitle>
               </CardHeader>
               <CardContent>
                 <ul className="space-y-2">
@@ -109,8 +109,8 @@ export function CourseLearn() {
             <Card className="border-slate-200 shadow-sm">
               <CardHeader className="bg-slate-50 border-b border-slate-100">
                 <CardTitle className="text-lg flex items-center justify-between">
-                  <span>เนื้อหาบทเรียน</span>
-                  <span className="text-sm font-normal text-muted-foreground">{lessons.length} บท</span>
+                  <span>{t.courseLearn.lessonContent}</span>
+                  <span className="text-sm font-normal text-muted-foreground">{lessons.length} {t.courseDetail.lessons}</span>
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
@@ -149,12 +149,12 @@ export function CourseLearn() {
                               <span>{idx + 1}. {lessonName}</span>
                               {isCompleted && (
                                 <span className="text-[9px] bg-green-100/80 text-green-700 border border-green-200 px-1.5 py-0.5 rounded-full font-semibold">
-                                  เรียนแล้ว
+                                  {t.courseDetail.completedBadge}
                                 </span>
                               )}
                             </div>
                             <div className="text-xs text-slate-500 mt-1 capitalize">
-                              {lesson.lesson_type} {lesson.duration_minutes ? `• ${lesson.duration_minutes} นาที` : ''}
+                              {lesson.lesson_type} {lesson.duration_minutes ? `• ${lesson.duration_minutes} ${t.lessons.minutes}` : ''}
                             </div>
                           </div>
                         </Link>
