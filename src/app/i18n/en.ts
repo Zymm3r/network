@@ -349,6 +349,18 @@ export const en: TranslationKeys = {
     noSearchResultsDesc: 'Try changing search query or selecting a new category.',
     clearSearchBtn: 'Clear Search',
     allCategories: 'All',
+    categoryMap: {
+      'Accessories': 'Accessories',
+      'Access Point': 'Access Point',
+      'Switch': 'Switch',
+      'Router': 'Router',
+      'Gateway': 'Gateway',
+      'Controller': 'Controller',
+      'Wireless': 'Wireless',
+    },
+    sourceMap: {
+      'Click to view details from dealer': 'Click to view details from dealer',
+    },
   },
   wiringSimulator: {
     selectCableError: 'Please select a cable first',
@@ -473,18 +485,6 @@ export const en: TranslationKeys = {
       path: 'Learning Paths',
       resource: 'Resources',
       equipment: 'Equipment',
-    },
-    categoryMap: {
-      'Accessories': 'Accessories',
-      'Access Point': 'Access Point',
-      'Switch': 'Switch',
-      'Router': 'Router',
-      'Gateway': 'Gateway',
-      'Controller': 'Controller',
-      'Wireless': 'Wireless',
-    },
-    sourceMap: {
-      'Click to view details from dealer': 'Click to view details from dealer',
     },
   },
 };

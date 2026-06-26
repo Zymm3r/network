@@ -347,6 +347,18 @@ export const th = {
     noSearchResultsDesc: 'ลองเปลี่ยนคำค้นหาหรือเลือกหมวดหมู่ใหม่',
     clearSearchBtn: 'ล้างการค้นหา',
     allCategories: 'ทั้งหมด',
+    categoryMap: {
+      'Accessories': 'อุปกรณ์เสริม (Accessories)',
+      'Access Point': 'แอคเซสพอยต์ (Access Point)',
+      'Switch': 'สวิตช์ (Switch)',
+      'Router': 'เราเตอร์ (Router)',
+      'Gateway': 'เกตเวย์ (Gateway)',
+      'Controller': 'คอนโทรลเลอร์ (Controller)',
+      'Wireless': 'ระบบไร้สาย (Wireless)',
+    },
+    sourceMap: {
+      'Click to view details from dealer': 'คลิกเพื่อดูรายละเอียดจากตัวแทนจำหน่าย',
+    },
   },
   wiringSimulator: {
     selectCableError: 'กรุณาเลือกสายไฟที่ต้องการเชื่อมต่อก่อน (Please select a cable first)',
@@ -471,18 +483,6 @@ export const th = {
       path: 'เส้นทางการเรียน',
       resource: 'แหล่งเรียนรู้',
       equipment: 'อุปกรณ์',
-    },
-    categoryMap: {
-      'Accessories': 'อุปกรณ์เสริม (Accessories)',
-      'Access Point': 'แอคเซสพอยต์ (Access Point)',
-      'Switch': 'สวิตช์ (Switch)',
-      'Router': 'เราเตอร์ (Router)',
-      'Gateway': 'เกตเวย์ (Gateway)',
-      'Controller': 'คอนโทรลเลอร์ (Controller)',
-      'Wireless': 'ระบบไร้สาย (Wireless)',
-    },
-    sourceMap: {
-      'Click to view details from dealer': 'คลิกเพื่อดูรายละเอียดจากตัวแทนจำหน่าย',
     },
   },
 };
