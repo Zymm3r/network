@@ -2,6 +2,7 @@ import { useProducts } from '../hooks/useProducts';
 import { EquipmentGrid } from '../components/EquipmentGrid';
 import { PackageSearch, AlertTriangle } from 'lucide-react';
 import { useI18n } from '../../../app/i18n';
+import { Button } from '../../../app/components/ui/button';
 
 export function EquipmentPage() {
   const { products, isLoading, error } = useProducts();
@@ -9,7 +10,7 @@ export function EquipmentPage() {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col h-full max-w-7xl mx-auto w-full">
+      <div className="flex flex-col h-full max-w-[1400px] mx-auto w-full">
         <div className="mb-6 flex items-center gap-4 animate-pulse">
           <div className="w-12 h-12 bg-slate-200 rounded-xl"></div>
           <div>
@@ -50,12 +51,12 @@ export function EquipmentPage() {
         </div>
         <h2 className="text-xl font-bold text-slate-800 mb-2">{t.equipmentCatalog.errorLoading}</h2>
         <p className="text-slate-500">{error.message}</p>
-        <button 
+        <Button 
           onClick={() => window.location.reload()}
-          className="mt-6 px-6 py-2.5 bg-[#6366F1] text-white font-medium rounded-xl hover:bg-indigo-700 transition-colors shadow-md shadow-indigo-200/50"
+          className="mt-6"
         >
           {t.equipmentCatalog.retryBtn}
-        </button>
+        </Button>
       </div>
     );
   }

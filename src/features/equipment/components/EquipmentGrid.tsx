@@ -29,7 +29,7 @@ export const EquipmentGrid = memo(({ products }: EquipmentGridProps) => {
 
   if (!products.length) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-center bg-white rounded-3xl border border-slate-100 shadow-sm mt-4">
+      <div className="flex flex-col items-center justify-center py-20 text-center border-2 border-dashed border-slate-200 rounded-3xl bg-slate-50/50 mt-4">
         <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4 text-slate-400">
           <PackageOpen size={32} />
         </div>
@@ -53,14 +53,14 @@ export const EquipmentGrid = memo(({ products }: EquipmentGridProps) => {
             className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all text-sm bg-slate-50/50 focus:bg-white"
           />
         </div>
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 lg:pb-0 hide-scrollbar flex-1 lg:justify-end">
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 lg:pb-0 flex-1 lg:justify-end">
           {categories.map(cat => (
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
               className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
                 selectedCategory === cat 
-                  ? 'bg-[#6366F1] text-white shadow-md shadow-indigo-200/50' 
+                  ? 'bg-indigo-500 text-white shadow-md shadow-indigo-200/50' 
                   : 'bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100'
               }`}
             >

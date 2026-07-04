@@ -500,7 +500,8 @@ export function LessonDetail() {
     // Count words by splitting on whitespace and filtering empty
     const wpmMap: Record<'th' | 'en', number> = { th: 180, en: 230 };
     const wpm = wpmMap[language];
-    return Math.max(1, Math.ceil(wordCount / wpm));
+    const words = readingContent.split(/\s+/).filter(Boolean).length;
+    return Math.max(1, Math.ceil(words / wpm));
   }, [readingContent, language]);
 
   const durationMinutes = isReadingLesson && estimatedReadingMinutes > 0

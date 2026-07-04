@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { ProductDetailData } from '../types/product';
 import { FileText, HelpCircle, Wrench, GraduationCap, Info, CircuitBoard, X, Loader2 } from 'lucide-react';
 import { WiringSimulator } from './WiringSimulator';
@@ -6,6 +6,7 @@ import { KalturaPlayer } from '../../../app/components/KalturaPlayer';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useI18n } from '../../../app/i18n';
+import { toast } from 'sonner';
 
 interface EquipmentDetailTabsProps {
   data: ProductDetailData;
@@ -17,6 +18,16 @@ export function EquipmentDetailTabs({ data, isLoading = false, error = null }: E
   const { t, language } = useI18n();
   const [activeTab, setActiveTab] = useState('overview');
   const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && selectedVideo) {
+        setSelectedVideo(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedVideo]);
 
   // Defensive: never let a single malformed record crash the whole tab.
   const safeArray = <T,>(arr: T[] | null | undefined): T[] => Array.isArray(arr) ? arr : [];
@@ -40,8 +51,14 @@ export function EquipmentDetailTabs({ data, isLoading = false, error = null }: E
     <div className="bg-white rounded-2xl shadow-sm border border-slate-100 flex flex-col relative">
       {/* Video Modal */}
       {selectedVideo && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="bg-slate-900 rounded-2xl w-full max-w-4xl overflow-hidden shadow-2xl border border-slate-700">
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+          onClick={() => setSelectedVideo(null)}
+        >
+          <div 
+            className="bg-slate-900 rounded-2xl w-full max-w-4xl overflow-hidden shadow-2xl border border-slate-700"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex justify-between items-center p-4 border-b border-slate-800 bg-slate-900/50">
               <h3 className="text-white font-semibold">{t.equipmentCatalog.trainingMediaModal}</h3>
               <button 
@@ -83,8 +100,8 @@ export function EquipmentDetailTabs({ data, isLoading = false, error = null }: E
               <Icon size={18} className={isActive ? 'text-white' : 'text-slate-400'} />
               {tab.label}
               {tab.count !== undefined && tab.count > 0 && (
-                <span className={`ml-1 px-2 py-0.5 rounded-full text-xs font-black ${
-                  isActive ? 'bg-white/20 text-white' : 'bg-indigo-100 text-indigo-700'
+                <span className={`ml-1 px-2 py-0.5 rounded-full text-xs font-bold ${
+                  isActive ? 'bg-indigo-500 text-white' : 'bg-slate-100 text-slate-500 group-hover:bg-indigo-100 group-hover:text-indigo-600'
                 }`}>
                   {tab.count}
                 </span>
@@ -208,7 +225,7 @@ export function EquipmentDetailTabs({ data, isLoading = false, error = null }: E
                 {data.faqs.map(faq => (
                   <div key={faq.id} className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm hover:shadow-md hover:border-indigo-200 transition-all">
                     <h4 className="font-bold text-slate-800 flex items-start gap-3">
-                      <span className="flex-shrink-0 w-7 h-7 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center font-black text-sm">Q</span>
+                      <span className="flex-shrink-0 w-7 h-7 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-sm">Q</span>
                       <span className="mt-0.5 text-lg leading-snug">{faq.question}</span>
                     </h4>
                     <div className="mt-4 pl-10">
@@ -276,7 +293,7 @@ export function EquipmentDetailTabs({ data, isLoading = false, error = null }: E
                       <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm">
                         <GraduationCap size={28} />
                       </div>
-                      <span className="px-3 py-1 bg-amber-100 text-amber-800 text-xs font-black uppercase tracking-wider rounded-full border border-amber-200 shadow-sm">
+                      <span className="px-3 py-1 bg-amber-100 text-amber-800 text-xs font-bold uppercase tracking-wider rounded-full border border-amber-200 shadow-sm">
                         {course.difficulty === 'Beginner' ? t.courses.beginner : course.difficulty === 'Intermediate' ? t.courses.intermediate : course.difficulty === 'Advanced' ? t.courses.advanced : (course.difficulty || 'Beginner')}
                       </span>
                     </div>
@@ -292,7 +309,7 @@ export function EquipmentDetailTabs({ data, isLoading = false, error = null }: E
                               if (lesson.video_url) {
                                 setSelectedVideo(lesson.video_url);
                               } else {
-                                alert(t.equipmentCatalog.noVideoAlert);
+                                toast.error(t.equipmentCatalog.noVideoAlert);
                               }
                             }}
                             className="w-full py-2.5 px-4 bg-indigo-50 text-indigo-700 font-semibold text-sm rounded-lg hover:bg-indigo-600 hover:text-white hover:shadow-md transition-all active:scale-95 flex items-center justify-between group"

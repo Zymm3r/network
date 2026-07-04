@@ -6,23 +6,8 @@ import { GlobalSearch } from '../GlobalSearch';
 import { ErrorBoundary } from '../ErrorBoundary';
 import { Toaster } from 'sonner';
 import { useAuth } from '../../hooks/useAuth';
+import { getInitials } from '../../lib/utils';
 import { ActivityProvider } from '../../contexts/ActivityContext';
-
-/** Extract first two consonant initials from email local part. */
-function getConsonantInitials(email: string | undefined): string {
-  if (!email) return 'G';
-  const local = email.split('@')[0] || '';
-  const vowels = 'aeiouAEIOU';
-  const consonants = local.split('').filter((c) => /[a-zA-Z]/.test(c) && !vowels.includes(c));
-  if (consonants.length >= 2) return (consonants[0] + consonants[1]).toUpperCase();
-  if (consonants.length === 1) return consonants[0].toUpperCase();
-  const alpha = local.split('').filter((c) => /[a-zA-Z]/.test(c));
-  return alpha.length >= 2
-    ? (alpha[0] + alpha[1]).toUpperCase()
-    : alpha.length === 1
-    ? alpha[0].toUpperCase()
-    : 'G';
-}
 
 export function AppLayout() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -102,7 +87,7 @@ export function AppLayout() {
                 <Trophy size={16} className="text-amber-500" />
               </button>
               <div className="w-8 h-8 rounded-full bg-[#6366F1] flex items-center justify-center ml-1">
-                <span className="text-white text-xs font-semibold">{getConsonantInitials(user?.email)}</span>
+                <span className="text-white text-xs font-semibold">{getInitials(user?.email)}</span>
               </div>
             </div>
           </header>

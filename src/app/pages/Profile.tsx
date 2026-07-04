@@ -5,6 +5,8 @@ import { useAuth } from '../hooks/useAuth';
 import { useEnrollments, useUserProgressSummary } from '../hooks/useProgress';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Avatar, AvatarFallback } from '../components/ui/avatar';
+import { CertificateCard } from '../components/CertificateCard';
+import { getInitials } from '../lib/utils';
 import { Button } from '../components/ui/button';
 import { Progress } from '../components/ui/progress';
 import { Badge } from '../components/ui/badge';
@@ -26,23 +28,7 @@ export function Profile() {
   const [certificates, setCertificates] = useState<any[]>([]);
   const [statsLoading, setStatsLoading] = useState(true);
 
-  const getInitials = (email: string | undefined) => {
-    if (!email) return 'G';
-    const localPart = email.split('@')[0] || '';
-    const vowels = 'aeiouAEIOU';
-    const consonants = localPart
-      .split('')
-      .filter((ch) => /[a-zA-Z]/.test(ch) && !vowels.includes(ch));
-    if (consonants.length >= 2) return (consonants[0] + consonants[1]).toUpperCase();
-    if (consonants.length === 1) return consonants[0].toUpperCase();
-    // Fallback: first 2 alphabetic chars
-    const alpha = localPart.split('').filter((ch) => /[a-zA-Z]/.test(ch));
-    return alpha.length >= 2
-      ? (alpha[0] + alpha[1]).toUpperCase()
-      : alpha.length === 1
-      ? alpha[0].toUpperCase()
-      : 'G';
-  };
+
 
   useEffect(() => {
     const fetchProfileData = async () => {

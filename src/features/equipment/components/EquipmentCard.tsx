@@ -1,4 +1,4 @@
-import { ExternalLink, ChevronRight } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import { Product } from '../types/product';
 import { memo } from 'react';
 import { Link } from 'react-router';
