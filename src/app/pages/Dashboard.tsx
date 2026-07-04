@@ -152,7 +152,7 @@ export function Dashboard() {
             <CardContent>
               <div className="text-3xl font-bold">{Math.ceil(studentMetrics.study_time / 60)}</div>
               <p className="text-xs text-muted-foreground mt-1">
-                {t.dashboardAnalytics.hoursUnit} ({studentMetrics.study_time} mins)
+                {t.dashboardAnalytics.hoursUnit}
               </p>
             </CardContent>
           </Card>

@@ -14,6 +14,7 @@ import {
 import { LanguageSwitcher } from '../LanguageSwitcher';
 import { useI18n } from '../../i18n';
 import { useAuth } from '../../hooks/useAuth';
+import { getInitials } from '../../lib/utils';
 
 const navItems = [
   { to: '/dashboard', labelKey: 'nav.dashboard', icon: LayoutDashboard, end: false },
@@ -49,17 +50,6 @@ export function Sidebar({ onClose }: SidebarProps) {
     // Note: We DO NOT manually navigate('/auth') here.
     // The `signOut` function clears the user state in AuthProvider,
     // which automatically triggers `AppLayout` to redirect unauthenticated users.
-  };
-
-  const getConsonantInitials = (email: string | undefined): string => {
-    if (!email) return 'G';
-    const localPart = email.split('@')[0] || '';
-    const vowels = 'aeiouAEIOU';
-    const consonants = localPart.split('').filter((ch) => /[a-zA-Z]/.test(ch) && !vowels.includes(ch));
-    if (consonants.length >= 2) return (consonants[0] + consonants[1]).toUpperCase();
-    if (consonants.length === 1) return consonants[0].toUpperCase();
-    const alpha = localPart.split('').filter((ch) => /[a-zA-Z]/.test(ch));
-    return alpha.length >= 2 ? (alpha[0] + alpha[1]).toUpperCase() : alpha.length === 1 ? alpha[0].toUpperCase() : 'G';
   };
 
   const getLabel = (key: string) => {
@@ -133,7 +123,7 @@ export function Sidebar({ onClose }: SidebarProps) {
         {/* User Info */}
         <div className="flex items-center gap-3 px-3 py-2">
           <div className="w-8 h-8 rounded-full bg-[#6366F1] flex items-center justify-center flex-shrink-0">
-            <span className="text-white text-xs font-semibold">{getConsonantInitials(user?.email)}</span>
+            <span className="text-white text-xs font-semibold">{getInitials(user?.email)}</span>
           </div>
           <div className="flex-1 min-w-0">
             <div className="text-sm text-white font-medium truncate">{user?.email || t.profileStats.guestUser}</div>

@@ -12,6 +12,8 @@ import { BookOpen, Users, Clock } from 'lucide-react';
 import { useActivity } from '../contexts/ActivityContext';
 import type { CourseLevel } from '../types';
 
+const LEVEL_ORDER: Record<string, number> = { beginner: 1, intermediate: 2, advanced: 3 };
+
 function formatStudyTime(seconds: number, t: any) {
   if (seconds < 60) return t.coursesList.studySec.replace('{seconds}', String(seconds));
   
@@ -202,8 +204,7 @@ export function CoursesContent() {
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {[...courses].sort((a, b) => {
-            const levelOrder: Record<string, number> = { beginner: 1, intermediate: 2, advanced: 3 };
-            return (levelOrder[a.level] || 99) - (levelOrder[b.level] || 99);
+            return (LEVEL_ORDER[a.level] || 99) - (LEVEL_ORDER[b.level] || 99);
           }).map((course) => (
             <CourseCard key={course.id} course={course} />
           ))}

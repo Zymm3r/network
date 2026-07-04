@@ -30,6 +30,8 @@ export function GlobalSearch({ onResultClick }: GlobalSearchProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
   const { language, t } = useI18n();
+  
+  const isMac = useMemo(() => typeof navigator !== 'undefined' && navigator.platform.toUpperCase().indexOf('MAC') >= 0, []);
 
   useEffect(() => {
     const handleKeydown = (e: KeyboardEvent) => {
@@ -95,7 +97,7 @@ export function GlobalSearch({ onResultClick }: GlobalSearchProps) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => setFocused(true)}
-          onBlur={() => setTimeout(() => setFocused(false), 200)}
+          onBlur={() => setFocused(false)}
           placeholder={t.search.placeholder}
           className="w-full pl-10 pr-10 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 transition-all placeholder:text-slate-400"
         />
@@ -113,14 +115,17 @@ export function GlobalSearch({ onResultClick }: GlobalSearchProps) {
       {!focused && !query && (
         <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
           <kbd className="hidden md:inline-flex items-center gap-1 px-2 py-0.5 text-xs text-slate-400 bg-white border border-slate-200 rounded">
-            <span className="text-xs">⌘</span>K
+            {isMac ? <><span className="text-xs">⌘</span>K</> : <span className="text-xs">Ctrl K</span>}
           </kbd>
         </div>
       )}
 
       {/* Results Dropdown */}
       {focused && results.length > 0 && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-lg border border-slate-100 overflow-hidden z-50">
+        <div 
+          className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-lg border border-slate-100 overflow-hidden z-50"
+          onMouseDown={(e) => e.preventDefault()}
+        >
           {results.map((result) => {
             const config = categoryConfig[result.category];
             return (
