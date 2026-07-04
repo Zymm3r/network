@@ -51,18 +51,22 @@ export function EquipmentDetailTabs({ data, isLoading = false, error = null }: E
     <div className="bg-white rounded-2xl shadow-sm border border-slate-100 flex flex-col relative">
       {/* Video Modal */}
       {selectedVideo && (
-        <div 
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={t.equipmentCatalog.trainingMediaModal}
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
           onClick={() => setSelectedVideo(null)}
         >
-          <div 
+          <div
             className="bg-slate-900 rounded-2xl w-full max-w-4xl overflow-hidden shadow-2xl border border-slate-700"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex justify-between items-center p-4 border-b border-slate-800 bg-slate-900/50">
               <h3 className="text-white font-semibold">{t.equipmentCatalog.trainingMediaModal}</h3>
-              <button 
+              <button
                 onClick={() => setSelectedVideo(null)}
+                aria-label="Close"
                 className="text-slate-400 hover:text-white p-1 bg-slate-800 rounded-lg transition-colors"
               >
                 <X size={20} />
@@ -83,17 +87,21 @@ export function EquipmentDetailTabs({ data, isLoading = false, error = null }: E
       )}
 
       {/* Tab Navigation */}
-      <div className="flex flex-wrap gap-2 border-b border-slate-100 px-6 py-4 bg-slate-50/80 backdrop-blur-sm">
+      <div role="tablist" className="flex flex-wrap gap-2 border-b border-slate-100 px-6 py-4 bg-slate-50/80 backdrop-blur-sm">
         {tabs.map(tab => {
           const isActive = activeTab === tab.id;
           const Icon = tab.icon;
           return (
             <button
               key={tab.id}
+              role="tab"
+              aria-selected={isActive}
+              aria-controls={`tab-panel-${tab.id}`}
+              data-testid={`tab-${tab.id}`}
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all duration-200 transform active:scale-95 ${
-                isActive 
-                  ? 'bg-indigo-600 text-white ring-2 ring-indigo-600 ring-offset-2' 
+                isActive
+                  ? 'bg-indigo-600 text-white ring-2 ring-indigo-600 ring-offset-2'
                   : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100 hover:text-indigo-600 hover:border-indigo-300'
               }`}
             >
@@ -128,7 +136,7 @@ export function EquipmentDetailTabs({ data, isLoading = false, error = null }: E
         )}
 
         {activeTab === 'overview' && (
-          <div className="space-y-6">
+          <div id="tab-panel-overview" role="tabpanel" data-testid="overview-content" className="space-y-6">
             <div>
               <h3 className="text-lg font-bold text-slate-800 mb-4">{t.equipmentCatalog.detailsTitle}</h3>
               <div className="prose prose-slate prose-sm sm:prose-base max-w-none
@@ -146,7 +154,7 @@ export function EquipmentDetailTabs({ data, isLoading = false, error = null }: E
                 </ReactMarkdown>
               </div>
             </div>
-            
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-6 border-t border-slate-100">
                <div className="bg-slate-50 rounded-xl p-5 border border-slate-100">
                   <div className="text-sm font-semibold text-slate-500 mb-2 uppercase tracking-wide">{t.equipmentCatalog.categoryLabel}</div>
@@ -171,14 +179,16 @@ export function EquipmentDetailTabs({ data, isLoading = false, error = null }: E
         )}
 
         {activeTab === 'simulator' && (
-          <WiringSimulator 
-            productName={data.product?.name || t.equipmentCatalog.defaultDeviceName} 
-            productCategory={data.product?.category || ''}
-          />
+          <div id="tab-panel-simulator" role="tabpanel" data-testid="simulator-canvas">
+            <WiringSimulator
+              productName={data.product?.name || t.equipmentCatalog.defaultDeviceName}
+              productCategory={data.product?.category || ''}
+            />
+          </div>
         )}
 
         {activeTab === 'documents' && (
-          <div className="">
+          <div id="tab-panel-documents" role="tabpanel">
             {data.documents?.length > 0 ? (
               <ul className="grid gap-4 sm:grid-cols-2">
                 {data.documents.map(doc => (
@@ -219,7 +229,7 @@ export function EquipmentDetailTabs({ data, isLoading = false, error = null }: E
         )}
 
         {activeTab === 'faq' && (
-          <div className="">
+          <div id="tab-panel-faq" role="tabpanel">
             {data.faqs?.length > 0 ? (
               <div className="space-y-4">
                 {data.faqs.map(faq => (
@@ -249,7 +259,7 @@ export function EquipmentDetailTabs({ data, isLoading = false, error = null }: E
         )}
 
         {activeTab === 'troubleshooting' && (
-          <div className="">
+          <div id="tab-panel-troubleshooting" role="tabpanel">
             {data.troubleshooting_guides?.length > 0 ? (
               <div className="space-y-6">
                 {data.troubleshooting_guides.map(guide => (
@@ -284,7 +294,7 @@ export function EquipmentDetailTabs({ data, isLoading = false, error = null }: E
         )}
 
         {activeTab === 'training' && (
-          <div className="">
+          <div id="tab-panel-training" role="tabpanel" data-testid="training-lessons-list">
             {data.training_courses?.length > 0 ? (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {data.training_courses.map(course => (
@@ -303,8 +313,9 @@ export function EquipmentDetailTabs({ data, isLoading = false, error = null }: E
                       <div className="space-y-2 mt-4">
                         <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">{t.equipmentCatalog.lessonsTitle.replace('{count}', String(course.training_lessons.length))}</div>
                         {course.training_lessons.sort((a, b) => a.lesson_order - b.lesson_order).map(lesson => (
-                          <button 
+                          <button
                             key={lesson.id}
+                            data-testid="lesson-card"
                             onClick={() => {
                               if (lesson.video_url) {
                                 setSelectedVideo(lesson.video_url);
@@ -322,14 +333,15 @@ export function EquipmentDetailTabs({ data, isLoading = false, error = null }: E
                     ) : (
                       <>
                         {course.video_url ? (
-                          <button 
+                          <button
+                            data-testid="lesson-card"
                             onClick={() => setSelectedVideo(course.video_url!)}
                             className="w-full py-3 bg-indigo-600 text-white font-bold text-sm rounded-xl hover:bg-indigo-700 hover:shadow-md transition-all active:scale-95 flex items-center justify-center gap-2"
                           >
                             {t.equipmentCatalog.watchLessonBtn}
                           </button>
                         ) : (
-                          <button 
+                          <button
                             disabled
                             className="w-full py-3 bg-slate-100 text-slate-400 font-bold text-sm rounded-xl cursor-not-allowed flex items-center justify-center gap-2"
                           >

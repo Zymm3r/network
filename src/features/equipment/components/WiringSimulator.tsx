@@ -94,7 +94,7 @@ export function WiringSimulator({ productName, productCategory }: WiringSimulato
   const completionPercent = Math.round((Object.keys(connections).length / ports.length) * 100);
 
   return (
-    <div className="">
+    <div data-testid="simulator-canvas">
       <div className="bg-slate-900 rounded-2xl p-6 md:p-8 text-white relative overflow-hidden shadow-xl border border-slate-800">
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
         
@@ -103,8 +103,8 @@ export function WiringSimulator({ productName, productCategory }: WiringSimulato
             <h3 className="text-xl font-bold text-white mb-2">{t.wiringSimulator.title.replace('{productName}', productName)}</h3>
             <p className="text-slate-400 text-sm">{t.wiringSimulator.subtitle}</p>
           </div>
-          <div className="text-right shrink-0 ml-4">
-            <div className="text-2xl font-bold text-indigo-400">{completionPercent}%</div>
+          <div>
+            <div data-testid="completion-percentage" className="text-2xl font-bold text-indigo-400">{completionPercent}%</div>
             <div className="text-xs text-slate-400 uppercase">{t.wiringSimulator.percentCompleted}</div>
           </div>
         </div>
