@@ -490,7 +490,7 @@ export const en: TranslationKeys = {
     coursesInPath: 'Courses in this path ({count})',
   },
   search: {
-    placeholder: 'Search courses, lessons...',
+    placeholder: 'Search',
     categories: {
       course: 'Courses',
       lesson: 'Lessons',
