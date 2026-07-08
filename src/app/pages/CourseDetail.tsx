@@ -5,14 +5,14 @@ import { useLessons } from '../hooks/useLessons';
 import { useAuth } from '../hooks/useAuth';
 import { useLessonsProgress } from '../hooks/useProgress';
 import { supabase } from '../lib/supabase';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Badge } from '../components/ui/badge';
-import { Button } from '../components/ui/button';
-import { Skeleton } from '../components/ui/skeleton';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { Card, CardContent, CardHeader, CardTitle } from '../lib/components/ui/card';
+import { Badge } from '../lib/components/ui/badge';
+import { Button } from '../lib/components/ui/button';
+import { Skeleton } from '../lib/components/ui/skeleton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../lib/components/ui/tabs';
 import { ArrowLeft, Clock, BookOpen, Users, ChevronRight, Play, FileText, HelpCircle, CheckCircle2, PenTool, FlaskConical, Video } from 'lucide-react';
-import QuizCard from '../components/QuizCard';
-import ExerciseCard from '../components/ExerciseCard';
+import QuizCard from '../lib/components/QuizCard';
+import ExerciseCard from '../lib/components/ExerciseCard';
 import { useState } from 'react';
 
 const lessonTypeIcons: Record<string, typeof Play> = {

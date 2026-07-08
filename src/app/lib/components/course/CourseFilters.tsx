@@ -1,4 +1,4 @@
-import { useI18n } from '../../i18n';
+import { useI18n } from '../../../i18n';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import {
@@ -9,7 +9,7 @@ import {
   SelectValue,
 } from '../ui/select';
 import { Filter, X } from 'lucide-react';
-import type { CourseLevel } from '../../types';
+import type { CourseLevel } from '../../../types';
 
 interface CourseFiltersProps {
   selectedLevel?: CourseLevel;

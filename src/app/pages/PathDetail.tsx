@@ -2,10 +2,10 @@ import { useParams, Link, useNavigate } from 'react-router';
 import { useI18n } from '../i18n';
 import { useCourses } from '../hooks/useCourses';
 import { usePath } from '../hooks/usePaths';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Badge } from '../components/ui/badge';
-import { Button } from '../components/ui/button';
-import { Skeleton } from '../components/ui/skeleton';
+import { Card, CardContent, CardHeader, CardTitle } from '../lib/components/ui/card';
+import { Badge } from '../lib/components/ui/badge';
+import { Button } from '../lib/components/ui/button';
+import { Skeleton } from '../lib/components/ui/skeleton';
 import { ArrowLeft, Clock, BookOpen, ChevronRight, Route, CheckCircle2 } from 'lucide-react';
 
 const levelColors: Record<string, string> = {

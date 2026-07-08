@@ -5,9 +5,9 @@ import { Sidebar } from './Sidebar';
 import { GlobalSearch } from '../GlobalSearch';
 import { ErrorBoundary } from '../ErrorBoundary';
 import { Toaster } from 'sonner';
-import { useAuth } from '../../hooks/useAuth';
-import { getInitials } from '../../lib/utils';
-import { ActivityProvider } from '../../contexts/ActivityContext';
+import { useAuth } from '../../../hooks/useAuth';
+import { getInitials } from '../../utils';
+import { ActivityProvider } from '../../../contexts/ActivityContext';
 
 export function AppLayout() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);

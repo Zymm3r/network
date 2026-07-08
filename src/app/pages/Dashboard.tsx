@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useI18n } from '../i18n';
 import { analyticsApi, StudentMetrics, AdminMetrics, HardestExercise } from '../lib/api/analytics';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Skeleton } from '../components/ui/skeleton';
+import { Card, CardContent, CardHeader, CardTitle } from '../lib/components/ui/card';
+import { Skeleton } from '../lib/components/ui/skeleton';
 import { BookOpen, CheckCircle, GraduationCap, Clock, Award, Activity, Users, AlertCircle, FileText } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '../lib/components/ui/alert';
 
 export function Dashboard() {
   const { user } = useAuth();

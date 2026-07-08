@@ -299,6 +299,18 @@ export const th = {
     lessonContent: 'เนื้อหาบทเรียน',
   },
   equipmentCatalog: {
+    markdownSections: {
+      overview: 'ภาพรวม',
+      features: 'คุณสมบัติ',
+      applications: 'การนำไปใช้งาน',
+      installationNotes: 'ข้อแนะนำการติดตั้ง',
+      bestPractices: 'ข้อควรปฏิบัติที่ดี',
+      troubleshooting: 'การแก้ปัญหา',
+      faq: 'คำถามที่พบบ่อย',
+      trainingAndResources: 'การฝึกอบรมและทรัพยากร',
+      downloads: 'ดาวน์โหลด',
+      summary: 'สรุป'
+    },
     loading: 'กำลังโหลดข้อมูล...',
     errorLoading: 'ไม่สามารถโหลดข้อมูลได้',
     overviewTab: 'Overview',

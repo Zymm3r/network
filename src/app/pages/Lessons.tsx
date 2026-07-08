@@ -3,13 +3,13 @@ import { useI18n } from '../i18n';
 import { useLessons } from '../hooks/useLessons';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
-import { LessonCard } from '../components/lesson/LessonCard';
-import { Skeleton } from '../components/ui/skeleton';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { LessonCard } from '../lib/components/lesson/LessonCard';
+import { Skeleton } from '../lib/components/ui/skeleton';
+import { Card, CardContent, CardHeader, CardTitle } from '../lib/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../lib/components/ui/tabs';
 import { FlaskConical, Video, FileQuestion, PenTool, BookOpen, CheckCircle2, Clock } from 'lucide-react';
-import QuizCard from '../components/QuizCard';
-import ExerciseCard from '../components/ExerciseCard';
+import QuizCard from '../lib/components/QuizCard';
+import ExerciseCard from '../lib/components/ExerciseCard';
 
 const lessonTypes = [
   { key: 'all', labelKey: 'typeAll', icon: FlaskConical },

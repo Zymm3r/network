@@ -46,8 +46,9 @@ supabase/.branches/
 docs/archive/
 
 reports/
-
 screenshots/
+test-results/
+playwright-report/
 *.png
 *.jpg
 *.jpeg

@@ -2,8 +2,8 @@ import { ExternalLink, MapPin, Wrench, BookMarked, FileText, Video, Link2 } from
 import { Card, CardContent, CardFooter, CardHeader } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
-import { useI18n } from '../../i18n';
-import type { Resource } from '../../types';
+import { useI18n } from '../../../i18n';
+import type { Resource } from '../../../types';
 
 interface ResourceCardProps {
   resource: Resource;

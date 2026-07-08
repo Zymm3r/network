@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router';
 import { certificateApi } from '../lib/api/certificates';
 import { useI18n } from '../i18n';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
-import { Badge } from '../components/ui/badge';
-import { Button } from '../components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../lib/components/ui/card';
+import { Badge } from '../lib/components/ui/badge';
+import { Button } from '../lib/components/ui/button';
 import { CheckCircle2, XCircle, Award, Calendar, Hash, ArrowLeft, Download } from 'lucide-react';
 
 export function VerifyCertificate() {

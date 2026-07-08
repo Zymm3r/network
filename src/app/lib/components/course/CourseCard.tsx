@@ -2,9 +2,9 @@ import { Link } from 'react-router';
 import { Card, CardContent, CardFooter, CardHeader } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
-import { useI18n } from '../../i18n';
+import { useI18n } from '../../../i18n';
 import { BookOpen, Clock, Users, ChevronRight } from 'lucide-react';
-import type { Course } from '../../types';
+import type { Course } from '../../../types';
 
 interface CourseCardProps {
   course: Course;

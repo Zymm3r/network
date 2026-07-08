@@ -5,18 +5,18 @@ import { useLesson } from '../hooks/useLessons';
 import { useAuth, useLessonProgress } from '../hooks';
 import { supabase } from '../lib/supabase';
 import { toast } from 'sonner';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Badge } from '../components/ui/badge';
-import { Button } from '../components/ui/button';
-import { Skeleton } from '../components/ui/skeleton';
+import { Card, CardContent, CardHeader, CardTitle } from '../lib/components/ui/card';
+import { Badge } from '../lib/components/ui/badge';
+import { Button } from '../lib/components/ui/button';
+import { Skeleton } from '../lib/components/ui/skeleton';
 import {
   ArrowLeft, Clock, ChevronRight, Play, FileText, HelpCircle,
   CheckCircle, CheckCircle2, Circle, Zap, BookOpen, Trophy, ChevronDown,
-  Code2, PlayCircle, Eye
+  Code2, PlayCircle, Eye, Lock
 } from 'lucide-react';
-import QuizCard from '../components/QuizCard';
-import ExerciseCard from '../components/ExerciseCard';
-import { KalturaPlayer } from '../components/KalturaPlayer';
+import QuizCard from '../lib/components/QuizCard';
+import ExerciseCard from '../lib/components/ExerciseCard';
+import { KalturaPlayer } from '../lib/components/KalturaPlayer';
 
 /* ─────────────────────────────────────────
    Static look-up tables
@@ -428,6 +428,117 @@ function inlineFormat(text: string): string {
 /* ─────────────────────────────────────────
    Main Component
 ───────────────────────────────────────── */
+// ════════════════════════════════════════════
+//  SAVE TO SUPABASE: All dependent tables
+//  Updates lesson_progress, course_progress,
+//  and learning_path_progress consistently
+// ════════════════════════════════════════════
+const saveAllProgress = async (
+  userId: string,
+  lessonId: string,
+  courseId: string | null,
+  status: 'completed' | 'in_progress',
+  progressPercentage: number,
+  notes: string | null,
+) => {
+  const now = new Date().toISOString();
+  const isCompleted = status === 'completed';
+  const results: { table: string; success: boolean; error?: any }[] = [];
+
+  // 1. Save lesson_progress (user_progress table)
+  try {
+    const payload = {
+      user_id: userId,
+      lesson_id: lessonId,
+      status,
+      progress_percentage: progressPercentage,
+      notes,
+      completed_at: isCompleted ? now : null,
+      last_accessed_at: now,
+    };
+    
+    const { data: existing } = await supabase
+      .from('user_progress')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('lesson_id', lessonId)
+      .maybeSingle();
+
+    if (existing) {
+      const { error } = await supabase.from('user_progress').update(payload).eq('id', existing.id);
+      if (error) throw error;
+    } else {
+      const { error } = await supabase.from('user_progress').insert(payload);
+      if (error) throw error;
+    }
+    results.push({ table: 'user_progress', success: true });
+  } catch (err) {
+    console.error('[Progress DB Log] Failed to save lesson progress:', err);
+    results.push({ table: 'user_progress', success: false, error: err });
+  }
+
+  // 2. Save course_progress (enrollments table) — update if courseId provided
+  if (courseId && isCompleted) {
+    try {
+      // Get total lesson count for this course
+      const { data: lessons, error: lessonsError } = await supabase
+        .from('lessons')
+        .select('id')
+        .eq('course_id', courseId);
+
+      if (!lessonsError && lessons && lessons.length > 0) {
+        const totalLessons = lessons.length;
+        
+        // Get completed lesson count
+        const { data: completedData } = await supabase
+          .from('user_progress')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('status', 'completed')
+          .in('lesson_id', lessons.map(l => l.id));
+
+        const completedCount = completedData?.length || 0;
+        const coursePercentage = Math.round((completedCount / totalLessons) * 100);
+        const courseStatus = coursePercentage >= 100 ? 'completed' : 'active';
+
+        const { error: enrollError } = await supabase
+          .from('enrollments')
+          .upsert({
+            user_id: userId,
+            course_id: courseId,
+            status: courseStatus,
+            progress_percentage: coursePercentage,
+            completed_at: coursePercentage >= 100 ? now : null,
+            last_accessed_at: now,
+          }, { onConflict: 'user_id,course_id' });
+
+        if (enrollError) throw enrollError;
+        results.push({ table: 'enrollments', success: true });
+      }
+    } catch (err) {
+      console.error('[Progress DB Log] Failed to save course progress:', err);
+      results.push({ table: 'enrollments', success: false, error: err });
+    }
+  }
+
+  // 3. Auto-issue certificate if course is now 100% complete
+  if (courseId && isCompleted) {
+    try {
+      import('../lib/api/certificates').then(({ certificateApi }) => {
+        certificateApi.checkAndIssueCourseCertificate(userId, courseId).then(cert => {
+          if (cert) {
+            console.log(`[Certificate] Auto-issued certificate:`, cert.certificate_number);
+          }
+        });
+      });
+    } catch (err) {
+      console.error('[Certificate] Failed to check certificate:', err);
+    }
+  }
+
+  return results;
+};
+
 export function LessonDetail() {
   const { lessonId } = useParams();
   const { language, t } = useI18n();
@@ -447,131 +558,12 @@ export function LessonDetail() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showAllCheckpoints, setShowAllCheckpoints] = useState(false);
   const [activeCheckpointIdx, setActiveCheckpointIdx] = useState(0);
-  const [videoSeekState, setVideoSeekState] = useState<VideoSeekState | null>(null);
-  const [readingProgress, setReadingProgress] = useState(0);
-  const [isVideoCompleted, setIsVideoCompleted] = useState(false);
-  const readingContentRef = useRef<HTMLDivElement>(null);
-  
-  // Concurrent Flight Lock
-  const isSavingRef = useRef(false);
 
-  /* ── Scoped timer storage key ── */
+  /* ── Load/Initialize timer from localStorage when storage key or required duration changes ── */
   const timerStorageKey = useMemo(() => {
     if (!user?.id || !lessonId) return null;
     return `study-timer:${user.id}:${lessonId}:${isPythonLesson ? activeCheckpointIdx : 'general'}`;
   }, [user?.id, lessonId, isPythonLesson, activeCheckpointIdx]);
-
-  /* ── Parse completed checkpoints from notes column ── */
-  const completedCheckpoints: number[] = useMemo(() => {
-    if (!isPythonLesson || !progress?.notes) return [];
-    try {
-      const parsed = JSON.parse(progress.notes);
-      return Array.isArray(parsed) ? parsed : [];
-    } catch { return []; }
-  }, [isPythonLesson, progress?.notes]);
-
-  const completedSet = useMemo(() => new Set(completedCheckpoints), [completedCheckpoints]);
-
-  /* ── Auto-select first uncompleted checkpoint on load ── */
-  useEffect(() => {
-    if (!isPythonLesson || progressLoading) return;
-    const first = PYTHON_CHECKPOINTS.find(cp => !completedSet.has(cp.id));
-    if (first !== undefined) {
-      setActiveCheckpointIdx(first.id);
-    } else {
-      // All done — show last one
-      setActiveCheckpointIdx(PYTHON_CHECKPOINTS.length - 1);
-    }
-  }, [isPythonLesson, progressLoading, completedCheckpoints.length]);
-
-  /* ── Derived values ── */
-  const activeCheckpoint = isPythonLesson ? PYTHON_CHECKPOINTS[activeCheckpointIdx] : null;
-
-  /* ── Dynamic reading time calculation ── */
-  const isReadingLesson = lesson?.lesson_type === 'reading';
-  const readingContent = useMemo(() => {
-    if (!isReadingLesson || !lesson) return '';
-    return lesson[`content_${language}` as 'content_th' | 'content_en'] || '';
-  }, [isReadingLesson, lesson, language]);
-
-  const estimatedReadingMinutes = useMemo(() => {
-    if (!readingContent) return 0;
-    // Thai text: ~200 words/min, English: ~250 words/min
-    // Count words by splitting on whitespace and filtering empty
-    const wpmMap: Record<'th' | 'en', number> = { th: 180, en: 230 };
-    const wpm = wpmMap[language];
-    const words = readingContent.split(/\s+/).filter(Boolean).length;
-    return Math.max(1, Math.ceil(words / wpm));
-  }, [readingContent, language]);
-
-  const durationMinutes = isReadingLesson && estimatedReadingMinutes > 0
-    ? estimatedReadingMinutes
-    : (lesson?.duration_minutes || 0);
-  
-  // Disable page-level timer for video lessons
-  const requiredSeconds = lesson?.lesson_type === 'video'
-    ? 0
-    : isPythonLesson
-      ? (activeCheckpoint?.duration ?? 0)
-      : durationMinutes * 60;
-      
-  const isCurrentCheckpointDone = isPythonLesson
-    ? completedSet.has(activeCheckpointIdx)
-    : progress?.status === 'completed';
-  const isFullyCompleted = isPythonLesson
-    ? completedCheckpoints.length === PYTHON_CHECKPOINTS.length
-    : progress?.status === 'completed';
-    
-  // Require video completion for videos, fallback to timer for reading
-  const isTimeMet = lesson?.lesson_type === 'video'
-    ? isVideoCompleted
-    : elapsedSeconds >= requiredSeconds;
-
-  /* ── Load/Initialize timer from localStorage when storage key or required duration changes ── */
-  useEffect(() => {
-    if (!timerStorageKey) {
-      setElapsedSeconds(0);
-      return;
-    }
-    const saved = localStorage.getItem(timerStorageKey);
-    const parsed = saved ? parseInt(saved, 10) : 0;
-    
-    // Safety check: ensure it doesn't exceed requiredSeconds
-    const initialElapsed = Math.min(parsed, requiredSeconds);
-    
-    console.log(`[Progress Timer Log] Initializing timer for key [${timerStorageKey}] to ${initialElapsed}s (required: ${requiredSeconds}s)`);
-    setElapsedSeconds(initialElapsed);
-  }, [timerStorageKey, requiredSeconds]);
-
-  /* ── Stay-timer ticker with storage syncing ── */
-  useEffect(() => {
-    if (isCurrentCheckpointDone || isTimeMet || !lesson || requiredSeconds <= 0 || !timerStorageKey) return;
-
-    console.log(`[Progress Timer Log] Starting timer for key [${timerStorageKey}]. Current elapsed: ${elapsedSeconds}s, required: ${requiredSeconds}s`);
-
-    const interval = setInterval(() => {
-      setElapsedSeconds(prev => {
-        const next = prev + 1;
-        
-        // Sync tick to localStorage
-        localStorage.setItem(timerStorageKey, String(next));
-        
-        if (next >= requiredSeconds) {
-          console.log(`[Progress Timer Log] Timer target reached for key [${timerStorageKey}]!`);
-          clearInterval(interval);
-          return requiredSeconds;
-        }
-        return next;
-      });
-    }, 1000);
-
-    return () => {
-      console.log(`[Progress Timer Log] Clearing interval for key [${timerStorageKey}]`);
-      clearInterval(interval);
-    };
-  }, [isCurrentCheckpointDone, isTimeMet, lesson, requiredSeconds, timerStorageKey]);
-
-
 
   /* ── Offline resilience helper: Queue a failed save ── */
   const queueFailedSave = useCallback((payload: {
@@ -669,7 +661,7 @@ export function LessonDetail() {
     } catch (e) {
       console.error('[Progress Offline Log] Error during flush:', e);
     }
-  }, [refetchProgress, language]);
+  }, [refetchProgress, language, t.lessonDetail.offlineSyncSuccess]);
 
   /* ── Offline queue triggers ── */
   useEffect(() => {
@@ -690,134 +682,79 @@ export function LessonDetail() {
     };
   }, [user?.id, flushPendingSaves]);
 
-  /* ── Save checkpoint progress to Supabase (notes column) ── */
-  const saveCheckpointProgress = useCallback(async (newCompletedIndices: number[]) => {
-    if (!user?.id || !lessonId) {
-      throw new Error('User is not authenticated or lesson ID is missing');
-    }
-    const pct = Math.round((newCompletedIndices.length / PYTHON_CHECKPOINTS.length) * 100);
-    const isAll = newCompletedIndices.length === PYTHON_CHECKPOINTS.length;
-    const now = new Date().toISOString();
+  const [videoSeekState, setVideoSeekState] = useState<VideoSeekState | null>(null);
+  const [readingProgress, setReadingProgress] = useState(0);
+  const [isVideoCompleted, setIsVideoCompleted] = useState(false);
+  const readingContentRef = useRef<HTMLDivElement>(null);
+  
+  // Concurrent Flight Lock
+  const isSavingRef = useRef(false);
 
-    console.log(`[Progress DB Log] Saving Python checkpoint progress. User: ${user.id}, completed: [${newCompletedIndices.join(', ')}], percentage: ${pct}%`);
-
-    const payload = {
-      user_id: user.id,
-      lesson_id: lessonId,
-      status: isAll ? 'completed' : 'in_progress',
-      progress_percentage: pct,
-      notes: JSON.stringify(newCompletedIndices),
-      completed_at: isAll ? now : null,
-      last_accessed_at: now,
-    };
-
-    const { data: existing } = await supabase
-      .from('user_progress')
-      .select('id')
-      .eq('user_id', user.id)
-      .eq('lesson_id', lessonId)
-      .maybeSingle();
-
-    let saveError = null;
-    let resultData = null;
-
-    if (existing) {
-      const { data, error } = await supabase.from('user_progress').update(payload).eq('id', existing.id).select();
-      saveError = error;
-      resultData = data;
-    } else {
-      const { data, error } = await supabase.from('user_progress').insert(payload).select();
-      saveError = error;
-      resultData = data;
-    }
-
-    if (saveError) {
-      console.error('[Progress DB Log] Supabase save error:', saveError);
-      throw saveError;
-    }
-
-    console.log('[Progress DB Log] Python checkpoint progress saved successfully. Response:', resultData);
-  }, [user?.id, lessonId]);
-
-  const handleCheckpointClick = (cp: PythonCheckpoint) => {
-    setActiveCheckpointIdx(cp.id);
-    setElapsedSeconds(0);
-    setVideoSeekState({ time: parseStartTimeToSeconds(cp.startTime), triggerId: Date.now() });
-  };
-
-  /* ── Handle marking a checkpoint complete ── */
-  const handleMarkCheckpointComplete = async () => {
-    if (!isTimeMet || isSubmitting || isCurrentCheckpointDone || !user?.id || !lessonId) return;
-
-    // Concurrent Flight Locking
-    if (isSavingRef.current) {
-      console.warn('[Progress DB Log] Save request already in flight — blocking concurrent submission');
-      return;
-    }
-
+  /* ── Parse completed checkpoints from notes column ── */
+  const completedCheckpoints: number[] = useMemo(() => {
+    if (!isPythonLesson || !progress?.notes) return [];
     try {
-      isSavingRef.current = true;
-      setIsSubmitting(true);
-      console.log(`[Progress DB Log] Attempting to mark checkpoint ${activeCheckpointIdx} complete...`);
+      const parsed = JSON.parse(progress.notes);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch { return []; }
+  }, [isPythonLesson, progress?.notes]);
 
-      const updated = [...new Set([...completedCheckpoints, activeCheckpointIdx])];
-      
-      // Attempt to save to Supabase
-      try {
-        await saveCheckpointProgress(updated);
-        
-        // Success feedback
-        toast.success(
-          t.lessonDetail.checkpointSaveSuccess.replace('{title}', activeCheckpoint?.title || '')
-        );
+  const completedSet = useMemo(() => new Set(completedCheckpoints), [completedCheckpoints]);
 
-        if (isAll && lesson?.course_id) {
-          import('../lib/api/certificates').then(({ certificateApi }) => {
-            certificateApi.checkAndIssueCourseCertificate(user.id, lesson.course_id).then(cert => {
-              if (cert) console.log(`[Certificate] Auto-issued certificate:`, cert.certificate_number);
-            });
-          });
-        }
-
-        // Clear active checkpoint timer from localStorage upon completion
-        if (timerStorageKey) {
-          localStorage.removeItem(timerStorageKey);
-        }
-      } catch (dbErr) {
-        console.error('[Progress DB Log] Database write failed — queueing for offline retry', dbErr);
-        
-        // Queue progress update for offline sync
-        queueFailedSave({
-          userId: user.id,
-          lessonId,
-          isPython: true,
-          completedCheckpoints: updated,
-        });
-
-        toast.warning(t.lessonDetail.checkpointOfflineWarning);
-      }
-
-      // Refresh progress data in UI silently
-      await refetchProgress();
-      
-      // Auto-advance to next uncompleted checkpoint
-      const updatedSet = new Set(updated);
-      const next = PYTHON_CHECKPOINTS.find(cp => !updatedSet.has(cp.id));
-      if (next) {
-        console.log(`[Progress Timer Log] Auto-advancing to next checkpoint: ${next.id} (${next.title})`);
-        setActiveCheckpointIdx(next.id);
-      }
-    } catch (err) {
-      console.error('[Progress DB Log] Unexpected error during checkpoint completion:', err);
-      toast.error(t.lessonDetail.unexpectedError);
-    } finally {
-      setIsSubmitting(false);
-      isSavingRef.current = false;
+  /* ── Auto-select first uncompleted checkpoint on load ── */
+  useEffect(() => {
+    if (!isPythonLesson || progressLoading) return;
+    const first = PYTHON_CHECKPOINTS.find(cp => !completedSet.has(cp.id));
+    if (first !== undefined) {
+      setActiveCheckpointIdx(first.id);
+    } else {
+      // All done — show last one
+      setActiveCheckpointIdx(PYTHON_CHECKPOINTS.length - 1);
     }
-  };
+  }, [isPythonLesson, progressLoading, completedCheckpoints.length]);
+
+  /* ── Derived values ── */
+  const activeCheckpoint = isPythonLesson ? PYTHON_CHECKPOINTS[activeCheckpointIdx] : null;
+
+  const isReadingLesson = lesson?.lesson_type === 'reading';
+  const readingContent = useMemo(() => {
+    if (!isReadingLesson || !lesson) return '';
+    return lesson[`content_${language}` as 'content_th' | 'content_en'] || '';
+  }, [isReadingLesson, lesson, language]);
+
+  const estimatedReadingMinutes = useMemo(() => {
+    if (!readingContent) return 0;
+    const wpmMap: Record<'th' | 'en', number> = { th: 180, en: 230 };
+    const wpm = wpmMap[language];
+    const words = readingContent.split(/\s+/).filter(Boolean).length;
+    return Math.max(1, Math.ceil(words / wpm));
+  }, [readingContent, language]);
+
+  const durationMinutes = isReadingLesson && estimatedReadingMinutes > 0
+    ? estimatedReadingMinutes
+    : (lesson?.duration_minutes || 0);
+  
+  // Disable page-level timer for video lessons
+  const requiredSeconds = lesson?.lesson_type === 'video'
+    ? 0
+    : isPythonLesson
+      ? (activeCheckpoint?.duration ?? 0)
+      : durationMinutes * 60;
+      
+  const isCurrentCheckpointDone = isPythonLesson
+    ? completedSet.has(activeCheckpointIdx)
+    : progress?.status === 'completed';
+  const isFullyCompleted = isPythonLesson
+    ? completedCheckpoints.length === PYTHON_CHECKPOINTS.length
+    : progress?.status === 'completed';
+    
+  // Require video completion for videos, fallback to timer for reading
+  const isTimeMet = lesson?.lesson_type === 'video'
+    ? isVideoCompleted
+    : elapsedSeconds >= requiredSeconds;
 
   /* ── Standard (non-Python) mark complete ── */
-  const handleMarkComplete = async () => {
+  const handleMarkComplete = useCallback(async () => {
     if (!isTimeMet || isSubmitting || isFullyCompleted || !user?.id || !lessonId) return;
 
     // Concurrent Flight Locking
@@ -834,43 +771,18 @@ export function LessonDetail() {
       const now = new Date().toISOString();
       
       try {
-        const payload = {
-          user_id: user.id,
-          lesson_id: lessonId,
-          status: 'completed',
-          progress_percentage: 100,
-          completed_at: now,
-          last_accessed_at: now,
-        };
-
-        const { data: existing } = await supabase
-          .from('user_progress')
-          .select('id')
-          .eq('user_id', user.id)
-          .eq('lesson_id', lessonId)
-          .maybeSingle();
-
-        let saveError = null;
-        if (existing) {
-          const { error } = await supabase.from('user_progress').update(payload).eq('id', existing.id);
-          saveError = error;
-        } else {
-          const { error } = await supabase.from('user_progress').insert(payload);
-          saveError = error;
-        }
-
-        if (saveError) throw saveError;
+        // Save to all dependent tables consistently
+        await saveAllProgress(
+          user.id,
+          lessonId,
+          lesson?.course_id || null,
+          'completed',
+          100,
+          null,
+        );
 
         toast.success(t.lessonDetail.standardLessonCompleteSuccess);
-
-        if (lesson?.course_id) {
-          import('../lib/api/certificates').then(({ certificateApi }) => {
-            certificateApi.checkAndIssueCourseCertificate(user.id, lesson.course_id).then(cert => {
-              if (cert) console.log(`[Certificate] Auto-issued certificate:`, cert.certificate_number);
-            });
-          });
-        }
-
+        
         // Clear stay-timer from localStorage upon completion
         if (timerStorageKey) {
           localStorage.removeItem(timerStorageKey);
@@ -898,7 +810,221 @@ export function LessonDetail() {
       setIsSubmitting(false);
       isSavingRef.current = false;
     }
+  }, [isTimeMet, isSubmitting, isFullyCompleted, user?.id, lessonId, lesson?.course_id, saveAllProgress, timerStorageKey, queueFailedSave, t, refetchProgress]);
+
+  // ════════════════════════════════════════════
+  //  AUTO-COMPLETION SYSTEM
+  //  Automatically marks lesson complete when
+  //  progress reaches 100% without user clicking
+  // ════════════════════════════════════════════
+  const autoCompletedRef = useRef(false);
+  
+  // Reset auto-completed when lesson changes
+  useEffect(() => {
+    autoCompletedRef.current = false;
+  }, [lessonId]);
+
+  // Auto-completion: Standard lessons (time-based / reading scroll)
+  useEffect(() => {
+    if (!user?.id) return;
+    if (isPythonLesson) return;
+    if (!isTimeMet || isFullyCompleted || isSubmitting || autoCompletedRef.current) return;
+    if (isReadingLesson && readingProgress < 90) return;
+    
+    console.log('[AutoComplete] Triggering auto-completion for standard lesson', lessonId);
+    autoCompletedRef.current = true;
+    handleMarkComplete();
+  }, [user?.id, isTimeMet, isFullyCompleted, isSubmitting, isPythonLesson, isReadingLesson, readingProgress, lessonId, handleMarkComplete]);
+
+  // Auto-completion: Video lessons (KalturaPlayer onComplete)
+  useEffect(() => {
+    if (!user?.id) return;
+    if (!isVideoCompleted) return;
+    if (isPythonLesson) return;
+    if (isFullyCompleted || isSubmitting || autoCompletedRef.current) return;
+    
+    console.log('[AutoComplete] Video completed — auto-completing lesson', lessonId);
+    autoCompletedRef.current = true;
+    handleMarkComplete();
+  }, [user?.id, isVideoCompleted, isPythonLesson, isFullyCompleted, isSubmitting, lessonId, handleMarkComplete]);
+
+  // Auto-completion: Reading lessons (scroll 100% + time met)
+  useEffect(() => {
+    if (!user?.id) return;
+    if (!isReadingLesson) return;
+    if (readingProgress < 100) return;
+    if (isFullyCompleted || isSubmitting || autoCompletedRef.current) return;
+    if (!isTimeMet) return;
+    
+    console.log('[AutoComplete] Reading scroll 100% — auto-completing lesson', lessonId);
+    autoCompletedRef.current = true;
+    handleMarkComplete();
+  }, [user?.id, readingProgress, isTimeMet, isReadingLesson, isFullyCompleted, isSubmitting, lessonId, handleMarkComplete]);
+
+
+
+  useEffect(() => {
+    if (!timerStorageKey) {
+      setElapsedSeconds(0);
+      return;
+    }
+    const saved = localStorage.getItem(timerStorageKey);
+    const parsed = saved ? parseInt(saved, 10) : 0;
+    
+    // Safety check: ensure it doesn't exceed requiredSeconds
+    const initialElapsed = Math.min(parsed, requiredSeconds);
+    
+    console.log(`[Progress Timer Log] Initializing timer for key [${timerStorageKey}] to ${initialElapsed}s (required: ${requiredSeconds}s)`);
+    setElapsedSeconds(initialElapsed);
+  }, [timerStorageKey, requiredSeconds]);
+
+  /* ── Stay-timer ticker with storage syncing ── */
+  useEffect(() => {
+    if (isCurrentCheckpointDone || isTimeMet || !lesson || requiredSeconds <= 0 || !timerStorageKey) return;
+
+    console.log(`[Progress Timer Log] Starting timer for key [${timerStorageKey}]. Current elapsed: ${elapsedSeconds}s, required: ${requiredSeconds}s`);
+
+    const interval = setInterval(() => {
+      setElapsedSeconds(prev => {
+        const next = prev + 1;
+        
+        // Sync tick to localStorage
+        localStorage.setItem(timerStorageKey, String(next));
+        
+        if (next >= requiredSeconds) {
+          console.log(`[Progress Timer Log] Timer target reached for key [${timerStorageKey}]!`);
+          clearInterval(interval);
+          return requiredSeconds;
+        }
+        return next;
+      });
+    }, 1000);
+
+    return () => {
+      console.log(`[Progress Timer Log] Clearing interval for key [${timerStorageKey}]`);
+      clearInterval(interval);
+    };
+  }, [isCurrentCheckpointDone, isTimeMet, lesson, requiredSeconds, timerStorageKey]);
+
+
+
+
+
+  /* ── Save checkpoint progress to Supabase (notes column) ── */
+  const saveCheckpointProgress = useCallback(async (newCompletedIndices: number[]) => {
+    if (!user?.id || !lessonId) {
+      throw new Error('User is not authenticated or lesson ID is missing');
+    }
+    const pct = Math.round((newCompletedIndices.length / PYTHON_CHECKPOINTS.length) * 100);
+    const isAll = newCompletedIndices.length === PYTHON_CHECKPOINTS.length;
+    const now = new Date().toISOString();
+
+    console.log(`[Progress DB Log] Saving Python checkpoint progress. User: ${user.id}, completed: [${newCompletedIndices.join(', ')}], percentage: ${pct}%`);
+
+    // Save all dependent tables consistently
+    const results = await saveAllProgress(
+      user.id,
+      lessonId,
+      lesson?.course_id || null,
+      isAll ? 'completed' : 'in_progress',
+      pct,
+      JSON.stringify(newCompletedIndices),
+    );
+
+    const hasFailure = results.some(r => !r.success);
+    if (hasFailure) {
+      throw new Error('Failed to save progress to some tables');
+    }
+  }, [user?.id, lessonId, lesson?.course_id, saveAllProgress]);
+
+  const handleCheckpointClick = (cp: PythonCheckpoint) => {
+    setActiveCheckpointIdx(cp.id);
+    setElapsedSeconds(0);
+    // Reset auto-completion for the new checkpoint
+    autoCompletedRef.current = false;
+    setVideoSeekState({ time: parseStartTimeToSeconds(cp.startTime), triggerId: Date.now() });
   };
+
+  /* ── Handle marking a checkpoint complete ── */
+  const handleMarkCheckpointComplete = async () => {
+    if (!isTimeMet || isSubmitting || isCurrentCheckpointDone || !user?.id || !lessonId) return;
+
+    // Concurrent Flight Locking
+    if (isSavingRef.current) {
+      console.warn('[Progress DB Log] Save request already in flight — blocking concurrent submission');
+      return;
+    }
+
+    try {
+      isSavingRef.current = true;
+      setIsSubmitting(true);
+      console.log(`[Progress DB Log] Attempting to mark checkpoint ${activeCheckpointIdx} complete...`);
+
+      const updated = [...new Set([...completedCheckpoints, activeCheckpointIdx])];
+      const isAll = updated.length === PYTHON_CHECKPOINTS.length;
+      
+      // Attempt to save to Supabase
+      try {
+        await saveCheckpointProgress(updated);
+        
+        // Success feedback
+        toast.success(
+          t.lessonDetail.checkpointSaveSuccess.replace('{title}', activeCheckpoint?.title || '')
+        );
+        
+        // Clear active checkpoint timer from localStorage upon completion
+        if (timerStorageKey) {
+          localStorage.removeItem(timerStorageKey);
+        }
+      } catch (dbErr) {
+        console.error('[Progress DB Log] Database write failed — queueing for offline retry', dbErr);
+        
+        // Queue progress update for offline sync
+        queueFailedSave({
+          userId: user.id,
+          lessonId,
+          isPython: true,
+          completedCheckpoints: updated,
+        });
+
+        toast.warning(t.lessonDetail.checkpointOfflineWarning);
+      }
+
+      // Refresh progress data in UI silently
+      await refetchProgress();
+      
+      // Auto-advance to next uncompleted checkpoint
+      const updatedSet = new Set(updated);
+      const next = PYTHON_CHECKPOINTS.find(cp => !updatedSet.has(cp.id));
+      if (next) {
+        console.log(`[Progress Timer Log] Auto-advancing to next checkpoint: ${next.id} (${next.title})`);
+        setActiveCheckpointIdx(next.id);
+        // Reset auto-completion for the new checkpoint
+        autoCompletedRef.current = false;
+      }
+    } catch (err) {
+      console.error('[Progress DB Log] Unexpected error during checkpoint completion:', err);
+      toast.error(t.lessonDetail.unexpectedError);
+    } finally {
+      setIsSubmitting(false);
+      isSavingRef.current = false;
+    }
+  };
+
+  // ════════════════════════════════════════════
+  //  AUTO-COMPLETION: Python Checkpoints
+  //  Triggers when elapsed time reaches required
+  // ════════════════════════════════════════════
+  useEffect(() => {
+    if (!user?.id) return;
+    if (!isPythonLesson) return;
+    if (!isTimeMet || isCurrentCheckpointDone || isSubmitting || autoCompletedRef.current) return;
+    if (!activeCheckpoint) return;
+    
+    console.log(`[AutoComplete] Python checkpoint ${activeCheckpointIdx} time met — auto-completing`);
+    autoCompletedRef.current = true;
+    handleMarkCheckpointComplete();
+  }, [user?.id, isTimeMet, isCurrentCheckpointDone, isSubmitting, isPythonLesson, activeCheckpointIdx]);
 
   /* ─── Loading ─── */
   if (loading || (progressLoading && !progress)) {
@@ -1209,12 +1335,15 @@ export function LessonDetail() {
                     onClick={handleMarkCheckpointComplete}
                     disabled={!isTimeMet || isSubmitting || isCurrentCheckpointDone}
                     className={`w-full md:w-auto font-semibold px-6 transition-all duration-350 ${
-                      isCurrentCheckpointDone
-                        ? 'bg-emerald-600 hover:bg-emerald-600 text-white opacity-80 cursor-default shadow-none'
+                      isFullyCompleted || isCurrentCheckpointDone
+                        ? 'bg-emerald-600 hover:bg-emerald-600 text-white opacity-80 cursor-default shadow-none hidden md:inline-flex' // Hide on mobile, dim on desktop
                         : isTimeMet
                         ? 'bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer shadow-md shadow-emerald-200 animate-pulse-subtle'
                         : 'bg-slate-200 text-slate-400 cursor-not-allowed hover:bg-slate-200 shadow-none'
                     }`}
+                    style={{
+                      display: (isFullyCompleted || isCurrentCheckpointDone) ? 'none' : undefined
+                    }}
                   >
                     {isSubmitting ? (
                       <span className="flex items-center gap-2 justify-center">
@@ -1260,7 +1389,7 @@ export function LessonDetail() {
                   <button
                     key={cp.id}
                     title={`${cp.id + 1}. ${cp.title}`}
-                    onClick={() => { setActiveCheckpointIdx(cp.id); setElapsedSeconds(0); }}
+                    onClick={() => { setActiveCheckpointIdx(cp.id); setElapsedSeconds(0); autoCompletedRef.current = false; }}
                     className={`w-5 h-5 rounded-sm transition-all hover:scale-110 ${
                       completedSet.has(cp.id)
                         ? 'bg-emerald-400'
@@ -1310,7 +1439,7 @@ export function LessonDetail() {
                   disabled={!isTimeMet || isSubmitting || isFullyCompleted}
                   className={`w-full md:w-auto font-semibold px-6 transition-all duration-350 ${
                     isFullyCompleted
-                      ? 'bg-green-600 hover:bg-green-600 text-white border-green-650 opacity-90 cursor-default shadow-none'
+                      ? 'bg-green-600 hover:bg-green-600 text-white border-green-650 opacity-90 cursor-default shadow-none hidden'
                       : isTimeMet
                       ? 'bg-green-600 hover:bg-green-700 text-white cursor-pointer shadow-md shadow-green-200 animate-pulse-subtle'
                       : 'bg-slate-200 text-slate-400 cursor-not-allowed hover:bg-slate-200 shadow-none'

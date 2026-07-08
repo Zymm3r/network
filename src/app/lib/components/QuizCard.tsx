@@ -7,11 +7,11 @@ import {
   Trophy, Sparkles, Star, ArrowRight, RotateCcw, Brain,
   Flame, Award, Clock, Keyboard
 } from 'lucide-react';
-import { useAuth } from '../hooks/useAuth';
-import { useDailyStreak } from '../hooks/useDailyStreak';
-import { useActivity } from '../contexts/ActivityContext';
-import { playFeedback } from '../utils/feedback';
-import { getQuizForCourse, QuizQuestion } from '../data/courseQuizData';
+import { useAuth } from '../../hooks/useAuth';
+import { useDailyStreak } from '../../hooks/useDailyStreak';
+import { useActivity } from '../../contexts/ActivityContext';
+import { playFeedback } from '../../utils/feedback';
+import { getQuizForCourse, QuizQuestion } from '../../data/courseQuizData';
 
 /* ─────────────────────────────────────────
    Types & Data

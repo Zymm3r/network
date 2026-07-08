@@ -1,9 +1,10 @@
 import { useState, useMemo, useEffect } from 'react';
 import { ProductDetailData } from '../types/product';
-import { FileText, HelpCircle, Wrench, GraduationCap, Info, CircuitBoard, X, Loader2 } from 'lucide-react';
-import { WiringSimulator } from './WiringSimulator';
-import { KalturaPlayer } from '../../../app/components/KalturaPlayer';
+import { FileText, HelpCircle, Wrench, GraduationCap, Info, X } from 'lucide-react';
+import { Skeleton } from '../../../app/lib/components/ui/skeleton';
+import { KalturaPlayer } from '../../../app/lib/components/KalturaPlayer';
 import ReactMarkdown from 'react-markdown';
+import { HybridMarkdownRenderer } from './markdown/HybridMarkdownRenderer';
 import remarkGfm from 'remark-gfm';
 import { useI18n } from '../../../app/i18n';
 import { toast } from 'sonner';
@@ -32,14 +33,56 @@ export function EquipmentDetailTabs({ data, isLoading = false, error = null }: E
   // Defensive: never let a single malformed record crash the whole tab.
   const safeArray = <T,>(arr: T[] | null | undefined): T[] => Array.isArray(arr) ? arr : [];
 
-  const documents             = safeArray(data.documents);
-  const faqs                  = safeArray(data.faqs);
-  const troubleshootingGuides = safeArray(data.troubleshooting_guides);
-  const trainingCourses       = safeArray(data.training_courses);
+  const documents = useMemo(() => {
+    const arr = safeArray(data.documents);
+    const seen = new Set();
+    return arr.filter(d => {
+      const isDup = seen.has(d.title);
+      seen.add(d.title);
+      return !isDup;
+    });
+  }, [data.documents]);
+
+  const faqs = useMemo(() => {
+    const arr = safeArray(data.faqs);
+    const seen = new Set();
+    return arr.filter(f => {
+      const isDup = seen.has(f.question);
+      seen.add(f.question);
+      return !isDup;
+    });
+  }, [data.faqs]);
+
+  const troubleshootingGuides = useMemo(() => {
+    const arr = safeArray(data.troubleshooting_guides);
+    const seen = new Set();
+    return arr.filter(t => {
+      const isDup = seen.has(t.issue);
+      seen.add(t.issue);
+      return !isDup;
+    });
+  }, [data.troubleshooting_guides]);
+
+  const trainingCourses = useMemo(() => {
+    const arr = safeArray(data.training_courses);
+    const sorted = [...arr].sort((a, b) => {
+      const aHasMedia = (a.training_lessons && a.training_lessons.length > 0) || a.video_url ? 1 : 0;
+      const bHasMedia = (b.training_lessons && b.training_lessons.length > 0) || b.video_url ? 1 : 0;
+      return bHasMedia - aHasMedia;
+    });
+
+    const seen = new Set();
+    return sorted.filter(c => {
+      // Use clean string for deduplication in case of minor whitespace differences
+      const normalizedTitle = (c.title || '').trim().toLowerCase();
+      const isDup = seen.has(normalizedTitle);
+      seen.add(normalizedTitle);
+      return !isDup;
+    });
+  }, [data.training_courses]);
 
   const tabs = useMemo(() => ([
     { id: 'overview',       label: t.equipmentCatalog.overviewTab,         icon: Info },
-    { id: 'simulator',      label: t.equipmentCatalog.wiringTab, icon: CircuitBoard },
     { id: 'documents',      label: t.equipmentCatalog.documentsTab,        icon: FileText,    count: documents.length },
     { id: 'faq',            label: t.equipmentCatalog.faqTab,              icon: HelpCircle,  count: faqs.length },
     { id: 'troubleshooting',label: t.equipmentCatalog.troubleTab,  icon: Wrench,      count: troubleshootingGuides.length },
@@ -114,36 +157,31 @@ export function EquipmentDetailTabs({ data, isLoading = false, error = null }: E
       {/* Tab Content */}
       <div className="p-6 md:p-8 min-h-[400px]">
         {isLoading && (
-          <div className="flex items-center gap-3 text-slate-500 text-sm py-6">
-            <Loader2 className="animate-spin" size={18} />
-            {t.equipmentCatalog.loading}
+          <div className="space-y-6">
+            <div className="flex gap-4 mb-8">
+              <Skeleton className="h-10 w-32 rounded-xl" />
+              <Skeleton className="h-10 w-32 rounded-xl" />
+              <Skeleton className="h-10 w-32 rounded-xl" />
+            </div>
+            <Skeleton className="h-64 w-full rounded-2xl" />
           </div>
         )}
 
         {error && !isLoading && (
           <div className="bg-rose-50 border border-rose-200 text-rose-800 rounded-xl p-4 text-sm">
-            <div className="font-bold mb-1">{t.equipmentCatalog.errorLoading}</div>
+            <div className="font-bold mb-1">{t.equipmentCatalog.errorLoading || 'Error Loading Data'}</div>
             <div className="opacity-80">{error.message}</div>
           </div>
         )}
 
-        {activeTab === 'overview' && (
+        {!isLoading && !error && activeTab === 'overview' && (
           <div className="space-y-6">
             <div>
               <h3 className="text-lg font-bold text-slate-800 mb-4">{t.equipmentCatalog.detailsTitle}</h3>
-              <div className="prose prose-slate prose-sm sm:prose-base max-w-none
-                prose-headings:text-slate-800 prose-headings:font-bold prose-headings:border-b prose-headings:border-slate-100 prose-headings:pb-2 prose-headings:mb-4
-                prose-h2:text-lg prose-h2:mt-8
-                prose-h3:text-base prose-h3:mt-6
-                prose-p:text-slate-600 prose-p:leading-relaxed
-                prose-li:text-slate-600
-                prose-strong:text-slate-800 prose-strong:font-semibold
-                prose-a:text-indigo-600 prose-a:no-underline hover:prose-a:underline
-                prose-code:bg-slate-100 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-indigo-700 prose-code:text-sm
-                prose-ol:list-decimal prose-ul:list-disc">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                  {data.product?.content || data.product?.description || t.equipmentCatalog.noDescription}
-                </ReactMarkdown>
+              <div className="mt-4">
+                <HybridMarkdownRenderer 
+                  content={data.product?.content || data.product?.description || t.equipmentCatalog.noDescription}
+                />
               </div>
             </div>
             
@@ -170,18 +208,11 @@ export function EquipmentDetailTabs({ data, isLoading = false, error = null }: E
           </div>
         )}
 
-        {activeTab === 'simulator' && (
-          <WiringSimulator 
-            productName={data.product?.name || t.equipmentCatalog.defaultDeviceName} 
-            productCategory={data.product?.category || ''}
-          />
-        )}
-
-        {activeTab === 'documents' && (
+        {!isLoading && !error && activeTab === 'documents' && (
           <div className="">
-            {data.documents?.length > 0 ? (
+            {documents.filter(d => ['application/pdf', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'].includes(d.mime_type)).length > 0 ? (
               <ul className="grid gap-4 sm:grid-cols-2">
-                {data.documents.map(doc => (
+                {documents.filter(d => ['application/pdf', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'].includes(d.mime_type)).map(doc => (
                   <li key={doc.id} className="flex flex-col justify-between gap-4 p-5 bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-indigo-200 transition-all group">
                     <div className="flex items-start gap-4">
                       <div className="w-12 h-12 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 flex-shrink-0 group-hover:scale-110 transition-transform">
@@ -218,11 +249,11 @@ export function EquipmentDetailTabs({ data, isLoading = false, error = null }: E
           </div>
         )}
 
-        {activeTab === 'faq' && (
+        {!isLoading && !error && activeTab === 'faq' && (
           <div className="">
-            {data.faqs?.length > 0 ? (
+            {faqs.length > 0 ? (
               <div className="space-y-4">
-                {data.faqs.map(faq => (
+                {faqs.map(faq => (
                   <div key={faq.id} className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm hover:shadow-md hover:border-indigo-200 transition-all">
                     <h4 className="font-bold text-slate-800 flex items-start gap-3">
                       <span className="flex-shrink-0 w-7 h-7 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-sm">Q</span>
@@ -248,11 +279,11 @@ export function EquipmentDetailTabs({ data, isLoading = false, error = null }: E
           </div>
         )}
 
-        {activeTab === 'troubleshooting' && (
+        {!isLoading && !error && activeTab === 'troubleshooting' && (
           <div className="">
-            {data.troubleshooting_guides?.length > 0 ? (
+            {troubleshootingGuides.length > 0 ? (
               <div className="space-y-6">
-                {data.troubleshooting_guides.map(guide => (
+                {troubleshootingGuides.map(guide => (
                   <div key={guide.id} className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                     <div className="bg-rose-50 px-6 py-4 border-b border-rose-100 flex items-center gap-3">
                       <div className="bg-rose-200 p-2 rounded-lg"><Wrench className="text-rose-700" size={20} /></div>
@@ -283,11 +314,11 @@ export function EquipmentDetailTabs({ data, isLoading = false, error = null }: E
           </div>
         )}
 
-        {activeTab === 'training' && (
+        {!isLoading && !error && activeTab === 'training' && (
           <div className="">
-            {data.training_courses?.length > 0 ? (
+            {trainingCourses.length > 0 ? (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {data.training_courses.map(course => (
+                {trainingCourses.map(course => (
                   <div key={course.id} className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all group flex flex-col">
                     <div className="flex justify-between items-start mb-5">
                       <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm">

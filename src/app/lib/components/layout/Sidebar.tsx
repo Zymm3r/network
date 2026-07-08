@@ -12,9 +12,9 @@ import {
   PackageSearch,
 } from 'lucide-react';
 import { LanguageSwitcher } from '../LanguageSwitcher';
-import { useI18n } from '../../i18n';
-import { useAuth } from '../../hooks/useAuth';
-import { getInitials } from '../../lib/utils';
+import { useI18n } from '../../../i18n';
+import { useAuth } from '../../../hooks/useAuth';
+import { getInitials } from '../../utils';
 
 const navItems = [
   { to: '/dashboard', labelKey: 'nav.dashboard', icon: LayoutDashboard, end: false },
