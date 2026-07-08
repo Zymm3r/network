@@ -488,7 +488,7 @@ export const th = {
     coursesInPath: 'หลักสูตรในเส้นทาง ({count})',
   },
   search: {
-    placeholder: 'ค้นหาหลักสูตร บทเรียน...',
+    placeholder: 'ค้นหา',
     categories: {
       course: 'หลักสูตร',
       lesson: 'บทเรียน',
