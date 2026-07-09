@@ -99,9 +99,10 @@ class ExerciseErrorBoundary extends Component<{children: ReactNode}, {hasError: 
 interface ExerciseCardProps {
   courseName?: string;
   courseId?: string;
+  onComplete?: (passed: boolean) => void;
 }
 
-export default function ExerciseCard({ courseName, courseId }: ExerciseCardProps = {}) {
+export default function ExerciseCard({ courseName, courseId, onComplete }: ExerciseCardProps = {}) {
   const { user } = useAuth();
   const { currentStreak, recordActivity } = useDailyStreak(user?.id);
   const { totalSeconds } = useActivity();
@@ -304,6 +305,10 @@ export default function ExerciseCard({ courseName, courseId }: ExerciseCardProps
             setShowConfetti(true);
             playFeedback('complete');
             recordActivity(); // Record daily streak
+            
+            if (onComplete) {
+              onComplete(true);
+            }
 
             if (courseId) {
               import('../lib/api/certificates').then(({ certificateApi }) => {

@@ -41,9 +41,10 @@ function getRandomItem<T>(arr: T[]): T {
 interface QuizCardProps {
   courseName?: string;
   courseId?: string;
+  onComplete?: (score: number, totalQuestions: number) => void;
 }
 
-export default function QuizCard({ courseName, courseId }: QuizCardProps = {}) {
+export default function QuizCard({ courseName, courseId, onComplete }: QuizCardProps = {}) {
   const { user } = useAuth();
   const { currentStreak, recordActivity } = useDailyStreak(user?.id);
   const { totalSeconds } = useActivity();
@@ -164,8 +165,12 @@ export default function QuizCard({ courseName, courseId }: QuizCardProps = {}) {
         setShowAchievement('🏆 Perfect Score!');
         setTimeout(() => setShowAchievement(null), 3000);
       }
+      
+      if (onComplete) {
+        onComplete(score + (selectedIdx === question.correctIndex ? 1 : 0), totalQuestions);
+      }
     }
-  }, [currentQ, totalQuestions, score, selectedIdx, question.correctIndex, recordActivity]);
+  }, [currentQ, totalQuestions, score, selectedIdx, question.correctIndex, recordActivity, onComplete]);
 
   const handleRestart = useCallback(() => {
     setCurrentQ(0);

@@ -450,6 +450,18 @@ export function LessonDetail() {
   const [videoSeekState, setVideoSeekState] = useState<VideoSeekState | null>(null);
   const [readingProgress, setReadingProgress] = useState(0);
   const [isVideoCompleted, setIsVideoCompleted] = useState(false);
+  const [isQuizPassed, setIsQuizPassed] = useState(false);
+  const [isExercisePassed, setIsExercisePassed] = useState(false);
+  const [isScrolledToBottom, setIsScrolledToBottom] = useState(false);
+  
+  // Reset completion states when lesson changes
+  useEffect(() => {
+    setIsVideoCompleted(false);
+    setIsQuizPassed(false);
+    setIsExercisePassed(false);
+    setIsScrolledToBottom(false);
+  }, [lessonId]);
+  
   const readingContentRef = useRef<HTMLDivElement>(null);
   
   // Concurrent Flight Lock
@@ -522,10 +534,17 @@ export function LessonDetail() {
     ? completedCheckpoints.length === PYTHON_CHECKPOINTS.length
     : progress?.status === 'completed';
     
-  // Require video completion for videos, fallback to timer for reading
-  const isTimeMet = (lesson?.lesson_type === 'video' || !!lesson?.video_url)
-    ? isVideoCompleted
-    : elapsedSeconds >= requiredSeconds;
+  // Require strict completion checks per lesson type
+  const isTimeMet = useMemo(() => {
+    if (lesson?.lesson_type === 'video' || !!lesson?.video_url) return isVideoCompleted;
+    if (isPythonLesson) return completedCheckpoints.length === PYTHON_CHECKPOINTS.length;
+    if (lesson?.lesson_type === 'quiz') return isQuizPassed;
+    if (lesson?.lesson_type === 'exercise') return isExercisePassed;
+    if (lesson?.lesson_type === 'interactive') return false; // Handled explicitly by events if added
+    
+    // Default fallback for Reading/Markdown: timer and scroll
+    return elapsedSeconds >= requiredSeconds && isScrolledToBottom;
+  }, [lesson, isVideoCompleted, isPythonLesson, completedCheckpoints.length, isQuizPassed, isExercisePassed, elapsedSeconds, requiredSeconds, isScrolledToBottom]);
 
   /* ── Load/Initialize timer from localStorage when storage key or required duration changes ── */
   useEffect(() => {
@@ -689,6 +708,26 @@ export function LessonDetail() {
       window.removeEventListener('online', handleOnline);
     };
   }, [user?.id, flushPendingSaves]);
+
+  /* ── Reading Content Scroll Tracking ── */
+  useEffect(() => {
+    if (!isReadingLesson || !readingContentRef.current) return;
+    
+    // Check if content fits in the container without scrolling
+    const el = readingContentRef.current;
+    const checkScroll = () => {
+      if (el.scrollHeight <= el.clientHeight) {
+        setIsScrolledToBottom(true);
+        setReadingProgress(100);
+      }
+    };
+    
+    checkScroll();
+    
+    // Optional: Re-check on resize
+    window.addEventListener('resize', checkScroll);
+    return () => window.removeEventListener('resize', checkScroll);
+  }, [isReadingLesson, lesson]);
 
   /* ── Save checkpoint progress to Supabase (notes column) ── */
   const saveCheckpointProgress = useCallback(async (newCompletedIndices: number[]) => {
@@ -1058,9 +1097,20 @@ export function LessonDetail() {
       )}
 
       {/* Lesson Type Specific */}
-      {lesson.lesson_type === 'quiz' && <QuizCard />}
-
-      {lesson.lesson_type === 'exercise' && <ExerciseCard />}
+      {lesson.lesson_type === 'quiz' && (
+        <QuizCard 
+          courseId={lesson.course_id || undefined} 
+          onComplete={(score, total) => {
+            if (score / total >= 0.6) setIsQuizPassed(true); // Assuming 60% is pass
+          }} 
+        />
+      )}
+      {lesson.lesson_type === 'exercise' && (
+        <ExerciseCard 
+          courseId={lesson.course_id || undefined} 
+          onComplete={(passed) => setIsExercisePassed(passed)} 
+        />
+      )}
 
       {/* ══════════════════════════════════════════════════════════
           READING LESSON: Rich Article Renderer
@@ -1102,7 +1152,9 @@ export function LessonDetail() {
                 onScroll={(e) => {
                   const el = e.currentTarget;
                   const scrollPct = el.scrollTop / (el.scrollHeight - el.clientHeight);
-                  setReadingProgress(Math.min(100, Math.round(scrollPct * 100)));
+                  const newProgress = Math.min(100, Math.round(scrollPct * 100));
+                  setReadingProgress(newProgress);
+                  if (scrollPct >= 0.99) setIsScrolledToBottom(true);
                 }}
                 style={{ maxHeight: '70vh', overflowY: 'auto', scrollBehavior: 'smooth' }}
               >

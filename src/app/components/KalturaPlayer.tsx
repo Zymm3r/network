@@ -201,6 +201,10 @@ function KalturaEmbed({
     }
 
     try {
+      maxWatchedRef.current = 0;
+      completedRef.current = false;
+      setWatchPercent(0);
+      
       const targetId = `kaltura-player-${entryId}`;
       containerRef.current.id = targetId;
 
@@ -346,6 +350,10 @@ function YouTubeEmbed({
   useEffect(() => {
     if (!isLoaded || !containerRef.current || !videoId) return;
 
+    maxWatchedRef.current = 0;
+    completedRef.current = false;
+    setWatchPercent(0);
+
     const playerId = `yt-player-${Math.random().toString(36).substr(2, 9)}`;
     containerRef.current.id = playerId;
 
@@ -457,6 +465,12 @@ function Html5Video({
   const maxWatchedRef = useRef(0);
   const completedRef = useRef(false);
   const [watchPercent, setWatchPercent] = useState(0);
+
+  useEffect(() => {
+    maxWatchedRef.current = 0;
+    completedRef.current = false;
+    setWatchPercent(0);
+  }, [url]);
 
   const handleTimeUpdate = useCallback(() => {
     const video = videoRef.current;
