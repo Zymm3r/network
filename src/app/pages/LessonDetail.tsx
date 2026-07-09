@@ -509,7 +509,7 @@ export function LessonDetail() {
     : (lesson?.duration_minutes || 0);
   
   // Disable page-level timer for video lessons
-  const requiredSeconds = lesson?.lesson_type === 'video'
+  const requiredSeconds = (lesson?.lesson_type === 'video' || !!lesson?.video_url)
     ? 0
     : isPythonLesson
       ? (activeCheckpoint?.duration ?? 0)
@@ -523,7 +523,7 @@ export function LessonDetail() {
     : progress?.status === 'completed';
     
   // Require video completion for videos, fallback to timer for reading
-  const isTimeMet = lesson?.lesson_type === 'video'
+  const isTimeMet = (lesson?.lesson_type === 'video' || !!lesson?.video_url)
     ? isVideoCompleted
     : elapsedSeconds >= requiredSeconds;
 

@@ -33,7 +33,7 @@ export interface KalturaPlayerProps {
   onComplete?: () => void;
   /** Called periodically with watch progress (0-100) */
   onProgress?: (percent: number) => void;
-  /** Completion threshold percentage (default: 90) */
+  /** Completion threshold percentage (default: 100) */
   completionThreshold?: number;
   /** Seek to a specific time in seconds */
   seekToSeconds?: number;
@@ -96,7 +96,7 @@ export function KalturaPlayer({
   enforceNoSkip = false,
   onComplete,
   onProgress,
-  completionThreshold = 90,
+  completionThreshold = 100,
   seekToSeconds,
   className = '',
   showLockIndicator = true,
@@ -527,7 +527,7 @@ function Html5Video({
    Anti-Skip Progress Indicator
 ═══════════════════════════════════════════ */
 function AntiSkipIndicator({ percent }: { percent: number }) {
-  const isComplete = percent >= 90;
+  const isComplete = percent >= 100;
 
   return (
     <div className="absolute top-3 right-3 z-10">
