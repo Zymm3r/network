@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { progressApi } from '../lib/api/progress';
+import { analyticsApi } from '../lib/api/analytics';
 import { supabase } from '../lib/supabase';
 import type { UserProgress, Enrollment } from '../types';
 
@@ -119,6 +120,12 @@ export function useProgress(userId: string, courseId: string) {
       if (upsertError) throw upsertError;
 
       console.log(`[Progress DB Log] Successfully marked course ${courseId} complete`);
+      
+      // Award 100 XP for completing a course
+      analyticsApi.recordLearningActivity(userId, 100, 0).catch(err => {
+        console.error('[Progress DB Log] Failed to award XP for course completion:', err);
+      });
+
       setProgress(prev => prev ? {
         ...prev,
         status: 'completed',
@@ -282,24 +289,11 @@ export function useLessonProgress(userId: string, lessonId: string) {
 
       console.log(`[Progress DB Log] Successfully marked lesson ${lessonId} complete`);
       
-      // Auto-issue certificate if course is now 100% complete
-      // We don't have courseId here, so we must fetch it first
-      const { data: lessonData } = await supabase
-        .from('lessons')
-        .select('course_id')
-        .eq('id', lessonId)
-        .single();
-        
-      if (lessonData?.course_id) {
-        // We import certificateApi dynamically to avoid circular dependencies if any
-        import('../lib/api/certificates').then(({ certificateApi }) => {
-          certificateApi.checkAndIssueCourseCertificate(userId, lessonData.course_id).then(cert => {
-            if (cert) {
-              console.log(`[Certificate] Auto-issued certificate:`, cert.certificate_number);
-            }
-          });
-        });
-      }
+      // Award 20 XP for completing a lesson
+      analyticsApi.recordLearningActivity(userId, 20, 0).catch(err => {
+        console.error('[Progress DB Log] Failed to award XP for lesson completion:', err);
+      });
+
       setProgress(prev => prev ? {
         ...prev,
         status: 'completed',

@@ -123,15 +123,6 @@ export interface User {
   created_at: string;
 }
 
-export interface Certificate {
-  id: string;
-  user_id: string;
-  course_id: string | null;
-  learning_path_id: string | null;
-  certificate_number: string;
-  issued_at: string;
-  certificate_url: string | null;
-}
 
 export interface UserBookmark {
   id: string;

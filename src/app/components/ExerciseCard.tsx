@@ -310,13 +310,7 @@ export default function ExerciseCard({ courseName, courseId, onComplete }: Exerc
               onComplete(true);
             }
 
-            if (courseId) {
-              import('../lib/api/certificates').then(({ certificateApi }) => {
-                certificateApi.checkAndIssueCourseCertificate(user.id, courseId).then(cert => {
-                  if (cert) console.log(`[Certificate] Auto-issued certificate:`, cert.certificate_number);
-                });
-              });
-            }
+
 
             // Achievement badges
             const achievementMsg = attempts === 0

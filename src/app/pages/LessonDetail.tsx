@@ -811,11 +811,7 @@ export function LessonDetail() {
         );
 
         if (isAll && lesson?.course_id) {
-          import('../lib/api/certificates').then(({ certificateApi }) => {
-            certificateApi.checkAndIssueCourseCertificate(user.id, lesson.course_id).then(cert => {
-              if (cert) console.log(`[Certificate] Auto-issued certificate:`, cert.certificate_number);
-            });
-          });
+
         }
 
         // Clear active checkpoint timer from localStorage upon completion
@@ -903,11 +899,7 @@ export function LessonDetail() {
         toast.success(t.lessonDetail.standardLessonCompleteSuccess);
 
         if (lesson?.course_id) {
-          import('../lib/api/certificates').then(({ certificateApi }) => {
-            certificateApi.checkAndIssueCourseCertificate(user.id, lesson.course_id).then(cert => {
-              if (cert) console.log(`[Certificate] Auto-issued certificate:`, cert.certificate_number);
-            });
-          });
+
         }
 
         // Clear stay-timer from localStorage upon completion
