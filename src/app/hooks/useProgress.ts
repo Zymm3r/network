@@ -65,39 +65,39 @@ export function useProgress(userId: string, courseId: string) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  useEffect(() => {
-    const fetchProgress = async () => {
-      if (!userId || !courseId) {
-        setLoading(false);
-        return;
+  const fetchProgress = useCallback(async () => {
+    if (!userId || !courseId) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      console.log(`[Progress DB Log] Fetching course progress (enrollment) for user: ${userId}, course: ${courseId}`);
+      const { data, error: fetchError } = await supabase
+        .from('enrollments')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('course_id', courseId)
+        .single();
+
+      if (fetchError && fetchError.code !== 'PGRST116') {
+        throw fetchError;
       }
 
-      try {
-        setLoading(true);
-        console.log(`[Progress DB Log] Fetching course progress (enrollment) for user: ${userId}, course: ${courseId}`);
-        const { data, error: fetchError } = await supabase
-          .from('enrollments')
-          .select('*')
-          .eq('user_id', userId)
-          .eq('course_id', courseId)
-          .single();
-
-        if (fetchError && fetchError.code !== 'PGRST116') {
-          throw fetchError;
-        }
-
-        console.log(`[Progress DB Log] Fetched course progress:`, data);
-        setProgress(data || null);
-      } catch (err) {
-        console.error('[Progress DB Log] Failed to fetch course progress:', err);
-        setError(err instanceof Error ? err : new Error('Failed to fetch progress'));
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProgress();
+      console.log(`[Progress DB Log] Fetched course progress:`, data);
+      setProgress(data || null);
+    } catch (err) {
+      console.error('[Progress DB Log] Failed to fetch course progress:', err);
+      setError(err instanceof Error ? err : new Error('Failed to fetch progress'));
+    } finally {
+      setLoading(false);
+    }
   }, [userId, courseId]);
+
+  useEffect(() => {
+    fetchProgress();
+  }, [fetchProgress]);
 
   const markComplete = useCallback(async () => {
     if (!userId || !courseId) return;
@@ -126,12 +126,8 @@ export function useProgress(userId: string, courseId: string) {
         console.error('[Progress DB Log] Failed to award XP for course completion:', err);
       });
 
-      setProgress(prev => prev ? {
-        ...prev,
-        status: 'completed',
-        progress_percentage: 100,
-        completed_at: new Date().toISOString(),
-      } : null);
+      // Refetch from database
+      await fetchProgress();
     } catch (err) {
       console.error('[Progress DB Log] Failed to mark course complete:', err);
       throw err instanceof Error ? err : new Error('Failed to mark complete');
@@ -294,26 +290,8 @@ export function useLessonProgress(userId: string, lessonId: string) {
         console.error('[Progress DB Log] Failed to award XP for lesson completion:', err);
       });
 
-      setProgress(prev => prev ? {
-        ...prev,
-        status: 'completed',
-        progress_percentage: 100,
-        completed_at: new Date().toISOString(),
-      } : {
-        id: '',
-        user_id: userId,
-        course_id: null,
-        path_id: null,
-        exercise_id: null,
-        lesson_id: lessonId,
-        status: 'completed',
-        progress_percentage: 100,
-        completed_at: new Date().toISOString(),
-        last_accessed_at: new Date().toISOString(),
-        notes: null,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      } as UserProgress);
+      // Refetch from database rather than optimistically guessing completion state
+      await fetchProgress();
     } catch (err) {
       console.error('[Progress DB Log] Failed to mark lesson complete:', err);
       throw err instanceof Error ? err : new Error('Failed to mark complete');

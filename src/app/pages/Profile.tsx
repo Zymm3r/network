@@ -10,7 +10,7 @@ import { getInitials } from '../lib/utils';
 import { Button } from '../components/ui/button';
 import { Progress } from '../components/ui/progress';
 import { Badge } from '../components/ui/badge';
-import { BookOpen, Award, LogOut, Clock, Trophy, Target, Zap, Play, ChevronRight } from 'lucide-react';
+import { BookOpen, Award, LogOut, Clock, Trophy, Target, Zap, Play, ChevronRight, AlertTriangle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 export function Profile() {
@@ -525,6 +525,43 @@ export function Profile() {
                   </Badge>
                 </div>
               ))}
+              <Button 
+                  variant="outline" 
+                  className="w-full text-red-600 hover:text-red-700 hover:bg-red-50 border-red-100 mt-4"
+                  onClick={async () => {
+                    if (window.confirm('Are you sure you want to completely reset your learning progress? This cannot be undone.')) {
+                      try {
+                        const { error: progressError } = await supabase
+                          .from('user_progress')
+                          .delete()
+                          .eq('user_id', user.id);
+                        if (progressError) throw progressError;
+
+                        const { error: statsError } = await supabase
+                          .from('user_stats')
+                          .delete()
+                          .eq('user_id', user.id);
+                        if (statsError) throw statsError;
+
+                        const { error: enrollmentsError } = await supabase
+                          .from('enrollments')
+                          .delete()
+                          .eq('user_id', user.id);
+                        if (enrollmentsError) throw enrollmentsError;
+
+                        localStorage.removeItem('pending-progress-saves');
+                        alert('Progress has been successfully reset. The page will now reload.');
+                        window.location.reload();
+                      } catch (e) {
+                        alert('Failed to reset progress.');
+                        console.error(e);
+                      }
+                    }
+                  }}
+                >
+                  <AlertTriangle className="w-4 h-4 mr-2" />
+                  Reset My Progress
+                </Button>
             </div>
           )}
         </CardContent>

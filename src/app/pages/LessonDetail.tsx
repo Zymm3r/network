@@ -592,122 +592,7 @@ export function LessonDetail() {
 
 
 
-  /* ── Offline resilience helper: Queue a failed save ── */
-  const queueFailedSave = useCallback((payload: {
-    userId: string;
-    lessonId: string;
-    isPython: boolean;
-    completedCheckpoints: number[];
-  }) => {
-    try {
-      const existingStr = localStorage.getItem('pending-progress-saves');
-      const queue = existingStr ? JSON.parse(existingStr) : [];
-      
-      // Deduplicate by lessonId
-      const filtered = queue.filter(
-        (item: any) => !(item.lessonId === payload.lessonId)
-      );
-      filtered.push(payload);
-      
-      localStorage.setItem('pending-progress-saves', JSON.stringify(filtered));
-      console.log('[Progress Offline Log] Saved progress update to offline queue:', payload);
-    } catch (e) {
-      console.error('[Progress Offline Log] Failed to queue offline progress:', e);
-    }
-  }, []);
 
-  /* ── Offline resilience helper: Flush pending saves ── */
-  const flushPendingSaves = useCallback(async (currentUserId: string) => {
-    try {
-      const existingStr = localStorage.getItem('pending-progress-saves');
-      if (!existingStr) return;
-      
-      const queue = JSON.parse(existingStr);
-      if (!Array.isArray(queue) || queue.length === 0) return;
-
-      console.log(`[Progress Offline Log] Attempting to flush ${queue.length} pending saves for user ${currentUserId}`);
-      
-      const remaining = [];
-      let successCount = 0;
-
-      for (const item of queue) {
-        if (item.userId !== currentUserId) {
-          remaining.push(item);
-          continue;
-        }
-
-        try {
-          if (item.isPython) {
-            const pct = Math.round((item.completedCheckpoints.length / PYTHON_CHECKPOINTS.length) * 100);
-            const isAll = item.completedCheckpoints.length === PYTHON_CHECKPOINTS.length;
-            const now = new Date().toISOString();
-
-            const { error: upsertError } = await supabase.from('user_progress').upsert({
-              user_id: item.userId,
-              lesson_id: item.lessonId,
-              status: isAll ? 'completed' : 'in_progress',
-              progress_percentage: pct,
-              notes: JSON.stringify(item.completedCheckpoints),
-              completed_at: isAll ? now : null,
-              last_accessed_at: now,
-            }, { onConflict: 'user_id,lesson_id' });
-
-            if (upsertError) throw upsertError;
-          } else {
-            const { error: upsertError } = await supabase.from('user_progress').upsert({
-              user_id: item.userId,
-              lesson_id: item.lessonId,
-              status: 'completed',
-              progress_percentage: 100,
-              completed_at: new Date().toISOString(),
-              last_accessed_at: new Date().toISOString(),
-            }, { onConflict: 'user_id,lesson_id' });
-
-            if (upsertError) throw upsertError;
-          }
-          successCount++;
-          console.log('[Progress Offline Log] Flushed offline progress successfully:', item);
-        } catch (err) {
-          console.error('[Progress Offline Log] Failed to flush offline progress item:', item, err);
-          remaining.push(item);
-        }
-      }
-
-      if (remaining.length > 0) {
-        localStorage.setItem('pending-progress-saves', JSON.stringify(remaining));
-      } else {
-        localStorage.removeItem('pending-progress-saves');
-      }
-
-      if (successCount > 0) {
-        toast.success(
-          t.lessonDetail.offlineSyncSuccess.replace('{count}', successCount.toString())
-        );
-        await refetchProgress();
-      }
-    } catch (e) {
-      console.error('[Progress Offline Log] Error during flush:', e);
-    }
-  }, [refetchProgress, language]);
-
-  /* ── Offline queue triggers ── */
-  useEffect(() => {
-    if (!user?.id) return;
-
-    // 1. Flush immediately on mount/load
-    flushPendingSaves(user.id);
-
-    // 2. Flush when user comes back online
-    const handleOnline = () => {
-      console.log('[Progress Offline Log] Browser detected as ONLINE — flushing queue');
-      flushPendingSaves(user.id);
-    };
-
-    window.addEventListener('online', handleOnline);
-    return () => {
-      window.removeEventListener('online', handleOnline);
-    };
-  }, [user?.id, flushPendingSaves]);
 
   /* ── Reading Content Scroll Tracking ── */
   useEffect(() => {
@@ -1173,18 +1058,20 @@ export function LessonDetail() {
       {/* ══════════════════════════════════════════════════════════
           COMPLETION / TIMER CARD
       ══════════════════════════════════════════════════════════ */}
-      {isPythonLesson ? (
+      {isPythonLesson ? isFullyCompleted && progress?.completed_at ? (
+        <div className="mt-8">
+          <LessonCompleteCard completedAt={progress.completed_at} />
+        </div>
+      ) : (
         /* ── Python: per-checkpoint completion card ── */
         <Card className={`border transition-all duration-350 overflow-hidden ${
-          isFullyCompleted
-            ? 'border-emerald-200 bg-gradient-to-br from-emerald-50 to-green-50'
-            : isCurrentCheckpointDone
+          isCurrentCheckpointDone
             ? 'border-emerald-100 bg-emerald-50/30'
             : 'border-slate-100 bg-slate-50/40'
         }`}>
           <CardContent className="pt-6">
             {/* Checkpoint name banner */}
-            {!isFullyCompleted && activeCheckpoint && (
+            {activeCheckpoint && (
               <button
                 onClick={() => handleCheckpointClick(activeCheckpoint)}
                 className="w-full text-left mb-4 flex items-center gap-3 p-3 rounded-xl bg-white border border-indigo-100 shadow-sm hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer group"
@@ -1207,27 +1094,21 @@ export function LessonDetail() {
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
               <div className="flex items-center gap-3">
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
-                  isFullyCompleted
-                    ? 'bg-emerald-100 text-emerald-600'
-                    : isCurrentCheckpointDone
+                  isCurrentCheckpointDone
                     ? 'bg-emerald-100 text-emerald-600'
                     : 'bg-indigo-50 text-indigo-600'
                 }`}>
-                  {isFullyCompleted ? <Trophy className="w-5 h-5" /> : <CheckCircle className="w-5 h-5" />}
+                  <CheckCircle className="w-5 h-5" />
                 </div>
                 <div>
                   <div className="font-semibold text-slate-800">
-                    {isFullyCompleted
-                      ? t.lessonDetail.pythonFullyCompletedTitle
-                      : isCurrentCheckpointDone
+                    {isCurrentCheckpointDone
                       ? t.lessonDetail.pythonCheckpointDoneTitle.replace('{title}', activeCheckpoint?.title || '')
                       : t.lessonDetail.pythonAccumulatingTitle.replace('{title}', activeCheckpoint?.title || '')
                     }
                   </div>
                   <div className="text-sm text-muted-foreground mt-0.5">
-                    {isFullyCompleted
-                      ? t.lessonDetail.pythonFullyCompletedDesc.replace('{completedAt}', formatCompletedAt(progress?.completed_at))
-                      : isCurrentCheckpointDone
+                    {isCurrentCheckpointDone
                       ? t.lessonDetail.pythonCheckpointDoneDesc
                       : t.lessonDetail.pythonAccumulatingDesc
                     }
@@ -1236,49 +1117,47 @@ export function LessonDetail() {
               </div>
 
               {/* Timer + Button */}
-              {!isFullyCompleted && (
-                <div className="w-full md:w-auto flex flex-col md:flex-row items-stretch md:items-center gap-3 shrink-0">
-                  {!isCurrentCheckpointDone && requiredSeconds > 0 && (
-                    <div className="text-left md:text-right shrink-0">
-                      <div className="text-xs text-muted-foreground font-medium">{t.lessonDetail.requiredAccumulatedTime}</div>
-                      <div className="text-sm font-semibold text-indigo-600 mt-0.5">
-                        {isTimeMet
-                          ? t.lessonDetail.timeAccumulatedDone
-                          : t.lessonDetail.timeRemainingText.replace('{time}', formatCountdown(requiredSeconds - elapsedSeconds))
-                        }
-                      </div>
+              <div className="w-full md:w-auto flex flex-col md:flex-row items-stretch md:items-center gap-3 shrink-0">
+                {!isCurrentCheckpointDone && requiredSeconds > 0 && (
+                  <div className="text-left md:text-right shrink-0">
+                    <div className="text-xs text-muted-foreground font-medium">{t.lessonDetail.requiredAccumulatedTime}</div>
+                    <div className="text-sm font-semibold text-indigo-600 mt-0.5">
+                      {isTimeMet
+                        ? t.lessonDetail.timeAccumulatedDone
+                        : t.lessonDetail.timeRemainingText.replace('{time}', formatCountdown(requiredSeconds - elapsedSeconds))
+                      }
                     </div>
+                  </div>
+                )}
+                <Button
+                  onClick={handleMarkCheckpointComplete}
+                  disabled={!isTimeMet || isSubmitting || isCurrentCheckpointDone}
+                  className={`w-full md:w-auto font-semibold px-6 transition-all duration-350 ${
+                    isCurrentCheckpointDone
+                      ? 'bg-emerald-600 hover:bg-emerald-600 text-white opacity-80 cursor-default shadow-none'
+                      : isTimeMet
+                      ? 'bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer shadow-md shadow-emerald-200 animate-pulse-subtle'
+                      : 'bg-slate-200 text-slate-400 cursor-not-allowed hover:bg-slate-200 shadow-none'
+                  }`}
+                >
+                  {isSubmitting ? (
+                    <span className="flex items-center gap-2 justify-center">
+                      <span className="animate-spin rounded-full h-4 w-4 border-2 border-slate-300 border-t-white" />
+                      {t.lessonDetail.savingProgress}
+                    </span>
+                  ) : isCurrentCheckpointDone ? (
+                    t.lessonDetail.completedLabel
+                  ) : isTimeMet ? (
+                    t.lessonDetail.markAsCompletedLabel
+                  ) : (
+                    t.lessonDetail.waitingForTime
                   )}
-                  <Button
-                    onClick={handleMarkCheckpointComplete}
-                    disabled={!isTimeMet || isSubmitting || isCurrentCheckpointDone}
-                    className={`w-full md:w-auto font-semibold px-6 transition-all duration-350 ${
-                      isCurrentCheckpointDone
-                        ? 'bg-emerald-600 hover:bg-emerald-600 text-white opacity-80 cursor-default shadow-none'
-                        : isTimeMet
-                        ? 'bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer shadow-md shadow-emerald-200 animate-pulse-subtle'
-                        : 'bg-slate-200 text-slate-400 cursor-not-allowed hover:bg-slate-200 shadow-none'
-                    }`}
-                  >
-                    {isSubmitting ? (
-                      <span className="flex items-center gap-2 justify-center">
-                        <span className="animate-spin rounded-full h-4 w-4 border-2 border-slate-300 border-t-white" />
-                        {t.lessonDetail.savingProgress}
-                      </span>
-                    ) : isCurrentCheckpointDone ? (
-                      t.lessonDetail.completedLabel
-                    ) : isTimeMet ? (
-                      t.lessonDetail.markAsCompletedLabel
-                    ) : (
-                      t.lessonDetail.waitingForTime
-                    )}
-                  </Button>
-                </div>
-              )}
+                </Button>
+              </div>
             </div>
 
             {/* Per-checkpoint progress bar */}
-            {!isCurrentCheckpointDone && !isFullyCompleted && requiredSeconds > 0 && (
+            {!isCurrentCheckpointDone && requiredSeconds > 0 && (
               <div className="mt-4 space-y-1.5">
                 <div className="flex justify-between text-xs text-slate-400">
                   <span>{t.lessonDetail.accumulatedTimeHeader}</span>
@@ -1318,24 +1197,25 @@ export function LessonDetail() {
             </div>
           </CardContent>
         </Card>
+      ) : isFullyCompleted && progress?.completed_at ? (
+        <div className="mt-8">
+          <LessonCompleteCard completedAt={progress.completed_at} />
+        </div>
       ) : (
         /* ── Standard lesson completion card ── */
-        <Card className={`border-slate-100 transition-all duration-350 ${isFullyCompleted ? 'border-green-200 bg-green-50/40' : 'bg-slate-50/40'}`}>
+        <Card className="border-slate-100 bg-slate-50/40">
           <CardContent className="pt-6">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
               <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${isFullyCompleted ? 'bg-green-100 text-green-600' : 'bg-indigo-50 text-indigo-600'}`}>
+                <div className="w-10 h-10 rounded-full flex items-center justify-center bg-indigo-50 text-indigo-600 transition-all">
                   <CheckCircle className="w-5 h-5" />
                 </div>
                 <div>
                   <div className="font-semibold text-slate-800">
-                    {isFullyCompleted ? t.lessonDetail.standardCompletedTitle : t.lessonDetail.standardMarkCompleteTitle}
+                    {t.lessonDetail.standardMarkCompleteTitle}
                   </div>
                   <div className="text-sm text-muted-foreground mt-0.5">
-                    {isFullyCompleted
-                      ? t.lessonDetail.standardCompletedDesc.replace('{completedAt}', formatCompletedAt(progress?.completed_at))
-                      : t.lessonDetail.standardAccumulateTimeDesc
-                    }
+                    {t.lessonDetail.standardAccumulateTimeDesc}
                   </div>
                 </div>
               </div>
