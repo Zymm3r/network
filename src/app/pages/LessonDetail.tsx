@@ -17,6 +17,7 @@ import {
 import QuizCard from '../components/QuizCard';
 import ExerciseCard from '../components/ExerciseCard';
 import { KalturaPlayer } from '../components/KalturaPlayer';
+import { LessonCompleteCard } from '../components/LessonCompleteCard';
 
 /* ─────────────────────────────────────────
    Static look-up tables
