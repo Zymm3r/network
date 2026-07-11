@@ -544,7 +544,7 @@ function AntiSkipIndicator({ percent }: { percent: number }) {
   const isComplete = percent >= 100;
 
   return (
-    <div className="absolute top-3 right-3 z-10">
+    <div className="absolute bottom-16 left-4 z-10 pointer-events-none">
       <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold shadow-lg backdrop-blur-md border transition-all duration-500 ${
         isComplete
           ? 'bg-emerald-500/90 text-white border-emerald-400/50'
