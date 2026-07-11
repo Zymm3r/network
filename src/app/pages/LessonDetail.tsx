@@ -962,14 +962,17 @@ export function LessonDetail() {
         </Card>
       )}
 
-      {/* Content — show short description for non-reading lessons */}
+      {/* Content — show for video/quiz/exercise lessons, render markdown properly */}
       {content && !isReadingLesson && (
-        <Card className="border-slate-100">
-          <CardHeader>
-            <CardTitle>{t.lessonDetail.contentHeader}</CardTitle>
+        <Card className="border-slate-100 overflow-hidden shadow-sm">
+          <CardHeader className="bg-gradient-to-r from-slate-50 via-indigo-50/30 to-slate-50 border-b border-slate-100">
+            <div className="flex items-center gap-2">
+              <div className="w-1 h-5 bg-gradient-to-b from-indigo-500 to-purple-500 rounded-full" />
+              <CardTitle className="text-base font-semibold text-slate-800">{t.lessonDetail.contentHeader}</CardTitle>
+            </div>
           </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground leading-relaxed">{content}</p>
+          <CardContent className="pt-5 pb-6 px-6">
+            <ReadingContentRenderer content={content} />
           </CardContent>
         </Card>
       )}
