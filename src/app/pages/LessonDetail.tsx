@@ -497,6 +497,29 @@ export function LessonDetail() {
     }
   }, [isPythonLesson, progressLoading, completedCheckpoints.length]);
 
+  const handleNextLesson = async () => {
+    if (!lesson?.course_id) return;
+    try {
+      const { data, error } = await supabase
+        .from('lessons')
+        .select('id, order_index')
+        .eq('course_id', lesson.course_id)
+        .order('order_index', { ascending: true });
+        
+      if (error) throw error;
+      
+      const currentIndex = data.findIndex((l: any) => l.id === lesson.id);
+      if (currentIndex !== -1 && currentIndex < data.length - 1) {
+        const nextLessonId = data[currentIndex + 1].id;
+        navigate(`/courses/${lesson.course_id}/learn/${nextLessonId}`);
+      } else {
+        navigate(`/courses/${lesson.course_id}/learn`);
+      }
+    } catch (err) {
+      console.error('Failed to find next lesson:', err);
+    }
+  };
+
   /* ── Derived values ── */
   const activeCheckpoint = isPythonLesson ? PYTHON_CHECKPOINTS[activeCheckpointIdx] : null;
 
@@ -817,6 +840,18 @@ export function LessonDetail() {
     }
   };
 
+  /* ── Auto-complete when time is met ── */
+  useEffect(() => {
+    if (isTimeMet && !isSubmitting) {
+      if (isPythonLesson && !isCurrentCheckpointDone) {
+        handleMarkCheckpointComplete();
+      } else if (!isPythonLesson && !isFullyCompleted) {
+        handleMarkComplete();
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isTimeMet, isSubmitting, isPythonLesson, isCurrentCheckpointDone, isFullyCompleted]);
+
   /* ─── Loading ─── */
   if (loading || (progressLoading && !progress)) {
     return (
@@ -984,6 +1019,7 @@ export function LessonDetail() {
           onComplete={(score, total) => {
             if (score / total >= 0.6) setIsQuizPassed(true); // Assuming 60% is pass
           }} 
+          onNextLesson={handleNextLesson}
         />
       )}
       {lesson.lesson_type === 'exercise' && (

@@ -23,6 +23,7 @@ export interface Course {
   modules_left: number | null;
   estimated_hours: number | null;
   prerequisites: string[] | null;
+  enrolled_count?: number;
   created_at: string;
   updated_at: string;
 }

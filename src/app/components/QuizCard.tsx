@@ -42,9 +42,10 @@ interface QuizCardProps {
   courseName?: string;
   courseId?: string;
   onComplete?: (score: number, totalQuestions: number) => void;
+  onNextLesson?: () => void;
 }
 
-export default function QuizCard({ courseName, courseId, onComplete }: QuizCardProps = {}) {
+export default function QuizCard({ courseName, courseId, onComplete, onNextLesson }: QuizCardProps = {}) {
   const { user } = useAuth();
   const { currentStreak, recordActivity } = useDailyStreak(user?.id);
   const { totalSeconds } = useActivity();
@@ -287,7 +288,7 @@ export default function QuizCard({ courseName, courseId, onComplete }: QuizCardP
                 <RotateCcw className="w-4 h-4" /> ทำแบบทดสอบใหม่
               </Button>
               {pct >= 80 && (
-                <Button className="bg-emerald-600 hover:bg-emerald-700 gap-2">
+                <Button onClick={onNextLesson} className="bg-emerald-600 hover:bg-emerald-700 gap-2">
                   ไปบทเรียนถัดไป <ArrowRight className="w-4 h-4" />
                 </Button>
               )}

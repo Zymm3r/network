@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CheckCircle2, AlertCircle, RefreshCw, Zap, Network, Radio } from 'lucide-react';
+import { CheckCircle2, AlertCircle, RefreshCw, Zap, Network, Radio, CircuitBoard } from 'lucide-react';
 import { useI18n } from '../../../app/i18n';
 
 interface WiringSimulatorProps {

@@ -265,6 +265,7 @@ export const en: TranslationKeys = {
     modules: 'modules',
     lessons: 'lessons',
     reviews: 'reviews',
+    students: 'students',
     minutes: 'mins',
     perLesson: '/lesson',
     startLearning: 'Start Learning',

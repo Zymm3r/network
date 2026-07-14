@@ -263,6 +263,7 @@ export const th = {
     modules: 'บท',
     lessons: 'บทเรียน',
     reviews: 'รีวิว',
+    students: 'ผู้เรียน',
     minutes: 'นาที',
     perLesson: '/บท',
     startLearning: 'เริ่มเรียน',

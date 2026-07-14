@@ -116,10 +116,10 @@ export function CourseDetail() {
               <BookOpen className="w-4 h-4" />
               <span>{course.min_modules || 1} {t.courseDetail.modules}</span>
             </div>
-            {course.review_count !== null && course.review_count > 0 && (
+            {course.enrolled_count !== undefined && course.enrolled_count > 0 && (
               <div className="flex items-center gap-1.5">
                 <Users className="w-4 h-4" />
-                <span>{course.review_count}+ {t.courseDetail.reviews}</span>
+                <span>{course.enrolled_count}+ {t.courseDetail.students}</span>
               </div>
             )}
             {course.rating !== null && (
