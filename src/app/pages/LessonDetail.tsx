@@ -1269,24 +1269,31 @@ export function LessonDetail() {
                     </div>
                   </div>
                 )}
-                <Button
-                  onClick={handleMarkComplete}
-                  disabled={!isTimeMet || isSubmitting || isFullyCompleted}
-                  className={`w-full md:w-auto font-semibold px-6 transition-all duration-350 ${
-                    isFullyCompleted
-                      ? 'bg-green-600 hover:bg-green-600 text-white border-green-650 opacity-90 cursor-default shadow-none'
-                      : isTimeMet
-                      ? 'bg-green-600 hover:bg-green-700 text-white cursor-pointer shadow-md shadow-green-200 animate-pulse-subtle'
-                      : 'bg-slate-200 text-slate-400 cursor-not-allowed hover:bg-slate-200 shadow-none'
-                  }`}
-                >
-                  {isSubmitting ? (
-                    <span className="flex items-center gap-2 justify-center">
-                      <span className="animate-spin rounded-full h-4 w-4 border-2 border-slate-300 border-t-white" />
-                      {t.lessonDetail.savingProgress}
-                    </span>
-                  ) : isFullyCompleted ? t.lessonDetail.completedLabel : isTimeMet ? t.lessonDetail.markAsCompletedLabel : t.lessonDetail.waitingForTime}
-                </Button>
+                {isFullyCompleted ? (
+                  <Button
+                    onClick={handleNextLesson}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2 font-semibold px-6 shadow-md shadow-emerald-200 transition-all duration-350 w-full md:w-auto"
+                  >
+                    ไปบทเรียนถัดไป <ArrowRight className="w-4 h-4" />
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={handleMarkComplete}
+                    disabled={!isTimeMet || isSubmitting}
+                    className={`w-full md:w-auto font-semibold px-6 transition-all duration-350 ${
+                      isTimeMet
+                        ? 'bg-green-600 hover:bg-green-700 text-white cursor-pointer shadow-md shadow-green-200 animate-pulse-subtle'
+                        : 'bg-slate-200 text-slate-400 cursor-not-allowed hover:bg-slate-200 shadow-none'
+                    }`}
+                  >
+                    {isSubmitting ? (
+                      <span className="flex items-center gap-2 justify-center">
+                        <span className="animate-spin rounded-full h-4 w-4 border-2 border-slate-300 border-t-white" />
+                        {t.lessonDetail.savingProgress}
+                      </span>
+                    ) : isTimeMet ? t.lessonDetail.markAsCompletedLabel : t.lessonDetail.waitingForTime}
+                  </Button>
+                )}
               </div>
             </div>
 
