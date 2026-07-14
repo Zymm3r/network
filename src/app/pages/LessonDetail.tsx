@@ -512,7 +512,7 @@ export function LessonDetail() {
       const currentIndex = data.findIndex((l: any) => l.id === lesson.id);
       if (currentIndex !== -1 && currentIndex < data.length - 1) {
         const nextLessonId = data[currentIndex + 1].id;
-        navigate(`/courses/${lesson.course_id}/learn/${nextLessonId}`);
+        navigate(`/lessons/${nextLessonId}`);
       } else {
         navigate(`/courses/${lesson.course_id}/learn`);
       }
