@@ -12,8 +12,9 @@ import { Skeleton } from '../components/ui/skeleton';
 import {
   ArrowLeft, Clock, ChevronRight, Play, FileText, HelpCircle,
   CheckCircle, CheckCircle2, Circle, Zap, BookOpen, Trophy, ChevronDown,
-  Code2, PlayCircle, Eye
+  Code2, PlayCircle, Eye, PenTool
 } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import QuizCard from '../components/QuizCard';
 import ExerciseCard from '../components/ExerciseCard';
 import { KalturaPlayer } from '../components/KalturaPlayer';
@@ -1012,22 +1013,39 @@ export function LessonDetail() {
         </Card>
       )}
 
-      {/* Lesson Type Specific */}
-      {lesson.lesson_type === 'quiz' && (
-        <QuizCard 
-          courseId={lesson.course_id || undefined} 
-          onComplete={(score, total) => {
-            if (score / total >= 0.6) setIsQuizPassed(true); // Assuming 60% is pass
-          }} 
-          onNextLesson={handleNextLesson}
-        />
-      )}
-      {lesson.lesson_type === 'exercise' && (
-        <ExerciseCard 
-          courseId={lesson.course_id || undefined} 
-          onComplete={(passed) => setIsExercisePassed(passed)} 
-        />
-      )}
+      {/* Practice Tabs (Quiz & Exercise) for all lessons */}
+      <div className="mt-8">
+        <Tabs defaultValue="quiz" className="w-full">
+          <TabsList className="w-full flex mb-6">
+            <TabsTrigger value="quiz" className="flex-1 gap-2">
+              <HelpCircle className="w-4 h-4" />
+              แบบทดสอบ
+            </TabsTrigger>
+            <TabsTrigger value="exercise" className="flex-1 gap-2">
+              <PenTool className="w-4 h-4" />
+              แบบฝึกหัด
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="quiz" className="mt-0">
+            <QuizCard 
+              courseId={lesson.course_id || undefined} 
+              onComplete={(score, total) => {
+                if (score / total >= 0.8) setIsQuizPassed(true);
+              }} 
+              onNextLesson={handleNextLesson}
+            />
+          </TabsContent>
+          
+          <TabsContent value="exercise" className="mt-0">
+            <ExerciseCard 
+              courseId={lesson.course_id || undefined} 
+              onComplete={(passed) => setIsExercisePassed(passed)} 
+              onNextLesson={handleNextLesson}
+            />
+          </TabsContent>
+        </Tabs>
+      </div>
 
       {/* ══════════════════════════════════════════════════════════
           READING LESSON: Rich Article Renderer
