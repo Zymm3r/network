@@ -285,6 +285,18 @@ export const en: TranslationKeys = {
     lessonContent: 'Lesson Content',
   },
   equipmentCatalog: {
+    markdownSections: {
+      overview: 'Overview',
+      features: 'Features',
+      applications: 'Applications',
+      installationNotes: 'Installation Notes',
+      bestPractices: 'Best Practices',
+      troubleshooting: 'Troubleshooting',
+      faq: 'FAQ',
+      trainingAndResources: 'Training and Resources',
+      downloads: 'Downloads',
+      summary: 'Summary'
+    },
     loading: 'Loading data...',
     errorLoading: 'An error occurred while loading data',
     overviewTab: 'Overview',
@@ -462,7 +474,7 @@ export const en: TranslationKeys = {
     coursesInPath: 'Courses in this path ({count})',
   },
   search: {
-    placeholder: 'Search courses, lessons...',
+    placeholder: 'Search',
     categories: {
       course: 'Courses',
       lesson: 'Lessons',

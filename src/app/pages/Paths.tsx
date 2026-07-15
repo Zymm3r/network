@@ -1,10 +1,10 @@
 import { Link } from 'react-router';
 import { useI18n } from '../i18n';
 import { usePaths } from '../hooks/usePaths';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
-import { Badge } from '../components/ui/badge';
-import { Button } from '../components/ui/button';
-import { Skeleton } from '../components/ui/skeleton';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../lib/components/ui/card';
+import { Badge } from '../lib/components/ui/badge';
+import { Button } from '../lib/components/ui/button';
+import { Skeleton } from '../lib/components/ui/skeleton';
 import { Route, ChevronRight, CheckCircle2, Clock, BookOpen } from 'lucide-react';
 
 const levelColors: Record<string, string> = {

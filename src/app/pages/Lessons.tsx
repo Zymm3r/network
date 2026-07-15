@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useI18n } from '../i18n';
 import { useAuth } from '../hooks/useAuth';
+<<<<<<< HEAD
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
@@ -12,6 +13,16 @@ import {
 import QuizCard from '../components/QuizCard';
 import ExerciseCard from '../components/ExerciseCard';
 import { COURSE_QUIZ_MAP, COURSE_EXERCISE_MAP } from '../data/courseQuizData';
+=======
+import { supabase } from '../lib/supabase';
+import { LessonCard } from '../lib/components/lesson/LessonCard';
+import { Skeleton } from '../lib/components/ui/skeleton';
+import { Card, CardContent, CardHeader, CardTitle } from '../lib/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../lib/components/ui/tabs';
+import { FlaskConical, Video, FileQuestion, PenTool, BookOpen, CheckCircle2, Clock } from 'lucide-react';
+import QuizCard from '../lib/components/QuizCard';
+import ExerciseCard from '../lib/components/ExerciseCard';
+>>>>>>> origin/main
 
 /* ─────────────────────────────────────────
    Course catalogue — ordered easy → hard

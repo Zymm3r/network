@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router';
 import { useI18n } from '../i18n';
 import { useAuth } from '../hooks/useAuth';
 import { useEnrollments, useUserProgressSummary } from '../hooks/useProgress';
+<<<<<<< HEAD
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Avatar, AvatarFallback } from '../components/ui/avatar';
 
@@ -11,6 +12,16 @@ import { Button } from '../components/ui/button';
 import { Progress } from '../components/ui/progress';
 import { Badge } from '../components/ui/badge';
 import { BookOpen, Award, LogOut, Clock, Trophy, Target, Zap, Play, ChevronRight, AlertTriangle } from 'lucide-react';
+=======
+import { Card, CardContent, CardHeader, CardTitle } from '../lib/components/ui/card';
+import { Avatar, AvatarFallback } from '../lib/components/ui/avatar';
+
+import { getInitials } from '../lib/utils';
+import { Button } from '../lib/components/ui/button';
+import { Progress } from '../lib/components/ui/progress';
+import { Badge } from '../lib/components/ui/badge';
+import { BookOpen, Award, LogOut, Clock, Trophy, Target, Zap, Play, ChevronRight } from 'lucide-react';
+>>>>>>> origin/main
 import { supabase } from '../lib/supabase';
 
 export function Profile() {
