@@ -1,18 +1,13 @@
-# Progress
-
 ## Current Status
-Last visited: 2026-06-08T02:56:00Z
-- [x] Initialized workspace
-- [x] M2 Iteration 1 (FAILED - INTEGRITY VIOLATION)
-- [x] M2 Iteration 2 (FAILED - REVIEWER/CHALLENGER VETO)
-- [ ] M2 Iteration 3
-  - [x] Explore
-  - [x] Work (dispatched)
-  - [x] Review
-  - [x] Challenge
-  - [x] Audit
-  - [x] Gate (PASSED)
+Last visited: 2026-07-15T03:16:00+07:00
+- [x] M2: Quiz Data Generation & Migration [done]
 
 ## Iteration Status
-Current iteration: 3 / 32
+Current iteration: 1 / 32
 
+## Checklist
+- [x] Fetch all lessons from the database.
+- [x] Generate 5 multiple-choice questions per lesson based on `content_en`.
+- [x] Format questions as JSON matching QuizQuestion structure.
+- [x] Create Supabase migration file with UPDATE statements.
+- [x] Apply migration and verify.

@@ -1,25 +1,28 @@
-# Project: Python Execution & Supabase Integration
+# Project: Per-Lesson Quiz Refactor & Auto-Generation
 
 ## Architecture
-- **Execution**: `src/lib/pythonWorker.ts` runs code via Pyodide in a Web Worker. `src/hooks/usePython.ts` manages the Web Worker lifecycle. `src/app/components/ExerciseCard.tsx` provides the UI.
-- **Analytics**: Uses `src/lib/supabase.ts` (or `src/app/lib/supabase.ts`) to communicate with the Supabase backend.
-- **Data Flow**: `ExerciseCard` -> runs code -> evaluates -> if passed, submits result to Supabase.
+- **Database**: Supabase PostgreSQL database. `lessons` table stores lesson data. A `quiz_data` column of type `jsonb` will be added to store multiple-choice quiz questions.
+- **Frontend Components**:
+  - `src/app/types/index.ts`: Contains the typescript types. `Lesson` type will include optional `quiz_data`.
+  - `src/app/components/QuizCard.tsx`: Renders quiz questions. Needs to use `lesson.quiz_data` as the source of truth, falling back gracefully if empty.
+  - `src/app/pages/LessonDetail.tsx`: Renders individual lessons and passes `lesson` to `QuizCard`.
 
 ## Milestones
 | # | Name | Scope | Dependencies | Status |
 |---|------|-------|-------------|--------|
-| 1 | M1: Python Execution & Resource Management | Refactor `usePython.ts`, `ExerciseCard.tsx` and `pythonWorker.ts` for lazy loading, stdout cap, and advanced evaluation (`eval` fallback to `exec`). | none        | DONE    |
-| 2 | M2: Supabase Persistence | Integrate Supabase saving of exercise attempts, pass/fail, score, timestamps. Ensure graceful network error handling in `ExerciseCard.tsx` or related hook. | none | IN_PROGRESS    |
+| 1 | M1: Database Schema Migration | Add `quiz_data` JSONB column to `lessons` table | none | DONE |
+| 2 | M2: Quiz Data Generation | Read `content_en` of 73 lessons and generate 5 multiple-choice questions for each matching `QuizQuestion` schema | M1 | DONE |
+| 3 | M3: Database Insertion Migration | Create migrations with `UPDATE` statements to backfill generated JSON quiz data | M2 | DONE |
+| 4 | M4: UI Integration & Verification | Update `types/index.ts`, `QuizCard.tsx`, `LessonDetail.tsx`. Compile, run E2E/auditor verification. | M3 | IN_PROGRESS |
 
 ## Interface Contracts
-### `usePython.ts` ↔ `pythonWorker.ts`
-- Worker needs to accept run requests, handle timeout without crashing, and return either success/stdout, return values, or stdout truncation errors.
-
-### `ExerciseCard.tsx` ↔ Supabase
-- Must interact with Supabase table to record attempts without freezing UI.
+### `QuizCard` ↔ `Lesson`
+- `Lesson` object has a `quiz_data` field that is a JSON array of `QuizQuestion` objects.
+- `QuizCard` receives the `lesson` object (or `lesson.quiz_data`) and displays these questions.
+- If `quiz_data` is empty or null, `QuizCard` falls back gracefully (e.g. to course-level quizzes or a friendly message).
 
 ## Code Layout
-- `src/lib/pythonWorker.ts`: Python Web Worker
-- `src/hooks/usePython.ts`: Web Worker React hook
-- `src/app/components/ExerciseCard.tsx`: UI Component
-- `src/lib/supabase.ts`: Supabase client
+- `supabase/migrations/`: Database schema and data update migrations.
+- `src/app/types/index.ts`: TypeScript interfaces/types.
+- `src/app/components/QuizCard.tsx`: React component for quiz display and verification.
+- `src/app/pages/LessonDetail.tsx`: React page for lesson view.

@@ -1,61 +1,73 @@
-# BRIEFING — 2026-06-08T15:12:39+07:00
+# BRIEFING — 2026-07-14T14:31:11+07:00
 
 ## Mission
-Fix the Dashboard Analytics to display actual metrics instead of the "Data Sync Pending" error by applying `20260607000001_analytics_views.sql` and verifying `Dashboard.tsx`.
+Refactor the application to support per-lesson quizzes and auto-generate 5 quiz questions for each of the 73 lessons based on their English content.
 
 ## 🔒 My Identity
 - Archetype: teamwork_preview_orchestrator
 - Roles: orchestrator, user_liaison, human_reporter, successor
-- Working directory: c:\Users\UTHtest\Downloads\app.hotel\.agents\orchestrator
+- Working directory: C:\Users\UTHtest\.gemini\antigravity\worktrees\network\fix-lesson-completion-logic\.agents\orchestrator
 - Original parent: main agent
-- Original parent conversation ID: 7e7f7d1f-9da2-4c07-a02b-2d6802df585e
+- Original parent conversation ID: a4774ee6-e304-4998-a5ee-45523fd0508b
 
 ## 🔒 My Workflow
-- **Pattern**: Direct delegation
-- **Scope document**: c:\Users\UTHtest\Downloads\app.hotel\PROJECT.md
-1. **Decompose**:
-   - Milestone 1: Apply `20260607000001_analytics_views.sql` migration.
-   - Milestone 2: Verify `Dashboard.tsx` integration and RPC calls.
-2. **Dispatch & Execute**:
-   - Delegate investigation to Explorer.
-   - Delegate implementation to Worker.
-   - Delegate review to Reviewer.
-3. **On failure**: Retry -> Replace -> Skip -> Redistribute -> Degrade -> Escalate
-4. **Succession**: Self-succeed at 16 spawns
+- **Pattern**: Project Pattern
+- **Scope document**: C:\Users\UTHtest\.gemini\antigravity\worktrees\network\fix-lesson-completion-logic\PROJECT.md
+1. **Decompose**: Decompose the task into milestones:
+   - Milestone 1: Database schema migration (add quiz_data column to lessons).
+   - Milestone 2: Generate 5 multiple-choice quiz questions for all 73 lessons based on content_en.
+   - Milestone 3: Database insertion migration (create migration files with UPDATE statements).
+   - Milestone 4: UI Integration & Verification.
+2. **Dispatch & Execute** (pick ONE):
+   - **Delegate (sub-orchestrator)**: When an item is too large, spawn a sub-orchestrator for it. We will delegate milestones to subagents/sub-orchestrators using the Project pattern (Explorer -> Worker -> Reviewer -> Challenger -> Auditor cycle).
+3. **On failure** (in this order):
+   - Retry: nudge stuck agent or re-send task
+   - Replace: spawn fresh agent with partial progress
+   - Skip: proceed without (only if non-critical)
+   - Redistribute: split stuck agent's remaining work
+   - Redesign: re-partition decomposition
+   - Escalate: report to parent (sub-orchestrators only, last resort)
+4. **Succession**: Self-succeed at 16 spawns.
 - **Work items**:
-  1. Apply migration [pending]
-  2. Verify Dashboard UI [pending]
+  1. M1: Database schema migration [pending]
+  2. M2: Generate 5 multiple-choice quiz questions for all 73 lessons [pending]
+  3. M3: Database insertion migration [pending]
+  4. M4: UI Integration & Verification [pending]
 - **Current phase**: 1
 - **Current focus**: Milestone 1
 
 ## 🔒 Key Constraints
-- Use local tools like Supabase CLI (`npx supabase db push` or equivalent).
-- Verify `supabase.rpc('get_admin_metrics')` works.
-- Verify `Dashboard.tsx` UI renders analytics cards.
+- R1-R4 must be implemented.
+- All 73 lessons must have 5 multiple-choice questions matching the QuizQuestion structure.
+- Never reuse a subagent after it has delivered its handoff — always spawn fresh.
 
 ## Current Parent
-- Conversation ID: 7e7f7d1f-9da2-4c07-a02b-2d6802df585e
-- Updated: 2026-06-08T15:12:39+07:00
+- Conversation ID: a4774ee6-e304-4998-a5ee-45523fd0508b
+- Updated: 2026-07-14T14:31:11+07:00
 
 ## Key Decisions Made
-- Use Worker to run the migration and modify Dashboard if needed.
+- [TBD]
 
 ## Team Roster
 | Agent | Type | Work Item | Status | Conv ID |
 |-------|------|-----------|--------|---------|
-| Explorer | teamwork_preview_explorer | Investigate Migration and UI | Completed | abeaf951-8476-4b5e-8a4c-13132bbb70a3 |
-| Worker | teamwork_preview_worker | Apply Migration | In Progress | b6fca369-7101-491e-a3af-b8f39738cd2a |
+| M1 Sub-Orchestrator | teamwork_preview_orchestrator | Database Schema Migration | Completed | ce4dc9b4-5bd9-46b5-8f47-b96bbc136cc1 |
+| M2 Sub-Orchestrator | teamwork_preview_orchestrator | Quiz Data Generation & Migration | Completed | ee264a62-4dd4-42ed-97ee-6f51cf9aae02 |
+| M3 Sub-Orchestrator | teamwork_preview_orchestrator | UI Integration & Verification | Completed | bd742338-bad6-4b5c-bf5e-b02febf01520 |
+| Final Verification Worker | teamwork_preview_worker | Run Build and Tests (Unit & E2E) | In Progress | ed548933-d627-4a9f-a324-5394440c60e4 |
+| Final Forensic Auditor | teamwork_preview_auditor | Run Integrity Check | In Progress | ffde508d-f67a-487f-a4f6-99c8fd0fd37e |
 
 ## Succession Status
 - Succession required: no
-- Spawn count: 0 / 16
-- Pending subagents: none
+- Spawn count: 6 / 16
+- Pending subagents: ed548933-d627-4a9f-a324-5394440c60e4, ffde508d-f67a-487f-a4f6-99c8fd0fd37e
 - Predecessor: none
-- Successor: none
+- Successor: not yet spawned
 
 ## Active Timers
-- Heartbeat cron: not started
-- Safety timer: none
+- Heartbeat cron: task-188
+- Safety timer: task-702
 
 ## Artifact Index
-- c:\Users\UTHtest\Downloads\app.hotel\ORIGINAL_REQUEST.md — user request
+- C:\Users\UTHtest\.gemini\antigravity\worktrees\network\fix-lesson-completion-logic\.agents\orchestrator\ORIGINAL_REQUEST.md — original user request
+- C:\Users\UTHtest\.gemini\antigravity\worktrees\network\fix-lesson-completion-logic\PROJECT.md — project scope and milestone layout

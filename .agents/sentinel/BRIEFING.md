@@ -1,12 +1,12 @@
-# BRIEFING — 2026-06-08T14:38:00Z
+# BRIEFING — 2026-07-14T14:56:17Z
 
 ## Mission
-Manage the orchestration and completion of the Wiring Simulator MVP, Training media modals, and Equipment Catalog updates.
+Refactor the application to support per-lesson quizzes and auto-generate 5 quiz questions for each of the 73 lessons based on their English content.
 
 ## 🔒 My Identity
 - Archetype: sentinel
-- Working directory: c:\Users\UTHtest\Downloads\app.hotel\.agents\sentinel
-- Orchestrator: ebbdd851-c58f-4192-a4a7-56bab579a127
+- Working directory: C:\Users\UTHtest\.gemini\antigravity\worktrees\network\fix-lesson-completion-logic\.agents\sentinel
+- Orchestrator: a4774ee6-e304-4998-a5ee-45523fd0508b
 - Victory Auditor: to be spawned on victory claim
 
 ## 🔒 Key Constraints
@@ -14,7 +14,7 @@ Manage the orchestration and completion of the Wiring Simulator MVP, Training me
 - Victory Audit is MANDATORY before reporting completion
 
 ## User Context
-- **Last user request**: Implement Wiring Simulator MVP, functional training media modals, and fix unclickable tabs for Equipment Catalog.
+- **Last user request**: Resumed project execution after server restart and quota reset.
 - **Pending clarifications**: none
 - **Delivered results**: none
 
@@ -27,4 +27,4 @@ Manage the orchestration and completion of the Wiring Simulator MVP, Training me
 - **Retry count**: 0
 
 ## Artifact Index
-- c:\Users\UTHtest\Downloads\app.hotel\ORIGINAL_REQUEST.md — The authoritative record of user intent.
+- C:\Users\UTHtest\.gemini\antigravity\worktrees\network\fix-lesson-completion-logic\.agents\ORIGINAL_REQUEST.md — Original user request.

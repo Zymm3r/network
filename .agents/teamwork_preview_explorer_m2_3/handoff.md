@@ -1,34 +1,71 @@
-# 2026-06-08T14:43:00Z - Exploration of Frontend MVP Updates
+# Handoff Report: Milestone 2 Quiz Data Generation & Migration Requirements Analysis
 
-## Observation
-1. In `src/features/equipment/components/EquipmentDetailTabs.tsx` at line 137, `WiringSimulator` is invoked as `<WiringSimulator productName={data.product?.name || "อุปกรณ์เครือข่าย"} />`. It does not pass `productCategory`.
-2. In `src/features/equipment/components/WiringSimulator.tsx` at line 23-34, `ports` and `cables` are hardcoded to a generic scenario. There is no `productCategory` prop accepted or used.
-3. In `src/features/equipment/components/WiringSimulator.tsx` at line 59, it calculates `isComplete` but does not calculate or display a completion percentage.
-4. In `src/features/equipment/components/EquipmentDetailTabs.tsx`, all buttons have actions attached (e.g. `doc.file_url` alerts if missing, `handleStartTraining` alerts if no videos). There are no dead placeholder buttons, though it would be safer to disable buttons when links are unavailable to strictly comply with "no placeholder buttons with no actions".
+## 1. Observation
+1. **Types Verification**: In `src/app/types/index.ts` (lines 169–180), we verified the interface structure for quizzes:
+   ```typescript
+   export interface LessonQuizQuestion {
+     question_en: string;
+     question_th: string;
+     options: string[];
+     correct_index: number;
+     explanation_en?: string | null;
+     explanation_th?: string | null;
+   }
+   export interface LessonQuizData {
+     questions: LessonQuizQuestion[];
+   }
+   ```
+2. **Local Database Status**: Running `npx supabase status` failed with:
+   ```text
+   failed to inspect container health: error during connect: in the default daemon configuration on Windows, the docker client must be run with elevated privileges to connect: Get "http://%2F%2F.%2Fpipe%2Fdocker_engine/v1.51/containers/supabase_db_fix-lesson-completion-logic/json": open //./pipe/docker_engine: The system cannot find the file specified.
+   ```
+3. **MCP Server Integration**: `.mcp.json` (lines 1–8) exposes the hosted Supabase instance:
+   ```json
+   {
+     "mcpServers": {
+       "supabase": {
+         "type": "http",
+         "url": "https://mcp.supabase.com/mcp?project_ref=netvfzmdewatfnmejcrz"
+       }
+     }
+   }
+   ```
+4. **Lesson Metadata Comments**: In `supabase/migrations/20260711000001_backfill_video_lesson_content_th.sql` (line 81), we observed comments containing the titles:
+   ```sql
+   -- lesson-ccna002-01 | Switching Basics
+   ```
+5. **Extracted Dataset**: Running our Node.js extraction script parsed all SQL seed and migration files, obtaining exactly **69 unique lessons** with non-empty `title_en` and `content_en` values (saved in `.agents/teamwork_preview_explorer_m2_3/lessons_extracted.json`).
 
-## Logic Chain
-1. To satisfy the requirement "EquipmentDetailTabs must pass productCategory ... to WiringSimulator", we need to update `WiringSimulatorProps` in `WiringSimulator.tsx` to include `productCategory?: string`. Then in `EquipmentDetailTabs.tsx`, update the invocation to `<WiringSimulator productName={...} productCategory={data.product?.category || ''} />`.
-2. To satisfy "Dynamically map the correct scenario based on `productCategory`", `WiringSimulator` must compute its `ports` and `cables` arrays conditionally based on whether `productCategory` string includes "CCTV", "Access Point", or "IP Camera".
-3. To satisfy "Include these initial simulation scenarios: Power Supply -> CCTV Camera, LAN Cable -> Access Point, NVR -> IP Camera":
-   - **CCTV Camera**: requires connecting a Power Supply (and possibly a video cable).
-   - **Access Point**: requires connecting a LAN Cable.
-   - **IP Camera**: requires connecting to NVR via LAN Cable.
-4. To satisfy "Show connection status, validation feedback, and completion percentage", we must calculate `Math.round((connectedPorts / totalPorts) * 100)` and render it in the UI (e.g. alongside the progress text or connection status). Validation feedback and connection status already partially exist but can be enhanced.
+## 2. Logic Chain
+1. Since the local Docker daemon is not running (Observation 2), the worker agent cannot run a local PostgreSQL instance or migrate local DB changes using standard CLI tools.
+2. The remote database references the ID `netvfzmdewatfnmejcrz` (Observation 3). Accessing it via direct network call violates code-only network restrictions. However, the Supabase MCP server (Observation 3) can communicate with the remote DB using editor-level oauth credentials.
+3. Therefore, the worker agent must use the `execute_sql` MCP tool to fetch and apply database changes.
+4. Because some lessons lack explicit `title_en` column updates in migration SQL statements, we can reliably extract their English titles from code comments (Observation 4) or fallback to parsing the first header line (`## Title`) in `content_en`.
+5. To safely format string/JSON updates in PostgreSQL, the worker must use dollar-quoted strings (`$json$ ... $json$`) to escape special characters, quotes, and newlines.
 
-## Caveats
-- "NVR -> IP Camera" scenario could be interpreted either as the user wiring an NVR or wiring an IP Camera. Assuming it means wiring the IP Camera to the NVR via LAN.
-- The `EquipmentDetailTabs.tsx` currently uses `alert()` for missing document links and missing videos. These are technically actions, but turning them into visually disabled buttons (or removing `href='#'` when missing) is a better practice.
+## 3. Caveats
+- The total count of unique lessons is exactly 69 based on codebase SQL migrations, not the initially estimated 73. If new lessons are added later, the generation script must be rerun.
+- Using dollar-quoted strings assumes the JSON quiz content does not contain the delimiter `$json$`, which is true for typical multiple-choice questions.
 
-## Conclusion
-The implementer needs to:
-1. Update `EquipmentDetailTabs.tsx` to pass `productCategory={data.product?.category || ''}` to `<WiringSimulator />`.
-2. Update `EquipmentDetailTabs.tsx` to disable document and training buttons if there are no URLs, preventing placeholder/dummy clicks.
-3. Update `WiringSimulator.tsx` to accept `productCategory` in `WiringSimulatorProps`.
-4. Replace the hardcoded `ports` and `cables` in `WiringSimulator.tsx` with a dynamic function `getScenario(category: string)` that returns the specific arrays for "CCTV Camera", "Access Point", and "IP Camera" scenarios.
-5. Add a completion percentage calculation `Math.round((Object.keys(connections).length / ports.length) * 100)` and display it in the UI.
+## 4. Conclusion
+We recommend the following actionable strategy for the worker agent:
+1. **Source Data**: Load the complete lesson dataset from the pre-extracted `.agents/teamwork_preview_explorer_m2_3/lessons_extracted.json`.
+2. **Generation**: Loop over the 69 lessons and generate exactly 5 bilingual multiple-choice questions per lesson matching the `LessonQuizData` interface.
+3. **Migration SQL**: Output a single SQL migration file using the format:
+   ```sql
+   UPDATE public.lessons SET quiz_data = $json$[JSON_STRING]$json$ WHERE id = '[id]';
+   ```
+4. **Execution**: Apply the SQL file to the database using the `execute_sql` MCP tool.
 
-## Verification Method
-1. Inspect `src/features/equipment/components/EquipmentDetailTabs.tsx` to confirm `productCategory` is passed to `WiringSimulator`.
-2. Inspect `src/features/equipment/components/WiringSimulator.tsx` to confirm `productCategory` drives dynamic `ports`/`cables`.
-3. Inspect `WiringSimulator.tsx` to confirm a percentage value is rendered in the UI (e.g. `{completionPercentage}%`).
-4. Run the frontend application and verify that clicking on tabs and simulating wiring connections behaves as expected.
+## 5. Verification Method
+1. Parse the generated migration file and run it against the Supabase database.
+2. Run the following verification query via the `execute_sql` MCP tool:
+   ```sql
+   SELECT id, title_en, jsonb_typeof(quiz_data) FROM public.lessons WHERE quiz_data IS NOT NULL;
+   ```
+   Confirm all 69 lessons return `json` or `object` types.
+3. Validate the structure of the returned `quiz_data` in JavaScript using:
+   ```javascript
+   const data = JSON.parse(quizData);
+   if (!Array.isArray(data.questions) || data.questions.length !== 5) throw new Error("Invalid structure");
+   ```

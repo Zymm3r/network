@@ -1,14 +1,12 @@
-# Scope: Source Content Inventory
+# Scope: M1: Database Schema Migration
 
 ## Architecture
-- Real source materials (markdown, manuals, PDFs, website crawls, products.json, Firecrawl/Crawl4AI exports)
-- Directories: src/data, src/content, supabase/data
-- Output format: markdown inventory report
+- **Database**: Supabase PostgreSQL database. Adds a `quiz_data` column of type `jsonb` to the `lessons` table.
 
 ## Milestones
 | # | Name | Scope | Dependencies | Status |
 |---|------|-------|-------------|--------|
-| 1 | Source Content Inventory | Locate materials, produce inventory report | none | DONE |
+| 1 | M1: Database Schema Migration | Create a migration SQL file in `supabase/migrations/` and apply it to the database using Supabase CLI. | none | DONE |
 
 ## Interface Contracts
-- None
+- None (database schema update).

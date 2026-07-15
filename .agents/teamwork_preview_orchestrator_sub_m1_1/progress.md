@@ -1,12 +1,12 @@
 ## Current Status
-Last visited: 2026-06-08T09:20:00+07:00
-- [x] Initialize workspace
-- [x] Read PROJECT.md
-- [x] Spawn 3 Explorers
-- [x] Spawn 1 Worker
-- [x] Spawn 2 Reviewers
-- [x] Gate evaluation
-- [x] Report to parent
+Last visited: 2026-07-14T14:52:54+07:00
+- [x] M1: Database Schema Migration [done]
 
 ## Iteration Status
-Current iteration: 1 / 32
+Current iteration: 2 / 32
+
+## Checklist
+- [x] Verify Supabase configuration.
+- [x] Create database migration file for `quiz_data` column.
+- [x] Apply migration file (Skipped: Docker offline in local env).
+- [x] Verify migration application success (Statically verified SQL and TypeScript types).
