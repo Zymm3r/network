@@ -8,9 +8,6 @@ export interface StudentMetrics {
   avg_score: number;
   study_time: number;
   completion_rate: number;
-  xp: number;
-  level: number;
-  streak_days: number;
 }
 
 export interface AdminMetrics {
@@ -83,19 +80,6 @@ export const analyticsApi = {
     } catch (err) {
       console.error('[Analytics API] Error:', err);
       return [];
-    }
-  },
-
-  async recordLearningActivity(userId: string, xpGained: number, studySeconds: number): Promise<void> {
-    try {
-      const { error } = await supabase.rpc('record_learning_activity', {
-        p_user_id: userId,
-        p_xp_gained: xpGained,
-        p_study_seconds: studySeconds
-      });
-      if (error) throw error;
-    } catch (err) {
-      console.error('[Analytics API] Error recording learning activity:', err);
     }
   }
 };

@@ -21,6 +21,9 @@ function figmaAssetResolver() {
   };
 }
 export default defineConfig({
+  server: {
+    host: true,
+  },
   plugins: [figmaAssetResolver(),
   // The React and Tailwind plugins are both required for Make, even if
   // Tailwind is not being actively used – do not remove them
@@ -33,9 +36,6 @@ export default defineConfig({
   },
   // File types to support raw imports. Never add .css, .tsx, or .ts files to this.
   assetsInclude: ['**/*.svg', '**/*.csv'],
-  worker: {
-    format: 'es'
-  },
   test: {
     projects: [{
       extends: true,

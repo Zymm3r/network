@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { progressApi } from '../lib/api/progress';
-import { analyticsApi } from '../lib/api/analytics';
 import { supabase } from '../lib/supabase';
 import type { UserProgress, Enrollment } from '../types';
 
@@ -65,39 +64,39 @@ export function useProgress(userId: string, courseId: string) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  const fetchProgress = useCallback(async () => {
-    if (!userId || !courseId) {
-      setLoading(false);
-      return;
-    }
-
-    try {
-      setLoading(true);
-      console.log(`[Progress DB Log] Fetching course progress (enrollment) for user: ${userId}, course: ${courseId}`);
-      const { data, error: fetchError } = await supabase
-        .from('enrollments')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('course_id', courseId)
-        .single();
-
-      if (fetchError && fetchError.code !== 'PGRST116') {
-        throw fetchError;
+  useEffect(() => {
+    const fetchProgress = async () => {
+      if (!userId || !courseId) {
+        setLoading(false);
+        return;
       }
 
-      console.log(`[Progress DB Log] Fetched course progress:`, data);
-      setProgress(data || null);
-    } catch (err) {
-      console.error('[Progress DB Log] Failed to fetch course progress:', err);
-      setError(err instanceof Error ? err : new Error('Failed to fetch progress'));
-    } finally {
-      setLoading(false);
-    }
-  }, [userId, courseId]);
+      try {
+        setLoading(true);
+        console.log(`[Progress DB Log] Fetching course progress (enrollment) for user: ${userId}, course: ${courseId}`);
+        const { data, error: fetchError } = await supabase
+          .from('enrollments')
+          .select('*')
+          .eq('user_id', userId)
+          .eq('course_id', courseId)
+          .single();
 
-  useEffect(() => {
+        if (fetchError && fetchError.code !== 'PGRST116') {
+          throw fetchError;
+        }
+
+        console.log(`[Progress DB Log] Fetched course progress:`, data);
+        setProgress(data || null);
+      } catch (err) {
+        console.error('[Progress DB Log] Failed to fetch course progress:', err);
+        setError(err instanceof Error ? err : new Error('Failed to fetch progress'));
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchProgress();
-  }, [fetchProgress]);
+  }, [userId, courseId]);
 
   const markComplete = useCallback(async () => {
     if (!userId || !courseId) return;
@@ -120,14 +119,12 @@ export function useProgress(userId: string, courseId: string) {
       if (upsertError) throw upsertError;
 
       console.log(`[Progress DB Log] Successfully marked course ${courseId} complete`);
-      
-      // Award 100 XP for completing a course
-      analyticsApi.recordLearningActivity(userId, 100, 0).catch(err => {
-        console.error('[Progress DB Log] Failed to award XP for course completion:', err);
-      });
-
-      // Refetch from database
-      await fetchProgress();
+      setProgress(prev => prev ? {
+        ...prev,
+        status: 'completed',
+        progress_percentage: 100,
+        completed_at: new Date().toISOString(),
+      } : null);
     } catch (err) {
       console.error('[Progress DB Log] Failed to mark course complete:', err);
       throw err instanceof Error ? err : new Error('Failed to mark complete');
@@ -285,13 +282,44 @@ export function useLessonProgress(userId: string, lessonId: string) {
 
       console.log(`[Progress DB Log] Successfully marked lesson ${lessonId} complete`);
       
-      // Award 20 XP for completing a lesson
-      analyticsApi.recordLearningActivity(userId, 20, 0).catch(err => {
-        console.error('[Progress DB Log] Failed to award XP for lesson completion:', err);
-      });
-
-      // Refetch from database rather than optimistically guessing completion state
-      await fetchProgress();
+      // Auto-issue certificate if course is now 100% complete
+      // We don't have courseId here, so we must fetch it first
+      const { data: lessonData } = await supabase
+        .from('lessons')
+        .select('course_id')
+        .eq('id', lessonId)
+        .single();
+        
+      if (lessonData?.course_id) {
+        // We import certificateApi dynamically to avoid circular dependencies if any
+        import('../lib/api/certificates').then(({ certificateApi }) => {
+          certificateApi.checkAndIssueCourseCertificate(userId, lessonData.course_id).then(cert => {
+            if (cert) {
+              console.log(`[Certificate] Auto-issued certificate:`, cert.certificate_number);
+            }
+          });
+        });
+      }
+      setProgress(prev => prev ? {
+        ...prev,
+        status: 'completed',
+        progress_percentage: 100,
+        completed_at: new Date().toISOString(),
+      } : {
+        id: '',
+        user_id: userId,
+        course_id: null,
+        path_id: null,
+        exercise_id: null,
+        lesson_id: lessonId,
+        status: 'completed',
+        progress_percentage: 100,
+        completed_at: new Date().toISOString(),
+        last_accessed_at: new Date().toISOString(),
+        notes: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      } as UserProgress);
     } catch (err) {
       console.error('[Progress DB Log] Failed to mark lesson complete:', err);
       throw err instanceof Error ? err : new Error('Failed to mark complete');

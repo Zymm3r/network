@@ -5,14 +5,14 @@ import { useLessons } from '../hooks/useLessons';
 import { useAuth } from '../hooks/useAuth';
 import { useLessonsProgress } from '../hooks/useProgress';
 import { supabase } from '../lib/supabase';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Badge } from '../components/ui/badge';
-import { Button } from '../components/ui/button';
-import { Skeleton } from '../components/ui/skeleton';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { Card, CardContent, CardHeader, CardTitle } from '../lib/components/ui/card';
+import { Badge } from '../lib/components/ui/badge';
+import { Button } from '../lib/components/ui/button';
+import { Skeleton } from '../lib/components/ui/skeleton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../lib/components/ui/tabs';
 import { ArrowLeft, Clock, BookOpen, Users, ChevronRight, Play, FileText, HelpCircle, CheckCircle2, PenTool, FlaskConical, Video } from 'lucide-react';
-import QuizCard from '../components/QuizCard';
-import ExerciseCard from '../components/ExerciseCard';
+import QuizCard from '../lib/components/QuizCard';
+import ExerciseCard from '../lib/components/ExerciseCard';
 import { useState } from 'react';
 
 const lessonTypeIcons: Record<string, typeof Play> = {
@@ -116,10 +116,10 @@ export function CourseDetail() {
               <BookOpen className="w-4 h-4" />
               <span>{course.min_modules || 1} {t.courseDetail.modules}</span>
             </div>
-            {course.enrolled_count !== undefined && course.enrolled_count > 0 && (
+            {course.review_count !== null && course.review_count > 0 && (
               <div className="flex items-center gap-1.5">
                 <Users className="w-4 h-4" />
-                <span>{course.enrolled_count}+ {t.courseDetail.students}</span>
+                <span>{course.review_count}+ {t.courseDetail.reviews}</span>
               </div>
             )}
             {course.rating !== null && (

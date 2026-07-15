@@ -31,7 +31,7 @@ export function useCourses(options: UseCoursesOptions = {}): UseCoursesResult {
 
       let query = supabase
         .from('courses')
-        .select('*, enrollments(count)')
+        .select('*')
         .order('created_at', { ascending: false })
         .limit(limit);
 
@@ -55,7 +55,6 @@ export function useCourses(options: UseCoursesOptions = {}): UseCoursesResult {
           ...item,
           name: item[`name_${language}` as 'name_th' | 'name_en'] || item.name_en || item.name || '',
           description: item[`description_${language}` as 'description_th' | 'description_en'] || item.description_en || item.description || null,
-          enrolled_count: item.enrollments?.[0]?.count || 0,
         }));
         setCourses(mapped);
       }
@@ -91,7 +90,7 @@ export function useCourse(id: string) {
         setLoading(true);
         const { data, error: fetchError } = await supabase
           .from('courses')
-          .select('*, enrollments(count)')
+          .select('*')
           .eq('id', id)
           .single();
 
@@ -101,7 +100,6 @@ export function useCourse(id: string) {
             ...data,
             name: data[`name_${language}` as 'name_th' | 'name_en'] || data.name_en || data.name || '',
             description: data[`description_${language}` as 'description_th' | 'description_en'] || data.description_en || data.description || null,
-            enrolled_count: data.enrollments?.[0]?.count || 0,
           });
         } else {
           setCourse(null);
