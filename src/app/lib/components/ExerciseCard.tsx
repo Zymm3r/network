@@ -99,17 +99,18 @@ class ExerciseErrorBoundary extends Component<{children: ReactNode}, {hasError: 
 interface ExerciseCardProps {
   courseName?: string;
   courseId?: string;
+  lessonId?: string;
 }
 
-export default function ExerciseCard({ courseName, courseId }: ExerciseCardProps = {}) {
+export default function ExerciseCard({ courseName, courseId, lessonId }: ExerciseCardProps = {}) {
   const { user } = useAuth();
   const { currentStreak, recordActivity } = useDailyStreak(user?.id);
   const { totalSeconds } = useActivity();
 
   const exercise = getExerciseForCourse(courseId);
-  const { recordAttempt, isQueuedAttempts } = useExerciseProgress(
+  const { recordAttempt, progress, saving, saved, offline, syncing, markStarted, updateAnswer, updateTimer, markCompleted } = useExerciseProgress(
     exercise.id || courseId || 'unknown',
-    exercise.lessonId || '',
+    lessonId || exercise.lessonId || '',
     courseId || ''
   );
 
@@ -117,8 +118,13 @@ export default function ExerciseCard({ courseName, courseId }: ExerciseCardProps
   
   // Ensure code updates if course changes
   useEffect(() => {
-    setCode(exercise.starterCode);
-  }, [courseId, exercise.starterCode]);
+    setCode(typeof progress?.answers.code === 'string' ? progress.answers.code : exercise.starterCode);
+    if (typeof progress?.attempts === 'number') setAttempts(progress.attempts);
+    if (progress?.status === 'completed') setAllPassed(true);
+  }, [courseId, exercise.starterCode, progress?.answers.code, progress?.attempts, progress?.status]);
+
+  useEffect(() => { markStarted(); }, [markStarted]);
+  useEffect(() => { updateTimer(totalSeconds); }, [totalSeconds, updateTimer]);
   const [isRunning, setIsRunning] = useState(false);
   const [runComplete, setRunComplete] = useState(false);
   const [testResults, setTestResults] = useState<TestCase[]>([]);
@@ -209,6 +215,7 @@ export default function ExerciseCard({ courseName, courseId }: ExerciseCardProps
     setTestResults([]);
     setAllPassed(false);
     setAttempts(a => a + 1);
+    updateAnswer('last_run_at', new Date().toISOString());
     setRunPhase('compiling');
     playFeedback('run');
 
@@ -299,6 +306,7 @@ export default function ExerciseCard({ courseName, courseId }: ExerciseCardProps
           }
 
           if (gradingResult.passed && xpEarned === 0) {
+            void markCompleted({ score: gradingResult.score, attempts: attempts + 1, answers: { code } });
             setXpEarned(exercise.xpReward);
             setShowXpPopup(true);
             setShowConfetti(true);
@@ -365,7 +373,7 @@ export default function ExerciseCard({ courseName, courseId }: ExerciseCardProps
         }).catch(err => console.error('[Exercise Tracking] Failed to persist failed attempt:', err));
       }
     }
-  }, [code, exercise, xpEarned, attempts, runPythonTests, recordActivity, user?.id, courseId, recordAttempt]);
+  }, [code, exercise, xpEarned, attempts, runPythonTests, recordActivity, user?.id, courseId, recordAttempt, markCompleted, updateAnswer]);
 
   const handleReset = useCallback(() => {
     setCode(exercise.starterCode);
@@ -492,6 +500,14 @@ export default function ExerciseCard({ courseName, courseId }: ExerciseCardProps
           )}
         </div>
       )}
+      <div className="px-6 py-2 border-b border-slate-100 text-xs text-slate-500 flex flex-wrap gap-x-4 gap-y-1" aria-live="polite">
+        <span>{progress?.status === 'completed' ? 'Completed' : progress?.started_at ? 'Started' : 'Not started'}</span>
+        <span>Progress {progress?.progress_percentage ?? 0}%</span>
+        <span>Time {formatTime(progress?.time_spent_seconds ?? 0)}</span>
+        {progress?.last_activity_at && <span>Last activity {new Date(progress.last_activity_at).toLocaleTimeString()}</span>}
+        {progress?.completed_at && <span>Completed at {new Date(progress.completed_at).toLocaleString()}</span>}
+        <span className={offline ? 'text-amber-600 font-medium' : 'text-emerald-600 font-medium'}>{syncing ? 'Syncing...' : offline ? 'Offline' : saving ? 'Saving...' : saved ? 'Saved' : ''}</span>
+      </div>
       {/* Header */}
       <div className="bg-gradient-to-r from-emerald-50 to-teal-50 px-6 py-4 border-b border-emerald-100 flex items-center justify-between">
         <div className="flex items-center gap-2 text-emerald-800 font-semibold">
@@ -639,7 +655,7 @@ export default function ExerciseCard({ courseName, courseId }: ExerciseCardProps
                 <textarea
                   ref={textareaRef}
                   value={code}
-                  onChange={(e) => setCode(e.target.value)}
+                  onChange={(e) => { const next = e.target.value; setCode(next); updateAnswer('code', next); }}
                   className="absolute inset-0 w-full h-full resize-none cursor-text bg-transparent text-transparent caret-white outline-none"
                   style={{
                     paddingTop: '1rem',

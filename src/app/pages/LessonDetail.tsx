@@ -1186,7 +1186,7 @@ export function LessonDetail() {
       {/* Lesson Type Specific */}
       {lesson.lesson_type === 'quiz' && <QuizCard />}
 
-      {lesson.lesson_type === 'exercise' && <ExerciseCard />}
+      {lesson.lesson_type === 'exercise' && <ExerciseCard courseId={lesson.course_id} lessonId={lesson.id} />}
 
       {/* ══════════════════════════════════════════════════════════
           READING LESSON: Rich Article Renderer
