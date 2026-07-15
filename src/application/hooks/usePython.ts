@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { TestCase } from '../app/data/courseQuizData';
+import { TestCase } from '../../app/data/courseQuizData';
 
 export interface PythonTestResult extends TestCase {
   actual?: string;
@@ -17,7 +17,11 @@ export function usePython() {
 
   const initWorker = useCallback(() => {
     if (!workerRef.current) {
+      setIsInitializing(true);
       workerRef.current = new Worker(new URL('../../infrastructure/workers/pythonWorker.ts', import.meta.url), { type: 'module' });
+      workerRef.current.onerror = () => {
+        setIsInitializing(false);
+      };
     }
   }, []);
 
@@ -32,7 +36,7 @@ export function usePython() {
 
   const runPythonTests = useCallback(
     (code: string, testCases: TestCase[]): Promise<PythonExecutionResult> => {
-      return new Promise((resolve, reject) => {
+      return new Promise((resolve) => {
         if (!workerRef.current) {
           initWorker();
         }
@@ -98,6 +102,18 @@ export function usePython() {
     },
     [initWorker]
   );
+
+  // Set isInitializing to false once worker is ready
+  useEffect(() => {
+    if (!workerRef.current) return;
+    const handleReady = () => setIsInitializing(false);
+    workerRef.current.addEventListener('message', handleReady, { once: true });
+    return () => {
+      if (workerRef.current) {
+        workerRef.current.removeEventListener('message', handleReady);
+      }
+    };
+  }, [workerRef.current]);
 
   return { runPythonTests, isInitializing, initWorker };
 }

@@ -15,6 +15,8 @@ import { playFeedback } from '../utils/feedback';
 import { usePython } from "../../application/hooks/usePython";
 import { getExerciseForCourse, ExerciseData, TestCase } from '../data/courseQuizData';
 import { gradingService } from '../lib/api/grading';
+import { supabase } from '../lib/supabase';
+import { studyProgressService } from '../../application/services/StudyProgressService';
 
 /* ─────────────────────────────────────────
    Terminal Output Line
@@ -154,6 +156,52 @@ export default function ExerciseCard({ courseName, courseId, onComplete, onNextL
   };
 
   const { runPythonTests, isInitializing, initWorker } = usePython();
+
+  // Define recordAttempt for persisting exercise attempts to Supabase
+  const recordAttempt = useCallback(async (attempt: {
+    user_id: string;
+    exercise_id: string;
+    lesson_id: string;
+    course_id: string;
+    submitted_code: string | null;
+    passed_tests: number;
+    total_tests: number;
+    passed: boolean;
+    score: number | null;
+    attempts_count: number;
+    stdout: string | null;
+    error_message: string | null;
+    execution_time: number | null;
+    status: string | null;
+    execution_timestamp: string;
+  }) => {
+    try {
+      const { error } = await supabase
+        .from('exercise_attempts')
+        .insert({
+          user_id: attempt.user_id,
+          exercise_id: attempt.exercise_id,
+          lesson_id: attempt.lesson_id,
+          course_id: attempt.course_id,
+          submitted_code: attempt.submitted_code,
+          passed_tests: attempt.passed_tests,
+          total_tests: attempt.total_tests,
+          passed: attempt.passed,
+          score: attempt.score,
+          attempts_count: attempt.attempts_count,
+          stdout: attempt.stdout,
+          error_message: attempt.error_message,
+          execution_time: attempt.execution_time,
+          status: attempt.status,
+          execution_timestamp: attempt.execution_timestamp,
+        });
+      if (error) {
+        console.error('[ExerciseCard] Failed to record attempt:', error);
+      }
+    } catch (err) {
+      console.error('[ExerciseCard] Error recording attempt:', err);
+    }
+  }, []);
 
   // Parse Python error messages to extract error type and details
   const parsePythonError = (errorText: string): { type: string; message: string; line?: number } => {
@@ -300,16 +348,28 @@ export default function ExerciseCard({ courseName, courseId, onComplete, onNextL
             }).catch(err => console.error('[Exercise Tracking] Failed to persist attempt:', err));
           }
 
-          if (gradingResult.passed && xpEarned === 0) {
-            setXpEarned(exercise.xpReward);
-            setShowXpPopup(true);
-            setShowConfetti(true);
-            playFeedback('complete');
-            recordActivity(); // Record daily streak
-            
-            if (onComplete) {
-              onComplete(true);
-            }
+            if (gradingResult.passed && xpEarned === 0) {
+              setXpEarned(exercise.xpReward);
+              setShowXpPopup(true);
+              setShowConfetti(true);
+              playFeedback('complete');
+              recordActivity(); // Record daily streak
+              
+              // Mark the lesson as complete via shared service
+              if (exercise.lessonId && user?.id) {
+                studyProgressService.markLessonComplete(
+                  user.id,
+                  exercise.lessonId,
+                  courseId || null,
+                  gradingResult.score
+                ).catch(err => {
+                  console.error('[ExerciseCard] Failed to mark lesson progress:', err);
+                });
+              }
+              
+              if (onComplete) {
+                onComplete(true);
+              }
 
 
 
@@ -699,7 +759,7 @@ export default function ExerciseCard({ courseName, courseId, onComplete, onNextL
                 {isRunning && testResults.length === 0 && !isInitializing && (
                   <TerminalLine text="python main.py" type="info" delay={0} />
                 )}
-                {testResults.filter(Boolean).map((tc, i) => (
+                {testResults.filter(Boolean).map((tc: any, i: number) => (
                   <div key={i} className="terminal-line-enter" style={{ animationDelay: `${i * 100}ms` }}>
                     <TerminalLine
                       text={`Test ${i + 1}: ${tc?.input ?? ''}`}

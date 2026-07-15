@@ -20,6 +20,7 @@ import ExerciseCard from '../components/ExerciseCard';
 import { KalturaPlayer } from '../components/KalturaPlayer';
 import { LessonCompleteCard } from '../components/LessonCompleteCard';
 import { useExerciseProgress } from '../../application/hooks/useExerciseProgress';
+import { studyProgressService } from '../../application/services/StudyProgressService';
 
 /* ─────────────────────────────────────────
    Static look-up tables
@@ -640,54 +641,32 @@ export function LessonDetail() {
     return () => window.removeEventListener('resize', checkScroll);
   }, [isReadingLesson, lesson]);
 
-  /* ── Save checkpoint progress to Supabase (notes column) ── */
+  /* ── Save checkpoint progress using shared service ── */
   const saveCheckpointProgress = useCallback(async (newCompletedIndices: number[]) => {
     if (!user?.id || !lessonId) {
       throw new Error('User is not authenticated or lesson ID is missing');
     }
     const pct = Math.round((newCompletedIndices.length / PYTHON_CHECKPOINTS.length) * 100);
     const isAll = newCompletedIndices.length === PYTHON_CHECKPOINTS.length;
-    const now = new Date().toISOString();
 
     console.log(`[Progress DB Log] Saving Python checkpoint progress. User: ${user.id}, completed: [${newCompletedIndices.join(', ')}], percentage: ${pct}%`);
 
-    const payload = {
-      user_id: user.id,
-      lesson_id: lessonId,
-      status: isAll ? 'completed' : 'in_progress',
-      progress_percentage: pct,
-      notes: JSON.stringify(newCompletedIndices),
-      completed_at: isAll ? now : null,
-      last_accessed_at: now,
-    };
+    const result = await studyProgressService.updateLessonProgress(
+      user.id,
+      lessonId,
+      lesson?.course_id || null,
+      isAll ? 'completed' : 'in_progress',
+      pct,
+      JSON.stringify(newCompletedIndices)
+    );
 
-    const { data: existing } = await supabase
-      .from('user_progress')
-      .select('id')
-      .eq('user_id', user.id)
-      .eq('lesson_id', lessonId)
-      .maybeSingle();
-
-    let saveError = null;
-    let resultData = null;
-
-    if (existing) {
-      const { data, error } = await supabase.from('user_progress').update(payload).eq('id', existing.id).select();
-      saveError = error;
-      resultData = data;
-    } else {
-      const { data, error } = await supabase.from('user_progress').insert(payload).select();
-      saveError = error;
-      resultData = data;
+    if (result.error) {
+      console.error('[Progress DB Log] Supabase save error:', result.error);
+      throw new Error(result.error);
     }
 
-    if (saveError) {
-      console.error('[Progress DB Log] Supabase save error:', saveError);
-      throw saveError;
-    }
-
-    console.log('[Progress DB Log] Python checkpoint progress saved successfully. Response:', resultData);
-  }, [user?.id, lessonId]);
+    console.log('[Progress DB Log] Python checkpoint progress saved successfully.');
+  }, [user?.id, lessonId, lesson?.course_id]);
 
   const handleCheckpointClick = (cp: PythonCheckpoint) => {
     setActiveCheckpointIdx(cp.id);
@@ -767,7 +746,7 @@ export function LessonDetail() {
     }
   };
 
-  /* ── Standard (non-Python) mark complete ── */
+  /* ── Standard (non-Python) mark complete using shared service ── */
   const handleMarkComplete = async () => {
     if (!isTimeMet || isSubmitting || isFullyCompleted || !user?.id || !lessonId) return;
 
@@ -782,41 +761,18 @@ export function LessonDetail() {
       setIsSubmitting(true);
       console.log(`[Progress DB Log] Attempting to mark standard lesson ${lessonId} complete...`);
 
-      const now = new Date().toISOString();
-      
       try {
-        const payload = {
-          user_id: user.id,
-          lesson_id: lessonId,
-          status: 'completed',
-          progress_percentage: 100,
-          completed_at: now,
-          last_accessed_at: now,
-        };
+        const result = await studyProgressService.markLessonComplete(
+          user.id,
+          lessonId,
+          lesson?.course_id || null
+        );
 
-        const { data: existing } = await supabase
-          .from('user_progress')
-          .select('id')
-          .eq('user_id', user.id)
-          .eq('lesson_id', lessonId)
-          .maybeSingle();
-
-        let saveError = null;
-        if (existing) {
-          const { error } = await supabase.from('user_progress').update(payload).eq('id', existing.id);
-          saveError = error;
-        } else {
-          const { error } = await supabase.from('user_progress').insert(payload);
-          saveError = error;
+        if (result.error) {
+          throw new Error(result.error);
         }
-
-        if (saveError) throw saveError;
 
         toast.success(t.lessonDetail.standardLessonCompleteSuccess);
-
-        if (lesson?.course_id) {
-
-        }
 
         // Clear stay-timer from localStorage upon completion
         if (timerStorageKey) {
