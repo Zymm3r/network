@@ -2,9 +2,10 @@ import { Link } from 'react-router';
 import { Card, CardContent, CardFooter, CardHeader } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
-import { useI18n } from '../../../i18n';
+import { useI18n } from '../../i18n';
 import { BookOpen, Clock, Users, ChevronRight } from 'lucide-react';
-import type { Course } from '../../../types';
+import type { Course } from '../../types';
+import { stripMarkdown } from '../../utils/string';
 
 interface CourseCardProps {
   course: Course;
@@ -57,8 +58,8 @@ export function CourseCard({ course }: CourseCardProps) {
       <CardHeader className="space-y-2">
         <h3 className="font-semibold text-lg line-clamp-2">{name}</h3>
         {description && (
-          <p className="text-sm text-muted-foreground line-clamp-2">
-            {description}
+          <p className="text-sm text-muted-foreground line-clamp-2" title={stripMarkdown(description)}>
+            {stripMarkdown(description)}
           </p>
         )}
       </CardHeader>
@@ -69,10 +70,10 @@ export function CourseCard({ course }: CourseCardProps) {
             <Clock className="w-4 h-4" />
             <span>{t.coursesList.lessonsCountText.replace('{count}', (course.min_modules || 1).toString())}</span>
           </div>
-          {course.review_count !== null && course.review_count > 0 && (
+          {course.enrolled_count !== undefined && course.enrolled_count > 0 && (
             <div className="flex items-center gap-1">
               <Users className="w-4 h-4" />
-              <span>{course.review_count}+</span>
+              <span>{course.enrolled_count}+</span>
             </div>
           )}
         </div>

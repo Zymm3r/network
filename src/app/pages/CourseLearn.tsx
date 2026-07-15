@@ -4,9 +4,9 @@ import { useCourses } from '../hooks/useCourses';
 import { useLessons } from '../hooks/useLessons';
 import { useAuth } from '../hooks/useAuth';
 import { useLessonsProgress } from '../hooks/useProgress';
-import { Card, CardContent, CardHeader, CardTitle } from '../lib/components/ui/card';
-import { Button } from '../lib/components/ui/button';
-import { Skeleton } from '../lib/components/ui/skeleton';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Button } from '../components/ui/button';
+import { Skeleton } from '../components/ui/skeleton';
 import { ArrowLeft, BookOpen, CheckCircle, ChevronRight, Play, FileText, HelpCircle } from 'lucide-react';
 
 const lessonTypeIcons: Record<string, typeof Play> = {

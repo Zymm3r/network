@@ -5,16 +5,16 @@ import { Button } from './ui/button';
 import {
   Code2, PlayCircle, CheckCircle2, XCircle, Terminal,
   Zap, RotateCcw, Lightbulb, Copy, Check,
-  Flame, Award, Clock
+  Flame, Award, Clock, ChevronRight
 } from 'lucide-react';
-import { useAuth } from '../../hooks/useAuth';
-import { useDailyStreak } from '../../hooks/useDailyStreak';
-import { useActivity } from '../../contexts/ActivityContext';
-import { useExerciseProgress } from '../../hooks/useExerciseProgress';
-import { playFeedback } from '../../utils/feedback';
-import { usePython } from "../../../application/hooks/usePython";
-import { getExerciseForCourse, ExerciseData, TestCase } from '../../data/courseQuizData';
-import { gradingService } from '../api/grading';
+import { useAuth } from '../hooks/useAuth';
+import { useDailyStreak } from '../hooks/useDailyStreak';
+import { useActivity } from '../contexts/ActivityContext';
+import { useExerciseProgress } from '../hooks/useExerciseProgress';
+import { playFeedback } from '../utils/feedback';
+import { usePython } from "../../application/hooks/usePython";
+import { getExerciseForCourse, ExerciseData, TestCase } from '../data/courseQuizData';
+import { gradingService } from '../lib/api/grading';
 
 /* ─────────────────────────────────────────
    Terminal Output Line
@@ -99,18 +99,19 @@ class ExerciseErrorBoundary extends Component<{children: ReactNode}, {hasError: 
 interface ExerciseCardProps {
   courseName?: string;
   courseId?: string;
-  lessonId?: string;
+  onComplete?: (passed: boolean) => void;
+  onNextLesson?: () => void;
 }
 
-export default function ExerciseCard({ courseName, courseId, lessonId }: ExerciseCardProps = {}) {
+export default function ExerciseCard({ courseName, courseId, onComplete, onNextLesson }: ExerciseCardProps = {}) {
   const { user } = useAuth();
   const { currentStreak, recordActivity } = useDailyStreak(user?.id);
   const { totalSeconds } = useActivity();
 
   const exercise = getExerciseForCourse(courseId);
-  const { recordAttempt, progress, saving, saved, offline, syncing, markStarted, updateAnswer, updateTimer, markCompleted } = useExerciseProgress(
+  const { recordAttempt, isQueuedAttempts } = useExerciseProgress(
     exercise.id || courseId || 'unknown',
-    lessonId || exercise.lessonId || '',
+    exercise.lessonId || '',
     courseId || ''
   );
 
@@ -118,13 +119,8 @@ export default function ExerciseCard({ courseName, courseId, lessonId }: Exercis
   
   // Ensure code updates if course changes
   useEffect(() => {
-    setCode(typeof progress?.answers.code === 'string' ? progress.answers.code : exercise.starterCode);
-    if (typeof progress?.attempts === 'number') setAttempts(progress.attempts);
-    if (progress?.status === 'completed') setAllPassed(true);
-  }, [courseId, exercise.starterCode, progress?.answers.code, progress?.attempts, progress?.status]);
-
-  useEffect(() => { markStarted(); }, [markStarted]);
-  useEffect(() => { updateTimer(totalSeconds); }, [totalSeconds, updateTimer]);
+    setCode(exercise.starterCode);
+  }, [courseId, exercise.starterCode]);
   const [isRunning, setIsRunning] = useState(false);
   const [runComplete, setRunComplete] = useState(false);
   const [testResults, setTestResults] = useState<TestCase[]>([]);
@@ -215,7 +211,6 @@ export default function ExerciseCard({ courseName, courseId, lessonId }: Exercis
     setTestResults([]);
     setAllPassed(false);
     setAttempts(a => a + 1);
-    updateAnswer('last_run_at', new Date().toISOString());
     setRunPhase('compiling');
     playFeedback('run');
 
@@ -306,20 +301,17 @@ export default function ExerciseCard({ courseName, courseId, lessonId }: Exercis
           }
 
           if (gradingResult.passed && xpEarned === 0) {
-            void markCompleted({ score: gradingResult.score, attempts: attempts + 1, answers: { code } });
             setXpEarned(exercise.xpReward);
             setShowXpPopup(true);
             setShowConfetti(true);
             playFeedback('complete');
             recordActivity(); // Record daily streak
-
-            if (courseId) {
-              import('../api/certificates').then(({ certificateApi }) => {
-                certificateApi.checkAndIssueCourseCertificate(user.id, courseId).then(cert => {
-                  if (cert) console.log(`[Certificate] Auto-issued certificate:`, cert.certificate_number);
-                });
-              });
+            
+            if (onComplete) {
+              onComplete(true);
             }
+
+
 
             // Achievement badges
             const achievementMsg = attempts === 0
@@ -373,7 +365,7 @@ export default function ExerciseCard({ courseName, courseId, lessonId }: Exercis
         }).catch(err => console.error('[Exercise Tracking] Failed to persist failed attempt:', err));
       }
     }
-  }, [code, exercise, xpEarned, attempts, runPythonTests, recordActivity, user?.id, courseId, recordAttempt, markCompleted, updateAnswer]);
+  }, [code, exercise, xpEarned, attempts, runPythonTests, recordActivity, user?.id, courseId, recordAttempt]);
 
   const handleReset = useCallback(() => {
     setCode(exercise.starterCode);
@@ -500,14 +492,6 @@ export default function ExerciseCard({ courseName, courseId, lessonId }: Exercis
           )}
         </div>
       )}
-      <div className="px-6 py-2 border-b border-slate-100 text-xs text-slate-500 flex flex-wrap gap-x-4 gap-y-1" aria-live="polite">
-        <span>{progress?.status === 'completed' ? 'Completed' : progress?.started_at ? 'Started' : 'Not started'}</span>
-        <span>Progress {progress?.progress_percentage ?? 0}%</span>
-        <span>Time {formatTime(progress?.time_spent_seconds ?? 0)}</span>
-        {progress?.last_activity_at && <span>Last activity {new Date(progress.last_activity_at).toLocaleTimeString()}</span>}
-        {progress?.completed_at && <span>Completed at {new Date(progress.completed_at).toLocaleString()}</span>}
-        <span className={offline ? 'text-amber-600 font-medium' : 'text-emerald-600 font-medium'}>{syncing ? 'Syncing...' : offline ? 'Offline' : saving ? 'Saving...' : saved ? 'Saved' : ''}</span>
-      </div>
       {/* Header */}
       <div className="bg-gradient-to-r from-emerald-50 to-teal-50 px-6 py-4 border-b border-emerald-100 flex items-center justify-between">
         <div className="flex items-center gap-2 text-emerald-800 font-semibold">
@@ -655,7 +639,7 @@ export default function ExerciseCard({ courseName, courseId, lessonId }: Exercis
                 <textarea
                   ref={textareaRef}
                   value={code}
-                  onChange={(e) => { const next = e.target.value; setCode(next); updateAnswer('code', next); }}
+                  onChange={(e) => setCode(e.target.value)}
                   className="absolute inset-0 w-full h-full resize-none cursor-text bg-transparent text-transparent caret-white outline-none"
                   style={{
                     paddingTop: '1rem',
@@ -845,6 +829,14 @@ export default function ExerciseCard({ courseName, courseId, lessonId }: Exercis
               <div className="flex items-center gap-1 bg-amber-100 text-amber-700 px-4 py-2 rounded-full font-bold">
                 <Zap className="w-4 h-4" /> +{exercise.xpReward} XP
               </div>
+              {onNextLesson && (
+                <Button 
+                  onClick={onNextLesson}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2 font-semibold shadow-md ml-auto"
+                >
+                  ทำแบบฝึกหัดถัดไป <ChevronRight className="w-4 h-4" />
+                </Button>
+              )}
             </div>
           </div>
         )}

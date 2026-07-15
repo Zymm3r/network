@@ -1,5 +1,5 @@
 import { TestCase } from '../../data/courseQuizData';
-import { PythonTestResult } from '../../../../application/hooks/usePython';
+import { PythonTestResult } from '../../../hooks/usePython';
 
 export interface GradingResult {
   score: number; // 0-100 percentage

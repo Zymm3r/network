@@ -7,11 +7,11 @@ import {
   Trophy, Sparkles, Star, ArrowRight, RotateCcw, Brain,
   Flame, Award, Clock, Keyboard
 } from 'lucide-react';
-import { useAuth } from '../../hooks/useAuth';
-import { useDailyStreak } from '../../hooks/useDailyStreak';
-import { useActivity } from '../../contexts/ActivityContext';
-import { playFeedback } from '../../utils/feedback';
-import { getQuizForCourse, QuizQuestion } from '../../data/courseQuizData';
+import { useAuth } from '../hooks/useAuth';
+import { useDailyStreak } from '../hooks/useDailyStreak';
+import { useActivity } from '../contexts/ActivityContext';
+import { playFeedback } from '../utils/feedback';
+import { getQuizForCourse, QuizQuestion } from '../data/courseQuizData';
 
 /* ─────────────────────────────────────────
    Types & Data
@@ -41,9 +41,11 @@ function getRandomItem<T>(arr: T[]): T {
 interface QuizCardProps {
   courseName?: string;
   courseId?: string;
+  onComplete?: (score: number, totalQuestions: number) => void;
+  onNextLesson?: () => void;
 }
 
-export default function QuizCard({ courseName, courseId }: QuizCardProps = {}) {
+export default function QuizCard({ courseName, courseId, onComplete, onNextLesson }: QuizCardProps = {}) {
   const { user } = useAuth();
   const { currentStreak, recordActivity } = useDailyStreak(user?.id);
   const { totalSeconds } = useActivity();
@@ -164,8 +166,12 @@ export default function QuizCard({ courseName, courseId }: QuizCardProps = {}) {
         setShowAchievement('🏆 Perfect Score!');
         setTimeout(() => setShowAchievement(null), 3000);
       }
+      
+      if (onComplete) {
+        onComplete(score + (selectedIdx === question.correctIndex ? 1 : 0), totalQuestions);
+      }
     }
-  }, [currentQ, totalQuestions, score, selectedIdx, question.correctIndex, recordActivity]);
+  }, [currentQ, totalQuestions, score, selectedIdx, question.correctIndex, recordActivity, onComplete]);
 
   const handleRestart = useCallback(() => {
     setCurrentQ(0);
@@ -282,7 +288,7 @@ export default function QuizCard({ courseName, courseId }: QuizCardProps = {}) {
                 <RotateCcw className="w-4 h-4" /> ทำแบบทดสอบใหม่
               </Button>
               {pct >= 80 && (
-                <Button className="bg-emerald-600 hover:bg-emerald-700 gap-2">
+                <Button onClick={onNextLesson} className="bg-emerald-600 hover:bg-emerald-700 gap-2">
                   ไปบทเรียนถัดไป <ArrowRight className="w-4 h-4" />
                 </Button>
               )}

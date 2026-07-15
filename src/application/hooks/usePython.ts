@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { TestCase } from '../../app/data/courseQuizData';
+import { TestCase } from '../app/data/courseQuizData';
 
 export interface PythonTestResult extends TestCase {
   actual?: string;

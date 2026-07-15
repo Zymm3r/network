@@ -81,22 +81,19 @@ export function useProductDetail(slug: string | undefined) {
           { data: documents },
           { data: faqs },
           { data: troubleshooting_guides },
-          { data: training_courses },
-          { data: translations }
+          { data: training_courses }
         ] = await Promise.all([
           supabase.from('documents').select('*').eq('product_id', productId),
           supabase.from('faqs').select('*').eq('product_id', productId),
           supabase.from('troubleshooting_guides').select('*').eq('product_id', productId),
-          supabase.from('training_courses').select('*, training_lessons(*)').eq('product_id', productId),
-          supabase.from('product_translations').select('language, content').eq('product_id', productId)
+          supabase.from('training_courses').select('*, training_lessons(*)').eq('product_id', productId)
         ]);
 
         console.log('[DEBUG useProductDetail] Loaded related data:', { 
           docs: documents?.length, 
           faqs: faqs?.length, 
           guides: troubleshooting_guides?.length, 
-          courses: training_courses?.length,
-          translations: translations?.length
+          courses: training_courses?.length 
         });
 
         // 4. Translation Mapping Logic with Fallback
@@ -112,15 +109,8 @@ export function useProductDetail(slug: string | undefined) {
         const shortDesc = parts[0].trim();
         const extractedLongDesc = parts.length > 1 ? parts.slice(1).join('#').trim() : '';
         
-        const translation = (translations || []).find((t: any) => t.language === language);
         const contentFallback = dbProduct.content?.trim() ? dbProduct.content : (extractedLongDesc || shortDesc);
-        
-        // Prioritize product_translations table, then fallback to dbProduct inline columns
-        let contentVal = translation?.content;
-        if (contentVal === null || contentVal === undefined || contentVal === '') {
-          contentVal = dbProduct[`content_${language}` as 'content_th' | 'content_en'];
-        }
-        
+        const contentVal = dbProduct[`content_${language}` as 'content_th' | 'content_en'];
         const finalContent = contentVal !== null && contentVal !== undefined && contentVal !== '' ? contentVal : contentFallback;
 
         const mergedProduct = {

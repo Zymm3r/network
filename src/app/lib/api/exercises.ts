@@ -53,7 +53,7 @@ export const exerciseApi = {
         .select()
         .single();
 
-      return await handleSupabaseResponse(response, 'save exercise attempt');
+      return handleSupabaseResponse(response, 'save exercise attempt');
     } catch (err: any) {
       // Fallback for when the M4 migration has not been run yet.
       console.warn('[Exercise API] New M4 schema columns missing, falling back to legacy schema.');
@@ -74,7 +74,7 @@ export const exerciseApi = {
         .select()
         .single();
 
-      return await handleSupabaseResponse(legacyResponse, 'save exercise attempt (legacy)');
+      return handleSupabaseResponse(legacyResponse, 'save exercise attempt (legacy)');
     }
   },
 

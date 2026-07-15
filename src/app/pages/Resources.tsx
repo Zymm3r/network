@@ -1,10 +1,10 @@
 import { useI18n } from '../i18n';
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { ResourceCard } from '../lib/components/resources/ResourceCard';
-import { Skeleton } from '../lib/components/ui/skeleton';
-import { Card, CardContent } from '../lib/components/ui/card';
-import { Button } from '../lib/components/ui/button';
+import { ResourceCard } from '../components/resources/ResourceCard';
+import { Skeleton } from '../components/ui/skeleton';
+import { Card, CardContent } from '../components/ui/card';
+import { Button } from '../components/ui/button';
 import { Wrench, BookMarked, FileText, Video, Link2, MapPin, Coffee } from 'lucide-react';
 import type { Resource, ResourceType } from '../types';
 

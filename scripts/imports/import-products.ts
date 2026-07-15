@@ -200,30 +200,6 @@ async function run() {
   // Default fallback category if "products" or similar isn't found
   const fallbackCategoryId = categories?.[0]?.id || null;
 
-  console.log("Fetching existing products to preserve IDs...");
-  const existingProductsMap = new Map<string, string>();
-  
-  let hasMore = true;
-  let offset = 0;
-  const limit = 1000;
-  while (hasMore) {
-    const { data: existingProds, error: exError } = await supabase
-      .from('products')
-      .select('id, slug')
-      .range(offset, offset + limit - 1);
-      
-    if (exError) throw new Error(`Failed to fetch existing products: ${exError.message}`);
-    
-    if (existingProds && existingProds.length > 0) {
-      existingProds.forEach(p => existingProductsMap.set(p.slug, p.id));
-      offset += limit;
-      if (existingProds.length < limit) hasMore = false;
-    } else {
-      hasMore = false;
-    }
-  }
-  console.log(`Found ${existingProductsMap.size} existing products in DB.`);
-
   console.log("Upserting to Supabase...");
   // Bulk upsert in batches
   const BATCH_SIZE = 100;
@@ -243,10 +219,7 @@ async function run() {
       }
       
       const { category, ...rest } = record;
-      const existingId = existingProductsMap.get(record.slug);
-      
       return {
-        ...(existingId ? { id: existingId } : {}),
         ...rest,
         category_id: catId || fallbackCategoryId,
         source_url: record.source_url || null

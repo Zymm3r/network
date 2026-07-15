@@ -1,7 +1,7 @@
 import { createBrowserRouter, useParams, Link } from 'react-router';
 import { Unplug } from 'lucide-react';
 import { useI18n } from './i18n';
-import { AppLayout } from './lib/components/layout/AppLayout';
+import { AppLayout } from './components/layout/AppLayout';
 import { Courses } from './pages/Courses';
 import { CourseDetail } from './pages/CourseDetail';
 import { CourseLearn } from './pages/CourseLearn';
@@ -16,7 +16,6 @@ import { Profile } from './pages/Profile';
 import { Dashboard } from './pages/Dashboard';
 import { Auth } from './pages/Auth';
 import { AuthCallback } from './pages/AuthCallback';
-import { VerifyCertificate } from './pages/VerifyCertificate';
 
 function NotFound() {
   const { t } = useI18n();
@@ -68,7 +67,6 @@ export const router = createBrowserRouter([
       { path: 'equipment/:slug', Component: EquipmentDetailPage },
       { path: 'profile', Component: Profile },
       { path: 'dashboard', Component: Dashboard },
-      { path: 'verify/:certificateNumber', Component: VerifyCertificate },
       { path: '*', Component: NotFound },
     ],
   },

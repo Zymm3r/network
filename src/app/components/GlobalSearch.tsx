@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { Search, X } from 'lucide-react';
 import { useNavigate } from 'react-router';
-import { useI18n } from '../../i18n';
-import { useGlobalSearch } from '../../hooks/useGlobalSearch';
+import { useI18n } from '../i18n';
+import { useGlobalSearch } from '../hooks/useGlobalSearch';
 
 interface SearchResult {
   id: string;

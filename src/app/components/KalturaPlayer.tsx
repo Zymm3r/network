@@ -33,7 +33,7 @@ export interface KalturaPlayerProps {
   onComplete?: () => void;
   /** Called periodically with watch progress (0-100) */
   onProgress?: (percent: number) => void;
-  /** Completion threshold percentage (default: 90) */
+  /** Completion threshold percentage (default: 100) */
   completionThreshold?: number;
   /** Seek to a specific time in seconds */
   seekToSeconds?: number;
@@ -96,7 +96,7 @@ export function KalturaPlayer({
   enforceNoSkip = false,
   onComplete,
   onProgress,
-  completionThreshold = 90,
+  completionThreshold = 100,
   seekToSeconds,
   className = '',
   showLockIndicator = true,
@@ -201,6 +201,10 @@ function KalturaEmbed({
     }
 
     try {
+      maxWatchedRef.current = 0;
+      completedRef.current = false;
+      setWatchPercent(0);
+      
       const targetId = `kaltura-player-${entryId}`;
       containerRef.current.id = targetId;
 
@@ -346,6 +350,10 @@ function YouTubeEmbed({
   useEffect(() => {
     if (!isLoaded || !containerRef.current || !videoId) return;
 
+    maxWatchedRef.current = 0;
+    completedRef.current = false;
+    setWatchPercent(0);
+
     const playerId = `yt-player-${Math.random().toString(36).substr(2, 9)}`;
     containerRef.current.id = playerId;
 
@@ -458,6 +466,12 @@ function Html5Video({
   const completedRef = useRef(false);
   const [watchPercent, setWatchPercent] = useState(0);
 
+  useEffect(() => {
+    maxWatchedRef.current = 0;
+    completedRef.current = false;
+    setWatchPercent(0);
+  }, [url]);
+
   const handleTimeUpdate = useCallback(() => {
     const video = videoRef.current;
     if (!video || !video.duration) return;
@@ -527,10 +541,10 @@ function Html5Video({
    Anti-Skip Progress Indicator
 ═══════════════════════════════════════════ */
 function AntiSkipIndicator({ percent }: { percent: number }) {
-  const isComplete = percent >= 90;
+  const isComplete = percent >= 100;
 
   return (
-    <div className="absolute bottom-14 left-4 z-10 pointer-events-none">
+    <div className="absolute bottom-12 left-4 z-10 pointer-events-none">
       <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold shadow-lg backdrop-blur-md border transition-all duration-500 ${
         isComplete
           ? 'bg-emerald-500/90 text-white border-emerald-400/50'

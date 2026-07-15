@@ -1,8 +1,8 @@
 import { useProducts } from '../hooks/useProducts';
-import { EquipmentGrid } from "../components/EquipmentGrid";
+import { EquipmentGrid } from '../components/EquipmentGrid';
 import { PackageSearch, AlertTriangle } from 'lucide-react';
 import { useI18n } from '../../../app/i18n';
-import { Button } from '../../../app/lib/components/ui/button';
+import { Button } from '../../../app/components/ui/button';
 
 export function EquipmentPage() {
   const { products, isLoading, error } = useProducts();

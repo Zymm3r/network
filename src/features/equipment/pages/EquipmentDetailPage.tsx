@@ -1,7 +1,7 @@
 import { useParams, Link } from 'react-router';
 import { ChevronLeft, PackageSearch, AlertTriangle } from 'lucide-react';
 import { useProductDetail } from '../hooks/useProductDetail';
-import { EquipmentDetailTabs } from "../components/EquipmentDetailTabs";
+import { EquipmentDetailTabs } from '../components/EquipmentDetailTabs';
 import { useI18n } from '../../../app/i18n';
 
 export function EquipmentDetailPage() {

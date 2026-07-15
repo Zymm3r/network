@@ -4,9 +4,10 @@ import { Card, CardContent, CardFooter, CardHeader } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Clock, Video, FileQuestion, PenTool, BookOpen, ChevronRight, CheckCircle2 } from 'lucide-react';
-import { useI18n } from '../../../i18n';
-import type { Lesson } from '../../../types';
-import { supabase } from '../../supabase';
+import { useI18n } from '../../i18n';
+import type { Lesson } from '../../types';
+import { stripMarkdown } from '../../utils/string';
+import { supabase } from '../../lib/supabase';
 
 interface LessonCardProps {
   lesson: Lesson;
@@ -75,8 +76,8 @@ export function LessonCard({ lesson }: LessonCardProps) {
       <CardHeader className="space-y-2">
         <h3 className="font-semibold text-lg line-clamp-2">{name}</h3>
         {description && (
-          <p className="text-sm text-muted-foreground line-clamp-2">
-            {description}
+          <p className="text-sm text-muted-foreground line-clamp-2" title={stripMarkdown(description)}>
+            {stripMarkdown(description)}
           </p>
         )}
       </CardHeader>
