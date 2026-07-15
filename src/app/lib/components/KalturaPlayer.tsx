@@ -544,11 +544,7 @@ function AntiSkipIndicator({ percent }: { percent: number }) {
   const isComplete = percent >= 100;
 
   return (
-<<<<<<< HEAD:src/app/components/KalturaPlayer.tsx
-    <div className="absolute bottom-12 left-4 z-10 pointer-events-none">
-=======
     <div className="absolute bottom-14 left-4 z-10 pointer-events-none">
->>>>>>> origin/main:src/app/lib/components/KalturaPlayer.tsx
       <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold shadow-lg backdrop-blur-md border transition-all duration-500 ${
         isComplete
           ? 'bg-emerald-500/90 text-white border-emerald-400/50'

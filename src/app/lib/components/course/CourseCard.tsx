@@ -4,12 +4,8 @@ import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { useI18n } from '../../../i18n';
 import { BookOpen, Clock, Users, ChevronRight } from 'lucide-react';
-<<<<<<< HEAD:src/app/components/course/CourseCard.tsx
-import type { Course } from '../../types';
-import { stripMarkdown } from '../../utils/string';
-=======
 import type { Course } from '../../../types';
->>>>>>> origin/main:src/app/lib/components/course/CourseCard.tsx
+import { stripMarkdown } from '../../../utils/string';
 
 interface CourseCardProps {
   course: Course;

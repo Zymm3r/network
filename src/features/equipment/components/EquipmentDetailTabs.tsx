@@ -182,13 +182,8 @@ export function EquipmentDetailTabs({ data, isLoading = false, error = null }: E
           </div>
         )}
 
-<<<<<<< HEAD
-        {activeTab === 'overview' && (
-          <div id="tab-panel-overview" role="tabpanel" data-testid="overview-content" className="space-y-6">
-=======
         {!isLoading && !error && activeTab === 'overview' && (
           <div className="space-y-6">
->>>>>>> origin/main
             <div>
               <h3 className="text-lg font-bold text-slate-800 mb-4">{t.equipmentCatalog.detailsTitle}</h3>
               <div className="mt-4">
@@ -221,24 +216,9 @@ export function EquipmentDetailTabs({ data, isLoading = false, error = null }: E
           </div>
         )}
 
-<<<<<<< HEAD
-        {activeTab === 'simulator' && (
-          <div id="tab-panel-simulator" role="tabpanel" data-testid="simulator-canvas">
-            <WiringSimulator
-              productName={data.product?.name || t.equipmentCatalog.defaultDeviceName}
-              productCategory={data.product?.category || ''}
-            />
-          </div>
-        )}
-
-        {activeTab === 'documents' && (
-          <div id="tab-panel-documents" role="tabpanel">
-            {data.documents?.length > 0 ? (
-=======
         {!isLoading && !error && activeTab === 'documents' && (
           <div className="">
             {documents.filter(d => ['application/pdf', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'].includes(d.mime_type)).length > 0 ? (
->>>>>>> origin/main
               <ul className="grid gap-4 sm:grid-cols-2">
                 {documents.filter(d => ['application/pdf', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'].includes(d.mime_type)).map(doc => (
                   <li key={doc.id} className="flex flex-col justify-between gap-4 p-5 bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-indigo-200 transition-all group">
@@ -277,15 +257,9 @@ export function EquipmentDetailTabs({ data, isLoading = false, error = null }: E
           </div>
         )}
 
-<<<<<<< HEAD
-        {activeTab === 'faq' && (
-          <div id="tab-panel-faq" role="tabpanel">
-            {data.faqs?.length > 0 ? (
-=======
         {!isLoading && !error && activeTab === 'faq' && (
           <div className="">
             {faqs.length > 0 ? (
->>>>>>> origin/main
               <div className="space-y-4">
                 {faqs.map(faq => (
                   <div key={faq.id} className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm hover:shadow-md hover:border-indigo-200 transition-all">
@@ -313,15 +287,9 @@ export function EquipmentDetailTabs({ data, isLoading = false, error = null }: E
           </div>
         )}
 
-<<<<<<< HEAD
-        {activeTab === 'troubleshooting' && (
-          <div id="tab-panel-troubleshooting" role="tabpanel">
-            {data.troubleshooting_guides?.length > 0 ? (
-=======
         {!isLoading && !error && activeTab === 'troubleshooting' && (
           <div className="">
             {troubleshootingGuides.length > 0 ? (
->>>>>>> origin/main
               <div className="space-y-6">
                 {troubleshootingGuides.map(guide => (
                   <div key={guide.id} className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
@@ -354,15 +322,9 @@ export function EquipmentDetailTabs({ data, isLoading = false, error = null }: E
           </div>
         )}
 
-<<<<<<< HEAD
-        {activeTab === 'training' && (
-          <div id="tab-panel-training" role="tabpanel" data-testid="training-lessons-list">
-            {data.training_courses?.length > 0 ? (
-=======
         {!isLoading && !error && activeTab === 'training' && (
           <div className="">
             {trainingCourses.length > 0 ? (
->>>>>>> origin/main
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {trainingCourses.map(course => (
                   <div key={course.id} className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all group flex flex-col">

@@ -2,18 +2,11 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useI18n } from '../i18n';
 import { analyticsApi, StudentMetrics, AdminMetrics, HardestExercise } from '../lib/api/analytics';
-<<<<<<< HEAD
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
-import { Skeleton } from '../components/ui/skeleton';
-import { BookOpen, CheckCircle, GraduationCap, Clock, Award, Activity, Users, AlertCircle, Play, Flame, Star, Zap } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert';
-import { Link } from 'react-router';
-=======
-import { Card, CardContent, CardHeader, CardTitle } from '../lib/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../lib/components/ui/card';
 import { Skeleton } from '../lib/components/ui/skeleton';
-import { BookOpen, CheckCircle, GraduationCap, Clock, Award, Activity, Users, AlertCircle, FileText } from 'lucide-react';
+import { BookOpen, CheckCircle, GraduationCap, Clock, Award, Activity, Users, AlertCircle, FileText, Play, Flame, Star, Zap } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '../lib/components/ui/alert';
->>>>>>> origin/main
+import { Link } from 'react-router';
 
 export function Dashboard() {
   const { user } = useAuth();

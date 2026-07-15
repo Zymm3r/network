@@ -306,20 +306,10 @@ export default function ExerciseCard({ courseName, courseId, onComplete, onNextL
             setShowConfetti(true);
             playFeedback('complete');
             recordActivity(); // Record daily streak
-<<<<<<< HEAD:src/app/components/ExerciseCard.tsx
-            
             if (onComplete) {
               onComplete(true);
-=======
-
-            if (courseId) {
-              import('../api/certificates').then(({ certificateApi }) => {
-                certificateApi.checkAndIssueCourseCertificate(user.id, courseId).then(cert => {
-                  if (cert) console.log(`[Certificate] Auto-issued certificate:`, cert.certificate_number);
-                });
-              });
->>>>>>> origin/main:src/app/lib/components/ExerciseCard.tsx
             }
+
 
 
 

@@ -2,14 +2,9 @@ import { ExternalLink, MapPin, Wrench, BookMarked, FileText, Video, Link2 } from
 import { Card, CardContent, CardFooter, CardHeader } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
-<<<<<<< HEAD:src/app/components/resources/ResourceCard.tsx
-import { useI18n } from '../../i18n';
-import type { Resource } from '../../types';
-import { stripMarkdown } from '../../utils/string';
-=======
 import { useI18n } from '../../../i18n';
 import type { Resource } from '../../../types';
->>>>>>> origin/main:src/app/lib/components/resources/ResourceCard.tsx
+import { stripMarkdown } from '../../../utils/string';
 
 interface ResourceCardProps {
   resource: Resource;
