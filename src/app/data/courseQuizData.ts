@@ -21,6 +21,8 @@ export interface TestCase {
 }
 
 export interface ExerciseData {
+  id?: string;
+  lessonId?: string;
   title: string;
   description: string;
   starterCode: string;

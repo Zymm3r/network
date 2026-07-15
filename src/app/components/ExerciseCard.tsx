@@ -10,7 +10,7 @@ import {
 import { useAuth } from '../hooks/useAuth';
 import { useDailyStreak } from '../hooks/useDailyStreak';
 import { useActivity } from '../contexts/ActivityContext';
-import { useExerciseProgress } from '../hooks/useExerciseProgress';
+import { useExerciseProgress } from '../../application/hooks/useExerciseProgress';
 import { playFeedback } from '../utils/feedback';
 import { usePython } from "../../application/hooks/usePython";
 import { getExerciseForCourse, ExerciseData, TestCase } from '../data/courseQuizData';
@@ -109,7 +109,7 @@ export default function ExerciseCard({ courseName, courseId, onComplete, onNextL
   const { totalSeconds } = useActivity();
 
   const exercise = getExerciseForCourse(courseId);
-  const { recordAttempt, isQueuedAttempts } = useExerciseProgress(
+  const { progress: exerciseProgress, markStarted, markCompleted, updateTimer } = useExerciseProgress(
     exercise.id || courseId || 'unknown',
     exercise.lessonId || '',
     courseId || ''

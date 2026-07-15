@@ -10,15 +10,16 @@ import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { Skeleton } from '../components/ui/skeleton';
 import {
-  ArrowLeft, Clock, ChevronRight, Play, FileText, HelpCircle,
+  ArrowLeft, ArrowRight, Clock, ChevronRight, Play, FileText, HelpCircle,
   CheckCircle, CheckCircle2, Circle, Zap, BookOpen, Trophy, ChevronDown,
-  Code2, PlayCircle, Eye, PenTool
+  Code2, PlayCircle, Eye, PenTool, Activity
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import QuizCard from '../components/QuizCard';
 import ExerciseCard from '../components/ExerciseCard';
 import { KalturaPlayer } from '../components/KalturaPlayer';
 import { LessonCompleteCard } from '../components/LessonCompleteCard';
+import { useExerciseProgress } from '../../application/hooks/useExerciseProgress';
 
 /* ─────────────────────────────────────────
    Static look-up tables
@@ -565,7 +566,7 @@ export function LessonDetail() {
     if (isPythonLesson) return completedCheckpoints.length === PYTHON_CHECKPOINTS.length;
     if (lesson?.lesson_type === 'quiz') return isQuizPassed;
     if (lesson?.lesson_type === 'exercise') return isExercisePassed;
-    if (lesson?.lesson_type === 'interactive') return false; // Handled explicitly by events if added
+    if (lesson?.lesson_type === 'interactive') return false; // Handled explicitly by events if added (not in current enum)
     
     // Default fallback for Reading/Markdown: timer and scroll
     return elapsedSeconds >= requiredSeconds && isScrolledToBottom;
@@ -710,6 +711,7 @@ export function LessonDetail() {
       console.log(`[Progress DB Log] Attempting to mark checkpoint ${activeCheckpointIdx} complete...`);
 
       const updated = [...new Set([...completedCheckpoints, activeCheckpointIdx])];
+      const isAll = updated.length === PYTHON_CHECKPOINTS.length;
       
       // Attempt to save to Supabase
       try {
@@ -721,7 +723,7 @@ export function LessonDetail() {
         );
 
         if (isAll && lesson?.course_id) {
-
+          // Future: update enrollment/course progress
         }
 
         // Clear active checkpoint timer from localStorage upon completion
@@ -731,13 +733,17 @@ export function LessonDetail() {
       } catch (dbErr) {
         console.error('[Progress DB Log] Database write failed — queueing for offline retry', dbErr);
         
-        // Queue progress update for offline sync
-        queueFailedSave({
+        // Queue progress update for offline sync via localStorage fallback
+        const offlineQueueKey = `offline-progress-queue-${user.id}`;
+        const queue = JSON.parse(localStorage.getItem(offlineQueueKey) || '[]');
+        queue.push({
           userId: user.id,
           lessonId,
           isPython: true,
           completedCheckpoints: updated,
+          timestamp: Date.now()
         });
+        localStorage.setItem(offlineQueueKey, JSON.stringify(queue));
 
         toast.warning(t.lessonDetail.checkpointOfflineWarning);
       }
@@ -819,13 +825,17 @@ export function LessonDetail() {
       } catch (dbErr) {
         console.error('[Progress DB Log] Standard lesson database write failed — queueing for offline retry', dbErr);
 
-        // Queue progress update for offline sync
-        queueFailedSave({
+        // Queue progress update for offline sync via localStorage fallback
+        const offlineQueueKey = `offline-progress-queue-${user.id}`;
+        const queue = JSON.parse(localStorage.getItem(offlineQueueKey) || '[]');
+        queue.push({
           userId: user.id,
           lessonId,
           isPython: false,
           completedCheckpoints: [],
+          timestamp: Date.now()
         });
+        localStorage.setItem(offlineQueueKey, JSON.stringify(queue));
 
         toast.warning(t.lessonDetail.offlineQueueWarning);
       }
