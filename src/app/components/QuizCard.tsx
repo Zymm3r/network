@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Card, CardContent } from './ui/card';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
@@ -12,6 +12,8 @@ import { useDailyStreak } from '../hooks/useDailyStreak';
 import { useActivity } from '../contexts/ActivityContext';
 import { playFeedback } from '../utils/feedback';
 import { getQuizForCourse, QuizQuestion } from '../data/courseQuizData';
+import { useI18n } from '../i18n';
+import { Lesson } from '../types';
 
 /* ─────────────────────────────────────────
    Types & Data
@@ -41,14 +43,16 @@ function getRandomItem<T>(arr: T[]): T {
 interface QuizCardProps {
   courseName?: string;
   courseId?: string;
+  lesson?: Lesson;
   onComplete?: (score: number, totalQuestions: number) => void;
   onNextLesson?: () => void;
 }
 
-export default function QuizCard({ courseName, courseId, onComplete, onNextLesson }: QuizCardProps = {}) {
+export default function QuizCard({ courseName, courseId, lesson, onComplete, onNextLesson }: QuizCardProps = {}) {
   const { user } = useAuth();
   const { currentStreak, recordActivity } = useDailyStreak(user?.id);
   const { totalSeconds } = useActivity();
+  const { language } = useI18n();
 
   const [currentQ, setCurrentQ] = useState(0);
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
@@ -69,7 +73,20 @@ export default function QuizCard({ courseName, courseId, onComplete, onNextLesso
   const [showAchievement, setShowAchievement] = useState<string | null>(null);
   const correctAudioRef = useRef<HTMLAudioElement | null>(null);
 
-  const questions = getQuizForCourse(courseId);
+  const questions = useMemo(() => {
+    if (lesson?.quiz_data?.questions && lesson.quiz_data.questions.length > 0) {
+      return lesson.quiz_data.questions.map((q, index) => ({
+        id: index + 1,
+        question: language === 'th' ? q.question_th : q.question_en,
+        choices: q.options,
+        correctIndex: q.correct_index,
+        explanation: (language === 'th' ? q.explanation_th : q.explanation_en) || '',
+        hint: undefined,
+      }));
+    }
+    return getQuizForCourse(courseId);
+  }, [lesson, courseId, language]);
+
   const question = questions[currentQ];
   const totalQuestions = questions.length;
   const progressPct = ((currentQ + (isSubmitted ? 1 : 0)) / totalQuestions) * 100;

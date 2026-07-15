@@ -104,6 +104,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   //   4. Visibility change handler refreshes session when tab becomes visible.
   //
   useEffect(() => {
+    try {
+      if (window.localStorage.getItem('sb-mock-auth') === 'true') {
+        authLog('BOOT', 'Bypassing auth with mock session');
+        const mockUser = {
+          id: '00000000-0000-0000-0000-000000000000',
+          email: 'test@example.com',
+          full_name_th: 'ผู้ทดสอบระบบ',
+          full_name_en: 'System Tester',
+          avatar_url: null,
+          role: 'student' as const,
+          created_at: new Date().toISOString()
+        };
+        const mockSession = {
+          access_token: 'mock-token',
+          refresh_token: 'mock-refresh-token',
+          expires_in: 3600,
+          expires_at: Math.floor(Date.now() / 1000) + 3600,
+          token_type: 'bearer',
+          user: {
+            id: mockUser.id,
+            aud: 'authenticated',
+            role: 'authenticated',
+            email: mockUser.email,
+            app_metadata: { provider: 'email', providers: ['email'] },
+            user_metadata: {
+              full_name_th: mockUser.full_name_th,
+              full_name_en: mockUser.full_name_en,
+              role: mockUser.role
+            },
+            created_at: mockUser.created_at,
+            updated_at: mockUser.created_at
+          }
+        } as unknown as Session;
+
+        setUser(mockUser);
+        setSession(mockSession);
+        setLoading(false);
+        setInitialized(true);
+        return;
+      }
+    } catch (e) {
+      console.error('Failed to check sb-mock-auth', e);
+    }
+
     authLog('BOOT', 'Starting auth bootstrap');
     let disposed = false;
 

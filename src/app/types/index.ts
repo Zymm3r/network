@@ -41,6 +41,7 @@ export interface Lesson {
   video_url: string | null;
   thumbnail_url: string | null;
   difficulty: ExerciseDifficulty | null;
+  quiz_data?: LessonQuizData | null;
   created_at: string;
   updated_at: string;
 }
@@ -163,4 +164,17 @@ export interface ExerciseAttempt {
   execution_timestamp: string;
   created_at: string;
   updated_at: string;
+}
+
+export interface LessonQuizQuestion {
+  question_en: string;
+  question_th: string;
+  options: string[];
+  correct_index: number;
+  explanation_en?: string | null;
+  explanation_th?: string | null;
+}
+
+export interface LessonQuizData {
+  questions: LessonQuizQuestion[];
 }

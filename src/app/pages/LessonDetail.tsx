@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router';
 import { useI18n } from '../i18n';
@@ -10,10 +11,10 @@ import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { Skeleton } from '../components/ui/skeleton';
 import {
-  ArrowLeft, Clock, ChevronRight, Play, FileText, HelpCircle,
-  CheckCircle, CheckCircle2, Circle, Zap, BookOpen, Trophy, ChevronDown,
-  Code2, PlayCircle, Eye, PenTool
-} from 'lucide-react';
+ ArrowLeft, ArrowRight, Clock, ChevronRight, Play, FileText, HelpCircle,
+   CheckCircle, CheckCircle2, Circle, Zap, BookOpen, Trophy, ChevronDown,
+   Code2, PlayCircle, Eye, PenTool
+ } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import QuizCard from '../components/QuizCard';
 import ExerciseCard from '../components/ExerciseCard';
@@ -694,6 +695,21 @@ export function LessonDetail() {
     setVideoSeekState({ time: parseStartTimeToSeconds(cp.startTime), triggerId: Date.now() });
   };
 
+  /* ── Offline queue helper for lesson progress ── */
+  const queueFailedSave = useCallback((payload: {
+    userId: string;
+    lessonId: string;
+    isPython: boolean;
+    completedCheckpoints: number[];
+  }) => {
+    const queue = JSON.parse(localStorage.getItem(`pending-progress-${payload.userId}`) || '[]');
+    queue.push({
+      ...payload,
+      timestamp: Date.now(),
+    });
+    localStorage.setItem(`pending-progress-${payload.userId}`, JSON.stringify(queue));
+  }, []);
+
   /* ── Handle marking a checkpoint complete ── */
   const handleMarkCheckpointComplete = async () => {
     if (!isTimeMet || isSubmitting || isCurrentCheckpointDone || !user?.id || !lessonId) return;
@@ -710,6 +726,7 @@ export function LessonDetail() {
       console.log(`[Progress DB Log] Attempting to mark checkpoint ${activeCheckpointIdx} complete...`);
 
       const updated = [...new Set([...completedCheckpoints, activeCheckpointIdx])];
+      const allDone = updated.length === PYTHON_CHECKPOINTS.length;
       
       // Attempt to save to Supabase
       try {
@@ -720,7 +737,7 @@ export function LessonDetail() {
           t.lessonDetail.checkpointSaveSuccess.replace('{title}', activeCheckpoint?.title || '')
         );
 
-        if (isAll && lesson?.course_id) {
+        if (allDone && lesson?.course_id) {
 
         }
 
@@ -1030,6 +1047,7 @@ export function LessonDetail() {
           <TabsContent value="quiz" className="mt-0">
             <QuizCard 
               courseId={lesson.course_id || undefined} 
+              lesson={lesson}
               onComplete={(score, total) => {
                 if (score / total >= 0.8) setIsQuizPassed(true);
               }} 
