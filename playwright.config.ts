@@ -1,7 +1,11 @@
 import { defineConfig, devices } from '@playwright/test';
+import * as path from 'path';
+
+const AUTH_FILE = path.join('playwright', '.auth', 'user.json');
 
 export default defineConfig({
   testDir: './e2e',
+  globalSetup: './e2e/global-setup',
   timeout: 30000,
   expect: {
     timeout: 5000,
@@ -15,6 +19,7 @@ export default defineConfig({
     actionTimeout: 0,
     baseURL: 'http://localhost:5173',
     trace: 'on-first-retry',
+    storageState: AUTH_FILE,
   },
   projects: [
     {

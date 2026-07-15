@@ -4,6 +4,7 @@ import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { useI18n } from '../../../i18n';
 import type { Resource } from '../../../types';
+import { stripMarkdown } from '../../../utils/string';
 
 interface ResourceCardProps {
   resource: Resource;
@@ -74,8 +75,8 @@ export function ResourceCard({ resource }: ResourceCardProps) {
       <CardHeader className="space-y-2">
         <h3 className="font-semibold text-lg line-clamp-2">{name}</h3>
         {description && (
-          <p className="text-sm text-muted-foreground line-clamp-2">
-            {description}
+          <p className="text-sm text-muted-foreground line-clamp-2" title={stripMarkdown(description)}>
+            {stripMarkdown(description)}
           </p>
         )}
       </CardHeader>

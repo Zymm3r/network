@@ -23,6 +23,7 @@ export interface Course {
   modules_left: number | null;
   estimated_hours: number | null;
   prerequisites: string[] | null;
+  enrolled_count?: number;
   created_at: string;
   updated_at: string;
 }
@@ -40,6 +41,7 @@ export interface Lesson {
   video_url: string | null;
   thumbnail_url: string | null;
   difficulty: ExerciseDifficulty | null;
+  quiz_data?: LessonQuizData | null;
   created_at: string;
   updated_at: string;
 }
@@ -123,15 +125,6 @@ export interface User {
   created_at: string;
 }
 
-export interface Certificate {
-  id: string;
-  user_id: string;
-  course_id: string | null;
-  learning_path_id: string | null;
-  certificate_number: string;
-  issued_at: string;
-  certificate_url: string | null;
-}
 
 export interface UserBookmark {
   id: string;
@@ -171,4 +164,17 @@ export interface ExerciseAttempt {
   execution_timestamp: string;
   created_at: string;
   updated_at: string;
+}
+
+export interface LessonQuizQuestion {
+  question_en: string;
+  question_th: string;
+  options: string[];
+  correct_index: number;
+  explanation_en?: string | null;
+  explanation_th?: string | null;
+}
+
+export interface LessonQuizData {
+  questions: LessonQuizQuestion[];
 }

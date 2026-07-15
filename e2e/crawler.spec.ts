@@ -59,6 +59,7 @@ test.describe('Runtime Verification Crawler', () => {
       // Extract project ref from URL (e.g. netvfzmdewatfnmejcrz)
       const projectRef = 'netvfzmdewatfnmejcrz'; // Hardcoded for simplicity based on env
       window.localStorage.setItem(`sb-${projectRef}-auth-token`, sessionStr);
+      window.localStorage.setItem('sb-mock-auth', 'true');
     }, JSON.stringify(sessionData));
 
     // Array of routes to verify

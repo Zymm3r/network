@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Card, CardContent } from './ui/card';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
@@ -12,6 +12,8 @@ import { useDailyStreak } from '../../hooks/useDailyStreak';
 import { useActivity } from '../../contexts/ActivityContext';
 import { playFeedback } from '../../utils/feedback';
 import { getQuizForCourse, QuizQuestion } from '../../data/courseQuizData';
+import { useI18n } from '../../i18n';
+import { Lesson } from '../../types';
 
 /* ─────────────────────────────────────────
    Types & Data
@@ -41,12 +43,16 @@ function getRandomItem<T>(arr: T[]): T {
 interface QuizCardProps {
   courseName?: string;
   courseId?: string;
+  lesson?: Lesson;
+  onComplete?: (score: number, totalQuestions: number) => void;
+  onNextLesson?: () => void;
 }
 
-export default function QuizCard({ courseName, courseId }: QuizCardProps = {}) {
+export default function QuizCard({ courseName, courseId, lesson, onComplete, onNextLesson }: QuizCardProps = {}) {
   const { user } = useAuth();
   const { currentStreak, recordActivity } = useDailyStreak(user?.id);
   const { totalSeconds } = useActivity();
+  const { language } = useI18n();
 
   const [currentQ, setCurrentQ] = useState(0);
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
@@ -67,7 +73,20 @@ export default function QuizCard({ courseName, courseId }: QuizCardProps = {}) {
   const [showAchievement, setShowAchievement] = useState<string | null>(null);
   const correctAudioRef = useRef<HTMLAudioElement | null>(null);
 
-  const questions = getQuizForCourse(courseId);
+  const questions = useMemo(() => {
+    if (lesson?.quiz_data?.questions && lesson.quiz_data.questions.length > 0) {
+      return lesson.quiz_data.questions.map((q, index) => ({
+        id: index + 1,
+        question: language === 'th' ? q.question_th : q.question_en,
+        choices: q.options,
+        correctIndex: q.correct_index,
+        explanation: (language === 'th' ? q.explanation_th : q.explanation_en) || '',
+        hint: undefined,
+      }));
+    }
+    return getQuizForCourse(courseId);
+  }, [lesson, courseId, language]);
+
   const question = questions[currentQ];
   const totalQuestions = questions.length;
   const progressPct = ((currentQ + (isSubmitted ? 1 : 0)) / totalQuestions) * 100;
@@ -164,8 +183,12 @@ export default function QuizCard({ courseName, courseId }: QuizCardProps = {}) {
         setShowAchievement('🏆 Perfect Score!');
         setTimeout(() => setShowAchievement(null), 3000);
       }
+      
+      if (onComplete) {
+        onComplete(score + (selectedIdx === question.correctIndex ? 1 : 0), totalQuestions);
+      }
     }
-  }, [currentQ, totalQuestions, score, selectedIdx, question.correctIndex, recordActivity]);
+  }, [currentQ, totalQuestions, score, selectedIdx, question.correctIndex, recordActivity, onComplete]);
 
   const handleRestart = useCallback(() => {
     setCurrentQ(0);
@@ -282,7 +305,7 @@ export default function QuizCard({ courseName, courseId }: QuizCardProps = {}) {
                 <RotateCcw className="w-4 h-4" /> ทำแบบทดสอบใหม่
               </Button>
               {pct >= 80 && (
-                <Button className="bg-emerald-600 hover:bg-emerald-700 gap-2">
+                <Button onClick={onNextLesson} className="bg-emerald-600 hover:bg-emerald-700 gap-2">
                   ไปบทเรียนถัดไป <ArrowRight className="w-4 h-4" />
                 </Button>
               )}

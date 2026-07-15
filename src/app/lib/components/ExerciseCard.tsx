@@ -5,7 +5,7 @@ import { Button } from './ui/button';
 import {
   Code2, PlayCircle, CheckCircle2, XCircle, Terminal,
   Zap, RotateCcw, Lightbulb, Copy, Check,
-  Flame, Award, Clock
+  Flame, Award, Clock, ChevronRight
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useDailyStreak } from '../../hooks/useDailyStreak';
@@ -99,9 +99,11 @@ class ExerciseErrorBoundary extends Component<{children: ReactNode}, {hasError: 
 interface ExerciseCardProps {
   courseName?: string;
   courseId?: string;
+  onComplete?: (passed: boolean) => void;
+  onNextLesson?: () => void;
 }
 
-export default function ExerciseCard({ courseName, courseId }: ExerciseCardProps = {}) {
+export default function ExerciseCard({ courseName, courseId, onComplete, onNextLesson }: ExerciseCardProps = {}) {
   const { user } = useAuth();
   const { currentStreak, recordActivity } = useDailyStreak(user?.id);
   const { totalSeconds } = useActivity();
@@ -304,14 +306,12 @@ export default function ExerciseCard({ courseName, courseId }: ExerciseCardProps
             setShowConfetti(true);
             playFeedback('complete');
             recordActivity(); // Record daily streak
-
-            if (courseId) {
-              import('../api/certificates').then(({ certificateApi }) => {
-                certificateApi.checkAndIssueCourseCertificate(user.id, courseId).then(cert => {
-                  if (cert) console.log(`[Certificate] Auto-issued certificate:`, cert.certificate_number);
-                });
-              });
+            if (onComplete) {
+              onComplete(true);
             }
+
+
+
 
             // Achievement badges
             const achievementMsg = attempts === 0
@@ -829,6 +829,14 @@ export default function ExerciseCard({ courseName, courseId }: ExerciseCardProps
               <div className="flex items-center gap-1 bg-amber-100 text-amber-700 px-4 py-2 rounded-full font-bold">
                 <Zap className="w-4 h-4" /> +{exercise.xpReward} XP
               </div>
+              {onNextLesson && (
+                <Button 
+                  onClick={onNextLesson}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2 font-semibold shadow-md ml-auto"
+                >
+                  ทำแบบฝึกหัดถัดไป <ChevronRight className="w-4 h-4" />
+                </Button>
+              )}
             </div>
           </div>
         )}

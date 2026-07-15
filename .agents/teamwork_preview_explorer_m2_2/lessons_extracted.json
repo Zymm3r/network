@@ -1,0 +1,440 @@
+[
+  {
+    "id": "devnet-004-lesson-1",
+    "title_en": "Introduction to REST APIs",
+    "title_th": "ปูพื้นฐาน REST API",
+    "content_en": "## Introduction to REST APIs\n**What You Will Learn**\nUnderstand the fundamental principles of REST APIs and how applications communicate over the network, laying the groundwork for modern network automation.\n\n**Main Content**\n\n**REST Architecture: A standardized approach for web services to communicate via HTTP protocol.**\n\n**Key Components of a REST API:**\n- Endpoint / URI: The specific path to access a resource on the server.\n- HTTP Methods: The action requested from the server.\n- Headers & Body: Additional metadata and payload sent with the request or response.\n\n**Common HTTP Methods (CRUD Operations):**\n- GET (Read): Retrieves data without modifying server state.\n- POST (Create): Submits new data to create a resource.\n- PUT / PATCH (Update): Modifies or replaces existing data.\n- DELETE (Delete): Removes a resource from the server.\n\n**Standard Data Formats:**\n- JSON (JavaScript Object Notation): Human-readable and the most widely used format today.\n- XML (eXtensible Markup Language): Tag-based format heavily used in legacy systems.\n\n**Important Note**\nREST APIs are strictly Stateless. This means every single request must contain all the information the server needs to fulfill it, without relying on past interactions.\n\n**Conclusion**\nREST APIs are the backbone of modern programmability and Network Automation. Mastering HTTP methods and JSON formats is your first step toward configuring network devices automatically."
+  },
+  {
+    "id": "devnet-004-lesson-2",
+    "title_en": "Using Postman for Network APIs",
+    "title_th": "การใช้งาน Postman สำหรับ Network APIs",
+    "content_en": "## Using Postman for Network APIs\n**What You Will Learn**\nLearn how to use Postman to test and simulate API requests against network devices, ensuring functionality before writing actual automation code.\n\n**Main Content**\n\n**Postman: The industry-standard tool for testing, designing, and documenting APIs rapidly.**\n\n**Core Features of Postman Workspace:**\n- Request Builder: Configure your HTTP Method, Endpoint URL, Query Parameters, and Headers.\n- Response Window: Inspect the payload, response times, and HTTP Status Codes returned by the server.\n- Collections: Group and save multiple API requests for organized workflows and reuse.\n\n**Understanding HTTP Status Codes:**\n- 2xx (Success): Request processed successfully (e.g., 200 OK, 201 Created).\n- 4xx (Client Error): Issue with the request structure or credentials (e.g., 401 Unauthorized, 404 Not Found).\n- 5xx (Server Error): Server failed to process a valid request (e.g., 500 Internal Server Error).\n\n**Network Automation Applications:**\n- API Testing: Verify interface states or push configuration snippets without writing a single line of Python.\n- Environment Variables: Dynamically swap device IP addresses and API tokens using global or environment contexts.\n\n**Important Note**\nAlways handle Authentication Tokens securely within Postman environments, and do not share workspaces containing sensitive production credentials.\n\n**Conclusion**\nPostman drastically accelerates the API learning and testing phase. It bridges the gap between reading API documentation and writing functional automation scripts."
+  },
+  {
+    "id": "devnet-004-lesson-3",
+    "title_en": "Python Requests Library",
+    "title_th": "การใช้ Python Requests",
+    "content_en": "## Python Requests Library\n**What You Will Learn**\nHow to implement the Python `requests` library to send HTTP requests, handle authentication, and parse API responses to build automated network scripts.\n\n**Main Content**\n\n**Python Requests: An elegant and simple HTTP library for Python, built for human beings.**\n\n**Core Functions:**\n- requests.get(): Fetch information from a specific endpoint.\n- requests.post(): Submit a payload to create a new resource or authenticate.\n- response.json(): Automatically parse a JSON formatted response into a Python Dictionary.\n\n**Advanced Request Handling:**\n- Custom Headers: Inject metadata like `{'Content-Type': 'application/json'}` and Authentication tokens into your requests.\n- JSON Payloads: Pass dictionaries directly via the `json=` parameter to safely serialize data without manual conversion.\n- SSL Verification: Temporarily bypass strict certificate validation using `verify=False` for lab network environments.\n\n**Typical Automation Workflow:**\n- Authentication: Perform an initial request to acquire a session ID or Bearer token.\n- Execution: Utilize the acquired token in the headers of subsequent requests to push network configurations.\n\n**Important Note**\nSetting `verify=False` will trigger an `InsecureRequestWarning`. While acceptable in labs, production environments should ideally use valid certificates or suppress the warning explicitly via `urllib3`.\n\n**Conclusion**\nThe `requests` library is the most essential tool for Network Programmability in Python, seamlessly translating Postman tests into fully automated, repeatable code."
+  },
+  {
+    "id": "devnet-004-lesson-4",
+    "title_en": "Cisco DNA Center REST API",
+    "title_th": "การควบคุม Cisco DNA Center ผ่าน REST API",
+    "content_en": "## Cisco DNA Center REST API\n**What You Will Learn**\nApply your API skills to a real-world enterprise controller by connecting, authenticating, and retrieving network telemetry from Cisco DNA Center (Catalyst Center).\n\n**Main Content**\n\n**Cisco DNA Center Intent-based API: The centralized management plane that simplifies enterprise network automation.**\n\n**The Authentication Flow:**\n- Token Retrieval: Send Basic Auth credentials to `/dna/system/api/v1/auth/token` to receive a temporary `X-Auth-Token`.\n- Subsequent Requests: Pass the `X-Auth-Token` in the header of all subsequent API calls.\n- Endpoint Polling: Query specific endpoints to gather device or client health metrics.\n\n**Key API Capabilities:**\n- Device Inventory: Retrieve a comprehensive list of all managed Switches, Routers, and Wireless Access Points.\n- Topology & Discovery: Map out the physical and logical connections between devices automatically.\n- Command Runner: Execute read-only CLI commands across thousands of devices simultaneously via REST.\n\n**Roles in Network Engineering:**\n- Provisioning Automation: Programmatically deploy golden software images or configuration templates without manual CLI interaction.\n- Assurance Integration: Feed real-time telemetry from DNA Center directly into custom IT dashboards or ITSM tools like ServiceNow.\n\n**Important Note**\nThe DNA Center `X-Auth-Token` is temporary and typically expires after one hour. Enterprise scripts must handle token expiration and automatic renewal dynamically.\n\n**Conclusion**\nAutomating Cisco DNA Center via its REST APIs embodies the ultimate goal of Software-Defined Networking (SDN), drastically reducing operational overhead in enterprise environments."
+  },
+  {
+    "id": "lesson-adv-001",
+    "title_en": "OSPF Areas and LSA Types",
+    "title_th": "OSPF Areas and LSA Types",
+    "content_en": "## OSPF Areas and LSA Types\n\n**What you will learn in this video**\nIn this video, we explore OSPF architecture in depth, including Area types (Backbone, Stub, Totally Stubby, NSSA), LSA Types 1-7, and the roles of ABRs and ASBRs.\n\n**Core Content**\n- **Area 0 — Backbone Area:** The core of OSPF. All areas must connect directly to Area 0.\n- **OSPF Area Types:**\n  - **Standard Area:** Accepts all LSAs (Type 1-5).\n  - **Stub Area:** Blocks External LSAs (Type 5); ABR sends a Default Route instead.\n  - **Totally Stubby Area (Cisco):** Blocks both Type 5 and Type 3; relies entirely on a Default Route.\n  - **NSSA:** Similar to Stub but allows an ASBR inside the area using Type 7 LSAs.\n- **LSA Types 1-7:**\n  - Type 1 (Router LSA): Created by all routers — within area\n  - Type 2 (Network LSA): Created by DR — within area\n  - Type 3 (Summary LSA): Created by ABR — between areas\n  - Type 4 (ASBR Summary LSA): Created by ABR — advertises ASBR location\n  - Type 5 (AS External LSA): Created by ASBR — throughout OSPF domain\n  - Type 6: Multicast OSPF (Rare)\n  - Type 7 (NSSA External LSA): By ASBR in NSSA — within NSSA only\n- **Router Roles:**\n  - **ABR:** Routes between areas, creates Type 3, 4 LSAs.\n  - **ASBR:** Redistributes external routes (BGP, EIGRP, Static) into OSPF.\n  - A single router can hold multiple roles simultaneously.\n\n**Conclusion**\nUnderstanding OSPF Areas and LSA Types is foundational for designing and troubleshooting large OSPF networks."
+  },
+  {
+    "id": "lesson-adv-002",
+    "title_en": "OSPF Route Summarization",
+    "title_th": "OSPF Route Summarization",
+    "content_en": "## OSPF Route Summarization\n\n**What you will learn in this video**\nIn this video, we will learn Route Summarization techniques in OSPF, which helps reduce the size of the routing table and router processing load. We will cover both `area range` and `summary-address`.\n\n**Core Content**\n- **Why Summarize:** OSPF does not have Auto-Summary, so it must be configured manually. Otherwise, ABRs will advertise every specific subnet.\n- **area range — Inter-Area Summarization:**\n  - Used on **ABR (Area Border Router)**\n  - Combines Type 1/2 LSAs into a single Type 3 LSA before sending to other areas\n  - Command: `area 1 range 172.16.0.0 255.255.252.0`\n- **summary-address — External Summarization:**\n  - Used on **ASBR**. Summarizes External Routes (Type 5 LSAs).\n- **Summary Address Calculation:**\n  1. Convert subnets to Binary\n  2. Find common bits from left to right\n  3. Number of common bits = Prefix Length\n  4. Set remaining host bits to 0\n  - Example: `172.16.0.0/24` + `172.16.1.0/24` → Summary: `172.16.0.0/23`\n- **Benefits:** Reduces routing table size, reduces CPU usage for SPF, hides topology changes, reduces LSA traffic.\n- **Discard Route (Null0):** Automatically created to prevent routing loops.\n\n**Conclusion**\nOSPF Route Summarization is an essential technique for large networks. Properly using `area range` on ABRs and `summary-address` on ASBRs makes the network more efficient, stable, and scalable."
+  },
+  {
+    "id": "lesson-adv002-01",
+    "title_en": "EIGRP Architecture",
+    "title_th": "EIGRP Architecture",
+    "content_en": "## EIGRP Architecture\n\n**What you will learn in this video**\nThis video delves into the internal architecture of EIGRP and how the DUAL Algorithm guarantees a loop-free network.\n\n**Core Content**\n- **DUAL Algorithm:** Pre-calculates backup routes (Feasible Successors). When the primary route fails, it fails over immediately.\n- **Feasibility Condition:** A crucial condition used to verify that the backup route will not cause a routing loop.\n- **EIGRP Tables:** Neighbor Table, Topology Table, Routing Table.\n- **Packet Types:** Hello, Update, Query, Reply, Acknowledgment.\n- **Named EIGRP Mode:** A modern configuration mode that unifies all Address Families in one place.\n\n**Conclusion**\nEIGRP is a complex but powerful protocol. Understanding DUAL and the Feasibility Condition helps accurately debug routing issues."
+  },
+  {
+    "id": "lesson-adv002-02",
+    "title_en": "EIGRP Metric Calculation",
+    "title_th": "EIGRP Metric Calculation",
+    "content_en": "## EIGRP Metric and Tuning\n\n**What you will learn in this video**\nThis video teaches how EIGRP Metrics are calculated and how to tune various parameters to control traffic paths.\n\n**Core Content**\n- **EIGRP Composite Metric:** Calculated from Bandwidth, Delay, Reliability, and Load using K-values.\n- **K-values (Default):** K1=1 (BW), K2=0, K3=1 (Delay), K4=0, K5=0 (Uses only BW + Delay).\n- **Bandwidth & Delay Tuning:**\n  - `bandwidth <kbps>` Changes the bandwidth value EIGRP uses for calculation (does not affect actual BW).\n  - `delay <tens-of-microseconds>` Adjusts the interface delay.\n- **EIGRP Wide Metrics:** In IPv6/Named Mode, expands the metric to be more accurate on high-speed interfaces (>10Gbps).\n\n**Conclusion**\nProperly tuning EIGRP metrics ensures traffic flows through the most optimal paths and prevents suboptimal routing issues."
+  },
+  {
+    "id": "lesson-adv002-03",
+    "title_en": "Unequal-Cost Load Balancing",
+    "title_th": "Unequal-Cost Load Balancing",
+    "content_en": "## EIGRP Load Balancing\n\n**What you will learn in this video**\nThis video teaches traffic load balancing in EIGRP, one of the unique features that makes EIGRP stand out.\n\n**Core Content**\n- **Equal-Cost Load Balancing (ECMP):** When multiple paths have the exact same metric, traffic is load-balanced immediately (up to 4 paths by default).\n- **Unequal-Cost Load Balancing:** A unique capability of EIGRP, enabled using the `variance <multiplier>` command.\n  - `variance 2` means it allows routes with a metric up to 2 times the Successor's metric to participate in load balancing.\n- **Maximum Paths:** Increase the maximum number of paths with `maximum-paths <N>` (up to 16).\n\n**Conclusion**\nUnequal-cost Load Balancing in EIGRP is a feature absent in OSPF, allowing networks to fully utilize links of differing speeds."
+  },
+  {
+    "id": "lesson-adv002-04",
+    "title_en": "EIGRP Route Filtering and Summarization",
+    "title_th": "EIGRP Route Filtering และ Summarization",
+    "content_en": "## EIGRP Route Filtering and Summarization\n\n**Introduction**\nEIGRP is an Advanced Distance Vector Routing Protocol. Managing the Routing Table to keep it small and efficient is an advanced skill in EIGRP.\n\n**Route Filtering**\n- Used to block or deny specific routes from entering the system.\n- Achieved using `Prefix-list`, `Access-list`, or `Route-map` in conjunction with the `distribute-list` command.\n- Increases security and controls traffic flow direction.\n\n**Manual Summarization**\n- Combines multiple subnets into a single route (Summary Route) before advertising it out.\n- Done using interface-level commands such as `ip summary-address eigrp <AS> <IP> <Mask>`.\n- **Benefits:** Reduces routing table size, limits the scope of EIGRP Queries when a route goes down (reduces Stuck-in-Active issues).\n\n**Conclusion**\nCombining Filtering and Summarization in EIGRP increases network stability, reduces router CPU load, and provides complete control over routing paths."
+  },
+  {
+    "id": "lesson-adv003-01",
+    "title_en": "BGP Overview and AS Numbers",
+    "title_th": "BGP Overview และ AS Numbers",
+    "content_en": "## BGP Overview\n\n**What you will learn in this video**\nThis video introduces BGP (Border Gateway Protocol), the routing protocol that powers the entire Internet.\n\n**Core Content**\n- BGP is an **EGP (Exterior Gateway Protocol)** used to connect different AS (Autonomous Systems).\n- **AS Number:** A unique identifier for each organization on the internet (e.g., AS7470 = TOT, AS9335 = AIS).\n- **iBGP vs eBGP:** iBGP connects routers within the same AS, eBGP connects different ASs.\n- BGP is not a fast protocol, but it is the **most controllable and flexible protocol**.\n- Uses TCP Port 179, does not use Multicast, and neighbors must be configured manually.\n\n**Conclusion**\nBGP is an ISP-level protocol that advanced network engineers must know. It is foundational for CCNP/CCIE and real-world ISP operations."
+  },
+  {
+    "id": "lesson-adv003-02",
+    "title_en": "BGP Neighbor Relationships",
+    "title_th": "BGP Neighbor Relationships",
+    "content_en": "## BGP Neighbors and Sessions\n\n**What you will learn in this video**\nThis video teaches how to establish BGP Neighbor Relationships and how to troubleshoot when sessions fail to come up.\n\n**Core Content**\n- **BGP FSM (Finite State Machine):** BGP goes through various states before becoming Established.\n  - Idle → Connect → Active → OpenSent → OpenConfirm → **Established**\n- Basic commands: `router bgp 65001`, `neighbor 10.0.0.2 remote-as 65002`\n- **BGP Timers:** Keepalive (60 seconds) and Hold Time (180 seconds) by default.\n- **eBGP Multihop:** Used when eBGP Peers are not directly connected.\n- Verification: `show bgp summary`, `show bgp neighbors`\n\n**Conclusion**\nBGP sessions failing to establish are usually caused by wrong AS Numbers, lack of connectivity to the Peer IP, or firewall issues blocking TCP 179."
+  },
+  {
+    "id": "lesson-adv003-03",
+    "title_en": "BGP Path Attributes",
+    "title_th": "BGP Path Attributes",
+    "content_en": "## BGP Attributes\n\n**What you will learn in this video**\nThis video explains the BGP Attributes used to make the best path selection decisions.\n\n**Core Content**\n- **Well-Known Mandatory:** Every router must recognize and pass it on → AS-Path, Next-Hop, Origin.\n- **Well-Known Discretionary:** Every router recognizes but may not pass on → Local Preference (Default is 100, higher = better).\n- **Optional Transitive:** Passed on even if unrecognized → Community.\n- **Optional Non-Transitive:** Not passed on → MED (Multi-Exit Discriminator).\n- **BGP Best Path Selection Process:** A 14-step process to choose the best route, evaluated in order of Weight → Local Pref → AS Path Length → ...\n\n**Conclusion**\nBGP Attributes are the primary tools for BGP Traffic Engineering. Understanding Local Preference, AS-Path, and MED allows you to control traffic directions."
+  },
+  {
+    "id": "lesson-adv003-04",
+    "title_en": "BGP Route Selection Process",
+    "title_th": "BGP Route Selection Process",
+    "content_en": "## BGP Path Selection\n\n**What you will learn in this video**\nThis video teaches the BGP path selection algorithm and how to use Attributes to influence path selection.\n\n**Core Content**\n- **BGP Decision Process (Simplified):**\n  1. Weight (higher = better) → Cisco-only\n  2. Local Preference (higher = better) → Controls Outbound traffic within the AS\n  3. Locally originated routes\n  4. Shortest AS-Path → Controls Outbound traffic to external ISPs\n  5. Lowest Origin type (IGP > EGP > Incomplete)\n  6. Lowest MED → Controls Inbound traffic from ISPs\n- **AS-Path Prepending:** Adding AS Numbers repeatedly into the AS-Path to artificially make the route look \"longer\" and less preferred.\n\n**Conclusion**\nBGP Traffic Engineering is an advanced skill used daily by ISP Engineers to control which ISP traffic enters or exits through."
+  },
+  {
+    "id": "lesson-adv003-05",
+    "title_en": "BGP Filtering and Route Maps",
+    "title_th": "BGP Filtering และ Route Maps",
+    "content_en": "## BGP Filtering and Route Maps\n\n**Introduction**\nBorder Gateway Protocol (BGP) is the core protocol driving the internet. Because the global internet routing table is massive (millions of full routes), route filtering is an absolute necessity.\n\n**BGP Filtering Tools**\n- **Prefix-lists:** Widely used to accurately filter by IP Prefix and Subnet mask.\n- **AS-Path ACLs:** Used to filter based on AS Numbers using Regular Expressions (Regex), such as only accepting routes originating from an adjacent AS.\n- **Route Maps:** The most powerful tool, acting like a set of IF-THEN scripting commands.\n\n**Applying Route Maps**\nRoute Maps can match routes using Prefix-lists, and then act (Set) to modify BGP Attributes such as Local Preference, MED, or AS-Path Prepending to engineer traffic paths.\n\n**Conclusion**\nBGP Filtering and Route Maps are expert-level tools that give organizations full control over where they receive data from and which ISP they send traffic to."
+  },
+  {
+    "id": "lesson-ccna001-01",
+    "title_en": "Introduction to Computer Networks",
+    "title_th": "บทนำสู่เครือข่ายคอมพิวเตอร์",
+    "content_en": "## Fundamental Networking: Computer Network Infrastructure\n\n**What you will learn in this video**\nThis video focuses on laying the foundation of network infrastructure and low-level operational principles to understand the most critical mechanism: \"How does data travel from one point to another?\" at the infrastructure level.\n\n**Core Content**\n**LAN and Ethernet:** How computers connect in a Local Area Network and the importance of using MAC Addresses to accurately identify each device.\n\n**Congestion Management:** Understanding data collisions in networks and how the Exponential Backoff algorithm resolves them.\n\n**Network Switches:** The crucial role of switches in breaking up Collision Domains, reducing data collisions, and increasing network efficiency.\n\n**Data Transmission Models:**\nComparing the 3 main data transmission models:\n- **Circuit Switching:** Reserves channels and maintains a direct line throughout communication (like legacy phone systems).\n- **Message Switching:** Sends data hop-by-hop through nodes (like a postal system).\n- **Packet Switching:** Divides data into small packets that travel separately and reassemble at the destination (the core of the modern Internet).\n\n**IP Addressing and ARPANET:**\nIntroducing the IP (Internet Protocol) standard and the history of the Internet's origins from the ARPANET project.\n\n**Conclusion**\nThis video aims to build an understanding of network infrastructure mechanisms, serving as a critical knowledge base before moving up to Application Layer Network Services (such as DHCP, DNS, and NAT) in the next lessons."
+  },
+  {
+    "id": "lesson-ccna001-02",
+    "title_en": "OSI 7 Layers Model",
+    "title_th": "โมเดล OSI 7 Layers",
+    "content_en": "## OSI Model and Network Fundamentals\n\n**What you will learn in this video**\nThis video introduces the 7-Layer OSI Model, which is the standard framework for understanding how data travels across a network.\n\n**Core Content**\n- **Layer 7 – Application:** User interfaces such as HTTP, DNS, FTP.\n- **Layer 4 – Transport:** TCP (reliable) and UDP (fast) manage data delivery between endpoints.\n- **Layer 3 – Network:** IP Addressing and Routing to find paths across networks.\n- **Layer 2 – Data Link:** MAC Addresses and Switching to deliver data within a LAN.\n- **Layer 1 – Physical:** Cables, radio waves, digital signals.\n\n**Conclusion**\nThe OSI Model is the foundation every network engineer must know before learning anything else, as it provides a systematic framework for troubleshooting network issues."
+  },
+  {
+    "id": "lesson-ccna001-03",
+    "title_en": "TCP/IP Protocol Suite",
+    "title_th": "TCP/IP Protocol Suite",
+    "content_en": "## TCP/IP Protocol Suite\n\n**Introduction**\nThe TCP/IP Protocol Suite is the foundation of communication in computer networks and the Internet, designed to allow disparate systems to communicate across different platforms.\n\n**Layer Architecture**\nConsists of 4 main layers:\n- **Application Layer:** Equivalent to Layers 5-7 of the OSI Model, handling user-level protocols like HTTP, FTP.\n- **Transport Layer:** Manages host-to-host connections. Its two main protocols are TCP (reliable) and UDP (fast).\n- **Internet Layer:** Equivalent to the Network Layer, responsible for pathfinding and IP Addressing.\n- **Network Access Layer:** Manages hardware and data transmission over physical media.\n\n**Conclusion**\nTCP/IP is the practical model used today. It is simpler and more flexible than the OSI Model, making it the universal standard for networking."
+  },
+  {
+    "id": "lesson-ccna001-04",
+    "title_en": "Network Devices",
+    "title_th": "Network Devices",
+    "content_en": "## Ethernet and LAN Fundamentals\n\n**What you will learn in this video**\nThis video explains the operation of Ethernet, the most widely used LAN technology in the world.\n\n**Core Content**\n- Ethernet Frame structure and MAC Addresses (48-bit, globally unique).\n- Half-duplex and Full-duplex transmission methods.\n- Differences between Hubs, Switches, and Bridges.\n- Various Ethernet standards such as 10/100/1000 Mbps (Fast/Gigabit Ethernet).\n- How ARP (Address Resolution Protocol) works to map IP to MAC.\n\n**Conclusion**\nUnderstanding Ethernet and MAC Addresses is the foundation for all Layer 2 operations before moving on to advanced VLANs and Switching."
+  },
+  {
+    "id": "lesson-ccna001-05",
+    "title_en": "IP Addressing and Subnetting",
+    "title_th": "IP Addressing and Subnetting",
+    "content_en": "## IP Addressing and Subnetting\n\n**What you will learn in this video**\nThis video teaches how to allocate IP Addresses and divide networks (Subnetting), an indispensable skill for network engineers.\n\n**Core Content**\n- IPv4 Address structure (32-bit, divided into Network + Host portions).\n- Subnet Masks and CIDR Notation such as /24, /25, /26.\n- Calculating Network Addresses, Broadcast Addresses, and the number of usable Hosts.\n- Subnetting using VLSM (Variable Length Subnet Masking).\n\n**Example**\n`192.168.1.0/26` → Has 64 IPs, yielding 62 usable Hosts (subtracting Network + Broadcast).\n\n**Conclusion**\nSubnetting is a skill that must be mastered through practice, as it forms the basis of IP design and management in real-world networks of all sizes."
+  },
+  {
+    "id": "lesson-ccna002-01",
+    "title_en": "Ethernet Switching Basics",
+    "title_th": "พื้นฐาน Ethernet Switching",
+    "content_en": "## Switch Fundamentals\n\n**What you will learn in this video**\nThis video explains the internal mechanics of a Network Switch, the heart of every LAN network.\n\n**Core Content**\n- Switches learn the MAC Addresses of connected devices and store them in the **MAC Address Table (CAM Table)**.\n- Forwarding decisions: Unicast, Multicast, Broadcast.\n- **Flooding:** When a switch doesn't know which port a MAC belongs to, it floods the frame out all ports.\n- **STP (Spanning Tree Protocol)** management to prevent loops.\n- **Port States:** Blocking → Listening → Learning → Forwarding.\n\n**Conclusion**\nUnderstanding how a switch operates helps in troubleshooting LAN issues such as Loops, Broadcast Storms, or MAC Flooding Attacks."
+  },
+  {
+    "id": "lesson-ccna002-02",
+    "title_en": "VLAN Configuration",
+    "title_th": "VLAN Configuration",
+    "content_en": "## VLAN Configuration\n\n**What you will learn in this video**\nThis video teaches how to create and configure VLANs (Virtual Local Area Networks) on Packet Tracer\nwith a practical lab.\n\n**Core Content**\n- VLANs segment a network logically as if they were separate physical switches, without needing separate hardware.\n- Commands to create a VLAN: `vlan 10`, `name SALES`\n- Assigning a port as an Access Port: `switchport mode access`, `switchport access vlan 10`\n- Verification: `show vlan brief`\n- **Inter-VLAN Routing:** Different VLANs cannot communicate with each other directly; they require a Router or a Layer 3 Switch.\n\n**Conclusion**\nVLANs are essential tools for segregating traffic between different departments like IT, HR, and Sales to enhance security and performance."
+  },
+  {
+    "id": "lesson-ccna002-03",
+    "title_en": "Trunking (802.1Q)",
+    "title_th": "Trunking (802.1Q)",
+    "content_en": "## Trunking and 802.1Q\n\n**What you will learn in this video**\nThis video teaches how to send traffic from multiple VLANs simultaneously over a single cable using Trunk Ports.\n\n**Core Content**\n- **Trunk Port:** A port that transmits traffic for multiple VLANs at once, used for Switch ↔ Switch or Switch ↔ Router connections.\n- **802.1Q Tag:** A 4-byte header inserted into the Ethernet Frame to identify which VLAN the packet belongs to.\n- **Native VLAN:** An untagged VLAN (Default is VLAN 1) which must match on both ends of the trunk.\n- Commands: `switchport mode trunk`, `switchport trunk allowed vlan 10,20,30`\n\n**Conclusion**\nTrunking is vital in enterprise networks with multiple VLANs. Without trunking, a separate cable would be needed for every single VLAN."
+  },
+  {
+    "id": "lesson-ccna002-04",
+    "title_en": "Spanning Tree Protocol (STP)",
+    "title_th": "Spanning Tree Protocol (STP)",
+    "content_en": "## Spanning Tree Protocol (STP)\n\n**Introduction**\nSpanning Tree Protocol (STP) is a Layer 2 protocol designed to prevent loops in switched networks when redundant links are connected.\n\n**How STP Works**\n- **Root Bridge Election:** The switch with the lowest Bridge ID is elected as the center (Root Bridge).\n- **Port Roles:** Ports are assigned roles such as Root Port (best path to the root), Designated Port (forwarding port), and Blocking Port (blocked to prevent loops).\n- **BPDU:** Switches exchange BPDU messages to share information and adapt the Spanning Tree structure when a link fails.\n\n**Conclusion**\nSTP is an indispensable mechanism in switched networks. It allows networks to have redundancy without suffering from broadcast storms that could crash the system."
+  },
+  {
+    "id": "lesson-ccna002-05",
+    "title_en": "VTP ",
+    "title_th": "VTP และ Inter-VLAN Routing",
+    "content_en": "## VTP and Inter-VLAN Routing\n\n**What you will learn in this video**\nThis video teaches 2 key topics: managing VLANs with VTP and enabling VLANs to communicate with each other.\n\n**Core Content**\n\n**VTP (VLAN Trunking Protocol)**\n- Automatically syncs VLAN Database across Switches.\n- 3 Modes: **Server** (create/edit VLANs), **Client** (receive data only), **Transparent** (does not participate).\n- ⚠️ Warning: Bringing a new Switch with a higher VTP Revision into the network can wipe out all VLANs!\n\n**Inter-VLAN Routing**\n- **Router-on-a-Stick:** Uses 1 Router with a Sub-interface to route between VLANs.\n- **Layer 3 Switch (SVI):** The preferred enterprise method, using `ip routing` and creating `interface vlan X`.\n\n**Conclusion**\nVTP reduces Admin workload but carries risks. Inter-VLAN routing enables all VLANs to cross-communicate based on defined policies."
+  },
+  {
+    "id": "lesson-ccna002-07",
+    "title_en": "Inter-VLAN Routing",
+    "title_th": "VTP และ Inter-VLAN Routing",
+    "content_en": "## VTP and Inter-VLAN Routing\n\n**What you will learn in this video**\nThis video teaches 2 key topics: managing VLANs with VTP and allowing VLANs to communicate, complete with a lab.\n\n**Core Content**\n**VTP (VLAN Trunking Protocol)**\n- Automatically syncs VLAN Database across Switches over Trunk Links.\n- 3 Modes: **Server** (create/edit/delete VLANs), **Client** (receive data only), **Transparent** (does not participate).\n- ⚠️ **Risk:** Introducing a new Switch with a higher VTP Revision Number will overwrite the entire VLAN Database!\n\n**Inter-VLAN Routing**\n- **Router-on-a-Stick:**\n```text\ninterface Gi0/0.10\n  encapsulation dot1Q 10\n  ip address 192.168.10.1 255.255.255.0\n```\n- **Layer 3 Switch (SVI):**\n```text\nip routing\ninterface vlan 10\n  ip address 192.168.10.1 255.255.255.0\n```\n\n**Conclusion**\nVTP reduces administrative tasks but requires caution regarding risks. Inter-VLAN routing allows all VLANs to communicate cross-network according to defined policies."
+  },
+  {
+    "id": "lesson-ccna003-01",
+    "title_en": "Routing Fundamentals",
+    "title_th": "หลักการ Routing พื้นฐาน",
+    "content_en": "## Routing Basics\n\n**What you will learn in this video**\nThis video explains the principles of a Router and how it makes data forwarding decisions across networks.\n\n**Core Content**\n- A Router operates at Layer 3, transmitting data between different networks by referencing its Routing Table.\n- **Routing Table:** A table storing paths to various networks, containing Destination, Next-Hop, Interface, Metric.\n- **Administrative Distance (AD):** The trustworthiness value of a routing source, e.g., Connected=0, Static=1, OSPF=110, RIP=120.\n- **Metric:** The value a Routing Protocol uses to measure route quality, such as Hop Count, Bandwidth, Delay.\n\n**Conclusion**\nEvery time a packet arrives at a Router, it searches the Routing Table. If it matches an Entry, it forwards the packet to that Entry's Next-Hop."
+  },
+  {
+    "id": "lesson-ccna003-02",
+    "title_en": "Static Routing",
+    "title_th": "Static Routing",
+    "content_en": "## Static Routing\n\n**What you will learn in this video**\nThis video teaches Manual route configuration (Static Route), ideal for small networks or specifying special routes.\n\n**Core Content**\n- Command: `ip route <Destination Network> <Subnet Mask> <Next-Hop IP or Exit Interface>`\n- **Default Route:** `ip route 0.0.0.0 0.0.0.0 <Next-Hop>` sends all unknown traffic out the Gateway.\n- **Floating Static Route:** Sets a higher AD than Dynamic Protocols to act as a Backup Route.\n- Advantages: Predictable, secure, uses zero CPU/Bandwidth.\n- Disadvantages: Requires manual configuration for every route; does not scale in large networks.\n\n**Conclusion**\nStatic Routing is perfect for Edge Routers connecting to an ISP or Stub Networks with only one way out."
+  },
+  {
+    "id": "lesson-ccna003-03",
+    "title_en": "RIP (Routing Information Protocol)",
+    "title_th": "RIP (Routing Information Protocol)",
+    "content_en": "## RIP (Routing Information Protocol)\n\n**Introduction**\nRIP is one of the oldest Distance Vector Routing Protocols, designed for small to medium-sized networks.\n\n**Core Features**\n- **Metric:** Uses Hop Count to select paths, where the route with the fewest hops is considered the best.\n- **Limitation:** Supports a maximum of 15 Hops (16 is considered Unreachable).\n- **RIPv1 vs RIPv2:** RIPv1 is Classful (does not send Subnet masks), while RIPv2 supports Classless Inter-Domain Routing (CIDR) and Authentication.\n\n**Basic Configuration Example**\n```text\nRouter(config)# router rip\nRouter(config-router)# version 2\nRouter(config-router)# network 192.168.1.0\n```\n\n**Conclusion**\nAlthough modern large organizations use OSPF or EIGRP, RIP remains an essential fundamental protocol for studying and understanding Dynamic Routing principles."
+  },
+  {
+    "id": "lesson-ccna003-04",
+    "title_en": "OSPF Basics",
+    "title_th": "OSPF พื้นฐาน",
+    "content_en": "## OSPF Basics\n\n**What you will learn in this video**\nThis video introduces OSPF (Open Shortest Path First), the most widely used Link-State Dynamic Routing Protocol in enterprise networks.\n\n**Core Content**\n- OSPF uses Dijkstra's Algorithm (SPF) to calculate the shortest path based on Bandwidth (Cost).\n- **DR/BDR Election:** In Multi-access networks (Ethernet), a Designated Router is elected to reduce overhead.\n- **LSA (Link-State Advertisement):** Data exchanged between OSPF Routers to build the Topology Map.\n- **Area:** OSPF is divided into Areas to reduce LSDB size; every Area must connect to Area 0 (Backbone).\n- Basic commands: `router ospf 1`, `network 192.168.1.0 0.0.0.255 area 0`\n\n**Conclusion**\nOSPF is highly scalable, converges quickly, and is an open Standard, making it the most popular protocol for Enterprise Networks."
+  },
+  {
+    "id": "lesson-ccna003-05",
+    "title_en": "EIGRP Basics",
+    "title_th": "EIGRP พื้นฐาน",
+    "content_en": "## EIGRP Basics\n\n**What you will learn in this video**\nThis video introduces EIGRP (Enhanced Interior Gateway Routing Protocol), an advanced Cisco proprietary protocol.\n\n**Core Content**\n- EIGRP is an Advanced Distance Vector protocol using the DUAL Algorithm (Diffusing Update Algorithm) to guarantee loop-free networks.\n- **Metric:** Calculated primarily from Bandwidth and Delay (K-values).\n- **Successor & Feasible Successor:** Stores Backup Routes in advance, allowing for rapid (sub-second) failover.\n- **Neighbor Relationship:** Uses Hello Packets to form Neighbors before exchanging data.\n- Commands: `router eigrp 100`, `network 10.0.0.0 0.255.255.255`\n\n**Conclusion**\nEIGRP converges much faster than OSPF and is ideal for networks requiring rapid failover, but its drawback is that it is strictly for Cisco devices."
+  },
+  {
+    "id": "lesson-ccna004-01",
+    "title_en": "WAN Overview and Technologies",
+    "title_th": "WAN Overview และ Technologies",
+    "content_en": "## WAN Overview\n\n**What you will learn in this video**\nThis video explains the various types of WAN connections organizations use to connect remote branches.\n\n**Core Content**\n- **Leased Line:** A private rented circuit, highly stable but expensive (T1/E1, DS3).\n- **MPLS (Multi-Protocol Label Switching):** An ISP technology that forwards data using Labels instead of IPs for speed and QoS.\n- **Internet-based VPN:** Connects branches over the internet using encryption; cheaper but without SLA guarantees.\n- **SD-WAN:** A modern technology that intelligently manages multiple WAN links simultaneously.\n\n**Conclusion**\nChoosing a WAN Technology requires balancing an organization's Budget, Bandwidth, Latency, and SLA needs. MPLS remains popular for large enterprises, but SD-WAN is rapidly gaining ground today."
+  },
+  {
+    "id": "lesson-ccna004-02",
+    "title_en": "PPP ",
+    "title_th": "PPP และ HDLC",
+    "content_en": "## PPP and HDLC\n\n**What you will learn in this video**\nThis video teaches Data Link layer protocols used on Point-to-Point Serial/WAN Links.\n\n**Core Content**\n- **HDLC (High-Level Data Link Control):** Cisco's default protocol on serial interfaces. Simple but Cisco-proprietary.\n- **PPP (Point-to-Point Protocol):** Open standard protocol. Supports Authentication (PAP/CHAP), Compression, and Multilink.\n- **PPPoE:** PPP over Ethernet. Commonly seen in home broadband ADSL/Fiber connections.\n- PPP Configuration: `encapsulation ppp`, `ppp authentication chap`\n\n**Conclusion**\nAlthough HDLC and PPP are older technologies, they still appear in CCNA exams and some legacy enterprise WAN systems."
+  },
+  {
+    "id": "lesson-ccna004-03",
+    "title_en": "MPLS and VPN",
+    "title_th": "MPLS และ VPN",
+    "content_en": "## MPLS and VPN\n\n**What you will learn in this video**\nThis video explains the principles of MPLS, the backbone of global ISP networks.\n\n**Core Content**\n- **MPLS Labels:** Replaces IP lookups with Labels for maximum speed.\n- **LSR (Label Switching Router):** A router that forwards data using Labels instead of a Routing Table.\n- **MPLS VPN (L3VPN):** Allows multiple clients to share the same MPLS infrastructure by separating traffic using VRF (Virtual Routing and Forwarding).\n- Advantages: Low Latency, guaranteed QoS, supports Traffic Engineering.\n\n**Conclusion**\nMPLS is the underlying technology of high-end Enterprise WANs, allowing ISPs to provide Guaranteed SLAs for Latency and Bandwidth."
+  },
+  {
+    "id": "lesson-ccna004-04",
+    "title_en": "WAN Design and Redundancy",
+    "title_th": "WAN Design และ Redundancy",
+    "content_en": "## WAN Design and Redundancy\n\n**Introduction**\nWide Area Networks (WANs) connect dispersed organizational sites. Designing an effective WAN requires a focus on high availability and stability.\n\n**Design Topologies**\n- **Hub and Spoke:** Headquarters acts as the center (Hub) with branches (Spoke) connecting in. Simple to manage but has a Single Point of Failure.\n- **Full Mesh:** All branches connect to each other. Most stable but very expensive.\n- **Partial Mesh:** A hybrid approach to reduce costs, directly connecting only the critical branches.\n\n**Importance of Redundancy**\nDesigning backup networks (Dual-homed or Dual-WAN) ensures continuous operation if the primary link fails, often combined with protocols like BGP or modern SD-WAN.\n\n**Conclusion**\nGood WAN design balances performance, cost, and reliability. Planning for Redundancy is the heart of this process."
+  },
+  {
+    "id": "lesson-ccna004-07",
+    "title_en": "HDLC",
+    "title_th": "PPP และ HDLC",
+    "content_en": "## PPP and HDLC\n\n**What you will learn in this video**\nThis video teaches Data Link layer protocols used on Point-to-Point Serial/WAN Links, specifically HDLC and PPP, along with lab configuration.\n\n**Core Content**\n- **HDLC:** Cisco's default protocol on serial interfaces. Simple but Cisco-proprietary (`encapsulation hdlc`).\n- **PPP:** Open standard protocol compatible with all vendors. Supports:\n  - **Authentication:** PAP (Cleartext) or CHAP (Challenge-Response, more secure).\n  - **Compression:** Reduces data payload size.\n  - **Multilink PPP:** Bundles multiple links to increase bandwidth.\n- **Configuration:**\n```text\ninterface Serial0/0\n  encapsulation ppp\n  ppp authentication chap\nusername PEER password SECRET\n```\n- **PPPoE:** PPP over Ethernet. Commonly seen in home ADSL/Fiber connections.\n- **Verification:** `show interfaces serial 0/0`, `debug ppp authentication`\n\n**Conclusion**\nAlthough HDLC and PPP are legacy technologies, they are still tested in CCNA and used in some enterprise WANs, especially PPPoE which remains widely used in broadband."
+  },
+  {
+    "id": "lesson-ccna005-01",
+    "title_en": "DHCP Server and Client",
+    "title_th": "DHCP Server และ Client",
+    "content_en": "## DHCP (Dynamic Host Configuration Protocol)\n\n**What you will learn in this video**\nThis video teaches how to configure a DHCP Server on a Cisco Router to automatically distribute IPs to network devices.\n\n**Core Content**\n- DORA Process: **Discover** → **Offer** → **Request** → **Acknowledge**\n- DHCP Pool Configuration on Cisco: `ip dhcp pool LAN`, `network 192.168.1.0 /24`, `default-router`, `dns-server`\n- **DHCP Exclusion:** Reserving IP ranges so they aren't distributed, e.g., `ip dhcp excluded-address 192.168.1.1 192.168.1.10`\n- **DHCP Relay Agent:** Used when the DHCP Server is on a different Subnet than the Client, configured with `ip helper-address`\n\n**Conclusion**\nDHCP massively reduces Admin workloads and is used in every organization. Understanding DHCP Relay is vital for large networks."
+  },
+  {
+    "id": "lesson-ccna005-02",
+    "title_en": "DNS (Domain Name System)",
+    "title_th": "DNS (Domain Name System)",
+    "content_en": "## DNS (Domain Name System)\n\n**What you will learn in this video**\nThis video explains the mechanics of DNS, which translates domain names into IP Addresses—a background process that runs every time we type a URL.\n\n**Core Content**\n- **DNS Hierarchy:** Root (.) → TLD (.com, .th) → Second-Level (google.com) → Subdomain (mail.google.com)\n- **DNS Records:** A (IPv4), AAAA (IPv6), MX (Mail), CNAME (Alias), PTR (Reverse Lookup)\n- **Recursive vs Iterative Query:** A Client queries a DNS Resolver, which then queries further up until an answer is found.\n- **DNS Caching & TTL:** Answers are cached based on TTL values to reduce traffic.\n\n**Conclusion**\nDNS is the \"Phonebook\" of the Internet. If DNS goes down, all services become unusable even if internet connectivity is completely normal."
+  },
+  {
+    "id": "lesson-ccna005-03",
+    "title_en": "NAT and PAT",
+    "title_th": "NAT และ PAT",
+    "content_en": "## NAT and PAT\n\n**What you will learn in this video**\nThis video teaches IP Address translation, allowing devices with Private IPs to access the internet.\n\n**Core Content**\n- **Static NAT:** 1 Private IP ↔ 1 Public IP (Used for servers requiring a fixed IP).\n- **Dynamic NAT:** Pool of Private IPs ↔ Pool of Public IPs (First-come, first-served).\n- **PAT (Port Address Translation / NAT Overload):** Multiple Private IPs → 1 Public IP, differentiated by Port Number (This is what is used in every home).\n- Configuration: `ip nat inside`, `ip nat outside`, `ip nat inside source list <ACL> interface <int> overload`\n\n**Conclusion**\nPAT is what keeps IPv4 viable today despite address exhaustion, as each home only needs 1 public IP for all its devices."
+  },
+  {
+    "id": "lesson-ccna005-04",
+    "title_en": "ACL (Access Control Lists)",
+    "title_th": "ACL (Access Control Lists)",
+    "content_en": "## ACL (Access Control Lists)\n\n**What you will learn in this video**\nThis video teaches the use of ACLs to filter traffic on a Router, which is a fundamental Layer 3/4 security tool.\n\n**Core Content**\n- **Standard ACL (1-99):** Filters by Source IP only → Place near Destination.\n- **Extended ACL (100-199):** Filters by Source IP, Destination IP, Protocol, Port → Place near Source.\n- Wildcard Mask: The inverse of a Subnet Mask (e.g., /24 = Wildcard 0.0.0.255).\n- ACLs process top-down, stop upon Match, and always have an **Implicit Deny** at the end.\n- Applying ACLs to an Interface: `ip access-group <ACL> in/out`\n\n**Conclusion**\nACLs act as basic firewalls built into Routers, great for simple traffic control, but cannot replace Stateful Firewalls."
+  },
+  {
+    "id": "lesson-ccna005-05",
+    "title_en": "NTP and Syslog",
+    "title_th": "NTP และ Syslog",
+    "content_en": "## NTP and Syslog\n\n**Introduction**\nNetwork Time Protocol (NTP) and Syslog are two fundamental network services that work together for effective system administration and monitoring.\n\n**Network Time Protocol (NTP)**\n- Synchronizes the time across all devices in a network.\n- Uses a Stratum architecture (Stratum 0 is the reference clock, Stratum 1 receives the time).\n- Highly critical for authentication and troubleshooting.\n\n**Syslog**\n- The standard for collecting and sending system logs to a central server.\n- Uses 8 Severity Levels (0 to 7), such as Level 0 (Emergencies), Level 3 (Errors), and Level 7 (Debugging).\n\n**Conclusion**\nWithout NTP, log timestamps will drift, making it impossible to correlate Syslog data across multiple devices to analyze network issues."
+  },
+  {
+    "id": "lesson-ccna005-07",
+    "title_en": "NAT",
+    "title_th": "NAT และ PAT",
+    "content_en": "## NAT and PAT\n\n**What you will learn in this video**\nThis video teaches IP Address translation allowing Private IP devices to access the internet, complete with a lab on a Cisco Router.\n\n**Core Content**\n- **Static NAT:** 1 Private IP <-> 1 Public IP. Ideal for servers needing a fixed IP.\n- **Dynamic NAT:** Pool of Private IPs <-> Pool of Public IPs (First-come, first-served).\n- **PAT (Port Address Translation / NAT Overload):** Multiple Private IPs -> 1 Public IP, distinguished by different Port Numbers. This is how home networks operate.\n- **Configuration:**\n```text\ninterface GigabitEthernet0/0\n  ip nat inside\ninterface GigabitEthernet0/1\n  ip nat outside\nip nat inside source list 1 interface Gi0/1 overload\naccess-list 1 permit 192.168.1.0 0.0.0.255\n```\n- **Verification:** `show ip nat translations`, `show ip nat statistics`\n- **NAT breaks End-to-End Transparency:** External devices cannot see the true IP of internal devices.\n\n**Conclusion**\nPAT is what keeps IPv4 functional today despite address exhaustion, as each household uses just 1 public IP for all its devices."
+  },
+  {
+    "id": "lesson-ccna006-01",
+    "title_en": "Network Security Concepts",
+    "title_th": "Network Security Concepts",
+    "content_en": "## Security Concepts\n\n**What you will learn in this video**\nThis video introduces fundamental network security concepts and common modern threats.\n\n**Core Content**\n- **CIA Triad:** Confidentiality (data doesn't leak), Integrity (data isn't altered), Availability (systems are always ready to use).\n- **Threat Types:** Malware, Phishing, DoS/DDoS, Man-in-the-Middle, SQL Injection.\n- **Defense in Depth:** Multi-layered defense, not relying on a Single Point of Defense.\n- **Firewall Types:** Packet Filter, Stateful Inspection, NGFW (Next-Gen).\n- **IDS vs IPS:** IDS detects and alerts, IPS detects and automatically blocks.\n\n**Conclusion**\nSecurity is not a product but an ongoing process. Network engineers must understand threats to design comprehensive defense systems."
+  },
+  {
+    "id": "lesson-ccna006-02",
+    "title_en": "Switch Security",
+    "title_th": "Switch Security",
+    "content_en": "## Switch Security\n\n**What you will learn in this video**\nThis video teaches Layer 2 security on Cisco Switches to prevent attacks within the LAN.\n\n**Core Content**\n- **Port Security:** Limits MAC Addresses on a port to prevent MAC Flooding Attacks.\n  - `switchport port-security maximum 2`\n  - `switchport port-security violation shutdown`\n- **DHCP Snooping:** Filters fake DHCP Responses from rogue servers, preventing Rogue DHCP.\n- **Dynamic ARP Inspection (DAI):** Prevents ARP Spoofing/Poisoning by validating ARPs.\n- **BPDU Guard:** Prevents external devices from sending STP BPDUs.\n\n**Conclusion**\nLayer 2 Security is often overlooked but is extremely important, as LAN attacks can easily take down the entire system."
+  },
+  {
+    "id": "lesson-ccna006-03",
+    "title_en": "ACLs for Security",
+    "title_th": "Access Control Lists สำหรับ Security",
+    "content_en": "## ACLs for Network Security\n\n**What you will learn in this video**\nThis video teaches how to apply ACLs specifically for security to control traffic in enterprise networks.\n\n**Core Content**\n- **Time-based ACL:** Opens/closes access based on time, e.g., allowing Internet only during office hours.\n- **Named ACL:** Names the ACL to make it easier to edit than Numbered ACLs.\n- **Reflexive ACL:** Automated ACL that permits Return Traffic of a session initiated internally (similar to a Stateful firewall).\n- **Use Case Examples:**\n  - Block all Telnet (port 23), allow only SSH (port 22).\n  - Restrict Management Interface access only to Admin IPs.\n\n**Conclusion**\nA well-designed ACL acts as an important defensive layer on Routers and Layer 3 Switches before traffic even reaches the Firewall."
+  },
+  {
+    "id": "lesson-ccna006-04",
+    "title_en": "AAA Framework",
+    "title_th": "AAA (Authentication, Authorization, Accounting)",
+    "content_en": "## AAA Framework\n\n**Introduction**\nAAA stands for Authentication, Authorization, and Accounting. It is the standard framework for controlling network access and security.\n\n**AAA Components**\n- **Authentication:** Verifies who the user is (e.g., via Username/Password, OTP, or Certificate).\n- **Authorization:** Determines what the user is allowed to do after authenticating (e.g., config rights vs read-only rights).\n- **Accounting:** Logs the user's actions, such as login time, commands typed, and session duration.\n\n**RADIUS vs TACACS+**\n- **RADIUS:** An open standard popular for Network Access like Wi-Fi 802.1x.\n- **TACACS+:** A Cisco protocol that distinctly separates A-A-A, popular for controlling Device Administration privileges.\n\n**Conclusion**\nAAA is the heart of an organization's Security Policy, allowing administrators to tightly control and audit every action on the network."
+  },
+  {
+    "id": "lesson-dev002-01",
+    "title_en": "Cisco DNA Center API",
+    "title_th": "Cisco DNA Center API",
+    "content_en": "## Cisco DNA Center API\n\n**What you will learn in this video**\nThis video teaches how to use Cisco DNA Center's REST API to manage networks programmatically.\n\n**Core Content**\n- **Cisco DNA Center:** A Controller for Campus Networks supporting Intent-Based Networking.\n- **REST API:** Communicates using HTTP Methods (GET, POST, PUT, DELETE) sending/receiving JSON data.\n- **Authentication:** Uses Token-based Auth via `POST /dna/system/api/v1/auth/token`.\n- **API Call Examples:**\n  - `GET /dna/intent/api/v1/network-device` → View all devices\n  - `GET /dna/intent/api/v1/topology/site-topology` → View Network Topology\n\n**Conclusion**\nDNA Center API enables rapid automation of Campus Network management and forms the foundation for modern Network DevOps."
+  },
+  {
+    "id": "lesson-dev002-02",
+    "title_en": "SD-WAN APIs",
+    "title_th": "SD-WAN (Viptela) APIs",
+    "content_en": "## Cisco SD-WAN API (vManage)\n\n**What you will learn in this video**\nThis video teaches how to use the vManage REST API to programmatically administer SD-WAN Edge Devices.\n\n**Core Content**\n- **Cisco SD-WAN Architecture:** vManage (Management), vSmart (Control), vBond (Orchestration), vEdge/cEdge (Data Plane).\n- **vManage API:** REST API used to retrieve data and configure the entire SD-WAN.\n- **Use Case Examples:**\n  - View all Tunnel statuses: `GET /dataservice/device/tunnel/statistics`\n  - View Device Inventory: `GET /dataservice/device`\n  - Push Policy: Create and Activate Policies via API\n\n**Conclusion**\nSD-WAN APIs empower Network Engineers to build Custom Dashboards and automate responses to network events."
+  },
+  {
+    "id": "lesson-dev002-03",
+    "title_en": "Meraki Dashboard API",
+    "title_th": "Meraki Dashboard API",
+    "content_en": "## Cisco Meraki API\n\n**What you will learn in this video**\nThis video teaches how to use the Meraki Dashboard API, one of the easiest Cloud-managed Network APIs available.\n\n**Core Content**\n- **Meraki:** Cloud-managed Networks (WiFi, Switches, Security) managed via an online Dashboard.\n- **Meraki API Key:** Simple authentication added to the Header: `X-Cisco-Meraki-API-Key`.\n- **Common API Examples:**\n  - `GET /organizations` → View list of Organizations\n  - `GET /networks/{networkId}/devices` → View devices in a network\n  - `GET /devices/{serial}/clients` → View connected Clients\n- **Webhook:** Receive Real-time Alerts when network events occur.\n\n**Conclusion**\nThe Meraki API is an excellent starting point for learning Network Automation due to its clear Documentation and Interactive API Docs that allow immediate testing."
+  },
+  {
+    "id": "lesson-dev002-04",
+    "title_en": "Ansible for Network Automation",
+    "title_th": "Ansible for Network Automation",
+    "content_en": "## Ansible for Network Automation\n\n**Introduction**\nAnsible is an open-source tool from Red Hat that is extremely popular in Network Automation because it is easy to use, does not require complex coding, and most importantly, is Agentless.\n\n**Architecture and Operation**\n- **Agentless:** No software installation needed on Routers or Switches; Ansible uses SSH to send commands directly.\n- **Playbooks:** Written in YAML, which is human-readable.\n- **Inventory:** A file specifying the list and groups of devices to manage.\n- **Modules:** Dedicated modules for network devices such as `ios_config`, `nxos_command`, `eos_facts`.\n\n**Use Case Example**\nUsing Ansible to configure VLANs, backup configurations, or check statuses (Show commands) on hundreds of devices simultaneously in just a few minutes.\n\n**Conclusion**\nAnsible reduces Human Error and cuts down time spent on repetitive tasks, allowing network engineers to focus more on system design."
+  },
+  {
+    "id": "lesson-git-01",
+    "title_en": "Introduction to Git",
+    "title_th": "Introduction to Git",
+    "content_en": "## Introduction to Git\n\n**What you will learn in this video**\nThis video teaches how to use Git, a Version Control system that modern network engineers must know.\n\n**Core Content**\n- **Why use Git:** Keep the edit history of every Config/Script Version, allowing you to roll back when mistakes happen.\n- **Basic Commands:**\n  - `git init` Create a new Repository\n  - `git add .` Add modified files to Staging\n  - `git commit -m \"message\"` Save a Snapshot\n  - `git log` View full history\n  - `git diff` Compare changes\n- **.gitignore file:** Specify files you do not want to Track, such as Password files.\n\n**Conclusion**\nGit is a tool shared by all Developers and Network Engineers. Once you start using it, you won't be able to work without it."
+  },
+  {
+    "id": "lesson-git-02",
+    "title_en": "GitHub & GitLab Workflows",
+    "title_th": "GitHub & GitLab Workflows",
+    "content_en": "## GitHub & GitLab Workflows\n\n**Introduction**\nAs the networking industry steps into the NetDevOps (Network + DevOps) era, Source Control becomes crucial. GitHub and GitLab are the primary platforms built on Git principles.\n\n**Management with Git Workflow**\n- **Branching:** When changing a configuration, engineers do not edit the production system; instead, they branch off.\n- **Pull Requests (PR) / Merge Requests (MR):** After editing files, a PR/MR is opened to allow teammates to review the code (Code Review) before applying it.\n- **CI/CD Pipeline:** Can integrate with GitLab CI or GitHub Actions to automatically run Ansible or Python scripts to configure real devices once a PR is merged.\n\n**Conclusion**\nGitHub and GitLab workflows standardize how network engineers work, providing clear edit histories and enterprise-level software development security."
+  },
+  {
+    "id": "lesson-git-03",
+    "title_en": "Git Commands Knowledge Check",
+    "title_th": "Git Commands Knowledge Check",
+    "content_en": "## Git Commands Knowledge Check\n\n**What you will learn in this video**\nIn this video, we review the most commonly used Git commands in daily work, from creating a Repository, saving changes, collaborating with a team, to viewing history and managing Branches.\n\n**Core Content**\n- **git init** — Initialize a new Git Repository, creating the .git folder.\n- **git clone <url>** — Copy a Repository from GitHub with full history.\n- **git add <file>** — Add files to the Staging Area (git add . for all files).\n- **git commit -m** — Save a Snapshot into the history.\n- **git push** — Send Commits up to the Remote Repository.\n- **git pull** — Fetch changes from Remote and Merge them into the current Branch.\n- **git branch** — List all Branches (* indicates the active Branch).\n- **git merge <branch>** — Merge the history of the specified Branch into the current Branch.\n- **git log** — Display Commit history; use --oneline or --graph.\n- **git status** — Show the status of the Working Directory.\n- **git diff** — Compare differences between the Working Directory and the latest Commit.\n- **git stash** — Temporarily save uncommitted changes.\n\n**Conclusion**\nUnderstanding these fundamental Git commands is an essential skill for all modern Developers and Network Engineers. Practicing them daily improves team efficiency and ensures you can always roll back."
+  },
+  {
+    "id": "lesson-git-04",
+    "title_en": "Resolving a Merge Conflict",
+    "title_th": "Resolving a Merge Conflict",
+    "content_en": "## Resolving a Merge Conflict\n\n**What you will learn in this video**\nIn this video, we will learn how Merge Conflicts occur in Git and how to properly resolve them step-by-step, right up to committing the final result.\n\n**Core Content**\n- **Cause:** Occurs when 2 Developers edit the same lines in the same file on different Branches and then Merge them.\n- **Step 1:** git status to identify problem files (listed under Unmerged paths).\n- **Step 2 — Conflict Markers:**\n```text\n<<<<<<< HEAD\nCurrent Branch's code\n=======\nIncoming Branch's code\n>>>>>>> feature-branch\n```\n- **Step 3:** Manually edit in a Text Editor, select the desired code, and remove all Markers.\n- **Alternative:** git mergetool using GUI tools like VS Code or KDiff3.\n- **Step 4:** git add filename → git commit\n- **Always Reversible:** git merge --abort to return to the pre-Merge state.\n\n**Conclusion**\nMerge Conflicts are a normal occurrence in any Team collaborating via Git. Practicing conflict resolution builds proficiency and confidence in Collaborative work."
+  },
+  {
+    "id": "lesson-git-05",
+    "title_en": "CI/CD Pipelines for Network Code",
+    "title_th": "CI/CD Pipelines for Network Code",
+    "content_en": "## CI/CD Pipeline for Network Code\n\n**What you will learn in this video**\nThis video demonstrates a CI/CD Pipeline using GitHub Actions to automatically test and Deploy Network Configurations.\n\n**Core Content**\n- **What is CI/CD:** Continuous Integration (testing on every Commit) and Continuous Delivery (automated Deployment).\n- **GitHub Actions Workflow:** The `.github/workflows/network-test.yml` file defines the steps.\n- **Pipeline Example:**\n  1. Developer Pushes code or Config to GitHub.\n  2. GitHub Actions runs a Python Script to verify Config Syntax.\n  3. Runs Network Simulation (e.g., Batfish) to ensure Policy correctness.\n  4. If all tests pass → Ansible automatically Deploys the Config to the Production Router.\n\n**Conclusion**\nCI/CD makes Network Configuration changes much safer, drastically reduces Human Error, and provides an auditable history of changes."
+  },
+  {
+    "id": "lesson-python-01",
+    "title_en": "Python Basics",
+    "title_th": "พื้นฐาน Python",
+    "content_en": "## Python Basics for Network Engineers\n\n**What you will learn in this video**\nIn this video, we will learn fundamental Python required for Network Engineers, focusing on practical usage to Automate repetitive tasks such as Config Backups and Interface Status checks.\n\n**Core Content**\n- **Why use Python:** Reduces Human Error, Automates dozens or hundreds of devices simultaneously, simple Syntax.\n- **Important Data Types:** str, int, bool, list, dict\n- **Control Flow:** if/elif/else, for loop, while loop\n- **Functions:** Wrapping frequently used code into functions.\n- **Important Modules:** Netmiko (SSH into Router/Switch), NAPALM, Requests (REST API), json/yaml\n- **Example:**\n```python\nfrom netmiko import ConnectHandler\ndevice = {'device_type': 'cisco_ios', 'host': '10.0.0.1', 'username': 'admin', 'password': 'cisco'}\nwith ConnectHandler(**device) as net_connect:\n    output = net_connect.send_command('show ip interface brief')\n    print(output)\n```\n\n**Conclusion**\nPython is an indispensable skill for modern Network Engineers and serves as a strong foundation for learning advanced Network Automation."
+  },
+  {
+    "id": "lesson-python-02",
+    "title_en": "Using Netmiko",
+    "title_th": "การใช้ Netmiko",
+    "content_en": "## Python for Network Automation\n\n**What you will learn in this video**\nThis video teaches writing Python Scripts to Automate Network tasks such as logging into devices and pulling data.\n\n**Core Content**\n- **Important Libraries:**\n  - `netmiko`: SSH into network devices like Cisco, Juniper, etc.\n  - `napalm`: Pull data from devices in a Vendor-agnostic way.\n  - `requests`: Call REST APIs.\n  - `paramiko`: Foundational SSH Library.\n- **Netmiko Script Example:**\n  ```python\n  from netmiko import ConnectHandler\n  device = ConnectHandler(device_type=\"cisco_ios\", host=\"10.0.0.1\", username=\"admin\", password=\"cisco\")\n  output = device.send_command(\"show ip interface brief\")\n  print(output)\n  ```\n\n**Conclusion**\nPython + Netmiko helps you pull data from 100 Routers in just seconds, rather than having to login one by one."
+  },
+  {
+    "id": "lesson-python-03",
+    "title_en": "Using NAPALM",
+    "title_th": "การใช้ NAPALM",
+    "content_en": "## Python REST API and JSON\n\n**What you will learn in this video**\nThis video teaches using Python to call Network Controller REST APIs (like DNA Center, Meraki) and handling JSON data.\n\n**Core Content**\n- **HTTP Requests with Python:** GET, POST, PUT, DELETE via the `requests` Library.\n- **JSON Parsing:** Converting a JSON Response into Python Dictionaries and Lists for processing.\n- **Authentication:** Basic Auth, Tokens, API Keys in Headers.\n- **Example:**\n  ```python\n  import requests\n  url = \"https://sandboxdnac.cisco.com/dna/system/api/v1/auth/token\"\n  response = requests.post(url, auth=(\"devnetuser\", \"Cisco123!\"))\n  token = response.json()[\"Token\"]\n  ```\n- **Error Handling:** Checking HTTP Status Codes before using data.\n\n**Conclusion**\nPython + REST API skills are the heart of modern Network Automation, enabling you to build Dashboards, notification Chatbots, or Auto-remediation systems."
+  },
+  {
+    "id": "lesson-sec-01",
+    "title_en": "Firewall Basics",
+    "title_th": "Firewall Basics",
+    "content_en": "## Firewall Basics\n\n**What you will learn in this video**\nIn this video, we will lay the foundation for understanding Firewalls, from different Firewall types to Security Zones, DMZs, and how Cisco ASA operates.\n\n**Core Content**\n- **Firewall Types:**\n  - **Packet Filter:** Operates at Layer 3/4, checking Headers statelessly.\n  - **Stateful Inspection:** Tracks Connection States via a State Table.\n  - **Proxy Firewall:** Inspects Layer 7 Traffic, seeing Application Data.\n  - **Next-Generation Firewall (NGFW):** Combines all features plus DPI, App-ID, IPS.\n- **Security Zones:**\n  - **Inside (Trusted):** Internal corporate network, highest trustworthiness.\n  - **Outside (Untrusted):** The Internet or external networks.\n  - **DMZ:** A middle zone for public-facing Servers (Web, Mail, DNS) separated from the internal network.\n- **Cisco ASA Security Levels:**\n  - Values from **0 to 100** assigned to each Interface.\n  - Security Level 100 = Inside (Highest trust)\n  - Security Level 0 = Outside (Untrusted)\n  - Traffic from High to Low Level → Permitted by default\n  - Traffic from Low to High Level → Blocked by default\n- **Inbound vs. Outbound Policy:**\n  - **Inbound:** Traffic from Internet to Inside — highly restricted.\n  - **Outbound:** Traffic from Inside to Internet — used to control content or prevent C&C Traffic.\n\n**Conclusion**\nFirewalls are the first and most critical line of defense for a network. Choosing the right Firewall type and designing good Security Zones are the foundations of Network Security Architecture."
+  },
+  {
+    "id": "lesson-sec-02",
+    "title_en": "Stateful Inspection",
+    "title_th": "Stateful Inspection",
+    "content_en": "## Stateful Inspection Firewall\n\n**What you will learn in this video**\nIn this video, we will compare Stateful Inspection Firewalls with legacy Packet Filtering and understand how modern Firewalls track TCP and UDP Sessions.\n\n**Core Content**\n- **Packet Filtering (Stateless):** Inspects each Packet individually with no memory of previous packets — like a \"guard with no memory.\"\n- **Stateful Inspection:** Tracks Connection Context using a **State Table** that stores the 5-tuple: Source IP, Source Port, Destination IP, Destination Port, Protocol.\n- **TCP Session Tracking:**\n  - **SYN:** Firewall receives the first Packet, checks Policy, creates Entry (state: NEW)\n  - **SYN-ACK:** Firewall updates state to ESTABLISHED\n  - **ACK:** Handshake complete, subsequent Data Packets permitted automatically\n  - **FIN/RST:** When Session ends, Firewall removes the Entry from the table\n- **UDP Pseudo-State Tracking:** UDP has no Handshake, so the Firewall creates a Virtual Session using a Timeout Value (e.g., 2 minutes) instead of a Close signal.\n- **Security Advantages:**\n  - Automatically blocks Unsolicited Inbound Traffic.\n  - Prevents SYN Floods, Port Scanning, IP Spoofing.\n  - Packets in an Established Session do not need ACL inspection every time.\n\n**Conclusion**\nStateful Inspection Firewalls represent a significant security upgrade from Packet Filtering by \"remembering\" the state of each Session in a State Table, allowing intelligent decisions on which Packets are legitimate and which are threats."
+  },
+  {
+    "id": "lesson-sec002-01",
+    "title_en": "VPN Concepts and Types",
+    "title_th": "VPN Concepts และ Types",
+    "content_en": "## VPN Concepts\n\n**What you will learn in this video**\nThis video explains the basics of VPNs and why every organization must use them.\n\n**Core Content**\n- **VPN (Virtual Private Network):** Creates an encrypted, virtual private tunnel over public networks.\n- **Why use VPN:** Secure, cheaper than Leased Lines, supports Remote Work.\n- **VPN Types:**\n  - **Site-to-Site VPN:** Permanently connects 2 offices together.\n  - **Remote Access VPN:** Employees at home connect into the office.\n- **Encryption Basics:** Symmetric (AES), Asymmetric (RSA), Hashing (SHA) used in VPNs.\n\n**Conclusion**\nVPN is fundamental knowledge required before diving into IPsec and SSL VPN in the upcoming topics."
+  },
+  {
+    "id": "lesson-sec002-02",
+    "title_en": "IPSec Deep Dive",
+    "title_th": "IPSec Deep Dive",
+    "content_en": "## IPsec Deep Dive\n\n**What you will learn in this video**\nThis video dives deep into the IPsec Framework, the standard encryption used for building enterprise-grade VPNs.\n\n**Core Content**\n- **IPsec Protocols:** AH (Authentication Header) verifies integrity, ESP (Encapsulating Security Payload) encrypts data.\n- **Modes:** Tunnel Mode (encrypts entire original Packet, used for VPN), Transport Mode (encrypts only Payload).\n- **IKE (Internet Key Exchange):** The secure Key exchange process, consisting of 2 Phases:\n  - **Phase 1:** Creates a Secure Channel for Negotiation (ISAKMP SA).\n  - **Phase 2:** Agrees on Parameters for Data Encryption (IPsec SA).\n- **Diffie-Hellman:** Used to exchange Symmetric Keys over an insecure Channel.\n\n**Conclusion**\nIPsec is the foundation of secure enterprise VPNs. Understanding IKE Phase 1 & 2 is essential for Debugging VPNs that fail to establish."
+  },
+  {
+    "id": "lesson-sec002-03",
+    "title_en": "Site-to-Site VPN Configuration",
+    "title_th": "Site-to-Site VPN Configuration",
+    "content_en": "## Site-to-Site VPN Configuration\n\n**What you will learn in this video**\nThis video teaches the step-by-step process of configuring an IPsec Site-to-Site VPN on a Cisco Router.\n\n**Core Content**\n- **5 Configuration Steps:**\n  1. Define IKE Policy (Encryption, Hashing, DH Group, Lifetime)\n  2. Set Pre-shared Key: `crypto isakmp key <password> address <peer-IP>`\n  3. Create IPsec Transform Set: `crypto ipsec transform-set`\n  4. Define Traffic to encrypt using a Crypto ACL\n  5. Create and attach a Crypto Map to an Interface\n- **Verification:** `show crypto isakmp sa`, `show crypto ipsec sa`\n\n**Conclusion**\nThis Lab gives a real-world overview of how IPsec VPN works, which is frequently tested in CCNA and used practically in every organization."
+  },
+  {
+    "id": "lesson-sec002-04",
+    "title_en": "SSL VPN and AnyConnect",
+    "title_th": "SSL VPN และ AnyConnect",
+    "content_en": "## SSL VPN and AnyConnect\n\n**Introduction**\nIn the Remote Work era, VPN is a critical tool. SSL VPN is a technology that allows external users to securely connect to the corporate network via TLS/SSL protocols.\n\n**Types of SSL VPN**\n- **Clientless SSL VPN:** Accessed via a Web Browser with no software installation required. Ideal for accessing internal web applications.\n- **Client-based SSL VPN:** Requires software like the **Cisco AnyConnect Secure Mobility Client**, which simulates a connection as if the computer were physically in the office (obtains an internal IP).\n\n**Cisco AnyConnect Highlights**\nBeyond VPN functions, AnyConnect can perform Posture Assessment on the client machine, such as requiring Antivirus or the latest Windows updates before allowing connection.\n\n**Conclusion**\nSSL VPN is much easier to use than traditional IPsec VPNs since users don't have to worry about port settings, and AnyConnect significantly elevates enterprise security."
+  },
+  {
+    "id": "lesson-ts002-01",
+    "title_en": "Troubleshooting Methodology",
+    "title_th": "Troubleshooting Methodology",
+    "content_en": "## Troubleshooting Methodology\n\n**What you will learn in this video**\nThis video teaches a systematic Troubleshooting process, the skill that separates novice engineers from the pros.\n\n**Core Content**\n- **Structured Approach:** Solve problems Bottom-Up (from lower layers) or Top-Down (from application level).\n- **OSI Model as Framework:** Test layer by layer, e.g., Layer 1 (Is the cable unplugged?) → Layer 2 (Is the MAC correct?) → Layer 3 (Is the IP reachable?).\n- **Basic Tools:**\n  - `ping` / `traceroute` to check Connectivity\n  - `show ip interface brief` to view Interface status\n  - `show ip route` to check Routing Table\n- **Documentation:** Always document what was tested and the results.\n\n**Conclusion**\nGood Troubleshooting must be systematic, not random guessing. A great engineer can resolve issues in minutes rather than hours."
+  },
+  {
+    "id": "lesson-ts002-02",
+    "title_en": "Debug and Show Commands",
+    "title_th": "Debug Commands และ Show Commands",
+    "content_en": "## Debug Commands (On Cisco)\n\n**What you will learn in this video**\nThis video teaches how to use the `debug` command on Cisco IOS safely and effectively.\n\n**Core Content**\n- **Important Debug Commands:**\n  - `debug ip routing` View Routing Table changes in Real-time\n  - `debug ip ospf events` View OSPF Neighbor Events\n  - `debug ip icmp` View ICMP Packets in Real-time (Warning! High CPU usage)\n  - `debug crypto isakmp` Debug VPN Phase 1\n- **⚠️ Caution:** Debugging on Production Routers requires extreme care as it can cause 100% CPU spikes and crash the Router.\n- **Turn off Debug:** `undebug all` or `no debug all`\n- **Conditional Debug:** `debug ip packet detail access-list <ACL>` filters only specific Traffic.\n\n**Conclusion**\nDebug is a powerful but dangerous Troubleshooting tool. It should only be used outside business hours or in a Lab Environment."
+  },
+  {
+    "id": "lesson-ts002-03",
+    "title_en": "Syslog and Logging Analysis",
+    "title_th": "Syslog และ Logging Analysis",
+    "content_en": "## Syslog Analysis\n\n**What you will learn in this video**\nThis video teaches how to read and analyze Syslog Messages from Cisco devices to find the root cause of problems.\n\n**Core Content**\n- **Syslog Message Format:** `%Facility-Severity-Mnemonic: Description`\n  - Example: `%LINK-3-UPDOWN: Interface GigabitEthernet0/0, changed state to down`\n- **Important Severity Levels:**\n  - Level 0 (Emergency), Level 2 (Critical), Level 3 (Error), Level 4 (Warning), Level 7 (Debug)\n- **Log Destinations:** Console, VTY (Terminal), Buffer (RAM), Syslog Server\n- Configuration: `logging host 192.168.1.100`, `logging trap informational`\n- **Log Correlation:** Cross-referencing Logs from multiple devices to find simultaneous events (Requires NTP!).\n\n**Conclusion**\nSyslog is the \"Black Box\" of a network. Without good Logging, finding the root cause of an issue post-incident is virtually impossible."
+  },
+  {
+    "id": "lesson-ts002-04",
+    "title_en": "EEM and SPAN",
+    "title_th": "EEM และ SPAN",
+    "content_en": "## EEM and SPAN\n\n**Introduction**\nIn the Troubleshooting and Monitoring process on Cisco devices, tools like EEM and SPAN are highly effective aides.\n\n**Embedded Event Manager (EEM)**\n- A built-in automated scripting system inside Cisco IOS.\n- Works on a Trigger-Action basis, e.g., if an interface goes down (Trigger), open a backup port and send an email alert (Action).\n- Drastically reduces Downtime without waiting for an admin.\n\n**Switch Port Analyzer (SPAN)**\n- Also known as Port Mirroring, it copies data (Traffic) from one port to another port where an analysis tool (like Wireshark) is plugged in.\n- Includes Local SPAN (within the same switch) and RSPAN (across switches via a VLAN).\n\n**Conclusion**\nEEM provides automated issue response capabilities on the device itself, while SPAN allows engineers to capture packets for in-depth analysis. Both are essential tools for advanced network administrators."
+  },
+  {
+    "id": "lesson-ts005-01",
+    "title_en": "Video: Introduction to IP SLA",
+    "title_th": "วิดีโอ: ทำความรู้จักและคอนฟิก IP SLA เบื้องต้น",
+    "content_en": "## Introduction and Basic Configuration of IP SLA\n\n**What you will learn in this video**\nIn this video, we will learn about Cisco IP SLA (Service Level Agreement), a Proactive network monitoring tool that enables Routers to continuously test and measure network path performance 24/7, using the results to automatically trigger Routing changes.\n\n**Core Content**\n- **What is IP SLA:** A Cisco IOS Feature that sends Probe Packets to regularly test network paths without waiting for problems to occur (Proactive Monitoring).\n- **ICMP Echo Operation:** Pings a Destination IP. Ideal for Reachability Checks; it's the simplest and requires no Responder at the destination.\n- **UDP Jitter Operation:** Measures Latency, Jitter (delay variance), and Packet Loss. Ideal for delay-sensitive apps like VoIP, requiring a Cisco IP SLA Responder at the destination.\n- **Floating Static Route Integration:** Used with Enhanced Object Tracking to automatically remove a Primary Route from the Routing Table when a Probe fails and failover to a Backup Route with a higher AD.\n- **Key Commands:** ip sla, icmp-echo, frequency, ip sla schedule, track, ip route with track\n- **Tracking Delay:** Use `delay down 10 up 10` to prevent Route Flapping.\n\n**Conclusion**\nIP SLA is a powerful Cisco tool that builds network Resiliency by continuously monitoring paths and automatically switching routes when issues occur, reducing Downtime and enabling intelligent Failovers without relying on Routing Protocol alerts."
+  },
+  {
+    "id": "lesson-ts005-02",
+    "title_en": "Reading: IP SLA and Tracking Objects in Depth",
+    "title_th": "บทความ: การใช้งาน IP SLA และ Tracking Object",
+    "content_en": "## Understanding IP SLA\n\n**Introduction**\nIP SLA (Service-Level Agreement) is a feature included with Cisco IOS that performs Active Monitoring of network performance.\n\n**How IP SLA Works**\nUnlike standard monitoring that passively checks if a link is Up or Down, IP SLA generates Synthetic Traffic into the network to measure variables such as:\n- **Round-Trip Time (RTT):** The time taken to send and receive data.\n- **Jitter:** Variance in packet travel times.\n- **Packet Loss:** The percentage of packets lost in transit.\n\n**Applying with Object Tracking**\nThe greatest benefit of IP SLA is pairing it with \"Object Tracking\". \nFor example, with two ISPs (Primary and Backup), IP SLA can continuously ping Google DNS (8.8.8.8) via the Primary ISP. \nIf Packet Loss or RTT exceeds the threshold, Object Tracking detects it and automatically orders the Router to switch Routing to the Backup ISP (Automated Failover).\n\n**Conclusion**\nIP SLA isn't just a simple monitoring tool; it acts as an intelligent sensor that enables the network to perceive connection conditions and adapt automatically."
+  },
+  {
+    "id": "lesson-wireshark-01",
+    "title_en": "Installing and Using Wireshark",
+    "title_th": "การติดตั้งและใช้งาน Wireshark",
+    "content_en": "## Wireshark Basics\n\n**What you will learn in this video**\nThis video teaches how to use Wireshark, the most popular Packet Analysis tool for Troubleshooting and Protocol analysis.\n\n**Core Content**\n- **Capture Filters:** Filter Packets during Capture, e.g., `host 192.168.1.1`, `port 80`\n- **Display Filters:** Filter captured Packets, e.g., `ip.addr == 192.168.1.1`, `tcp.port == 443`, `http`\n- **Packet Dissection:** Read Packet Details Layer by Layer (Frame → Ethernet → IP → TCP → Application)\n- **Follow TCP Stream:** View all communication data across a TCP Connection Session.\n- **Statistics:** I/O Graph, Protocol Hierarchy, Conversations.\n\n**Conclusion**\nWireshark is a tool that Network and Security engineers must master, as it reveals the direct \"truth\" of Network Traffic."
+  },
+  {
+    "id": "lesson-wireshark-02",
+    "title_en": "Analyzing TCP Packets",
+    "title_th": "การวิเคราะห์ TCP Packets",
+    "content_en": "## Protocol Analysis with Wireshark\n\n**What you will learn in this video**\nThis video teaches the analysis of various Protocols such as TCP Handshakes, HTTP, and DNS using Wireshark.\n\n**Core Content**\n- **TCP Three-Way Handshake:** Analyze SYN → SYN-ACK → ACK in Packets.\n- **HTTP Analysis:** View Request/Response Headers, Status Codes (200, 404, 503).\n- **DNS Query/Response:** See the Domain Name to IP translation process in Real-time.\n- **TLS/SSL Handshake:** View the Encrypted Session creation process (ClientHello, ServerHello, Certificate).\n- **TCP Retransmissions:** Identify Performance Issues from Retransmits in a Stream.\n\n**Conclusion**\nFluency in reading Packets helps troubleshoot Network and Application problems much deeper than just viewing Show Commands on a Router/Switch."
+  },
+  {
+    "id": "lesson-wireshark-03",
+    "title_en": "UDP and DNS Analysis",
+    "title_th": "การวิเคราะห์ UDP และ DNS",
+    "content_en": "## Security Analysis with Wireshark\n\n**What you will learn in this video**\nThis video teaches how to use Wireshark to investigate Network Attacks and abnormal behaviors.\n\n**Core Content**\n- **Port Scanning Detection:** Spot SYN Flood or Nmap Scan Patterns in Packets.\n- **ARP Spoofing Detection:** Find abnormal Gratuitous ARPs (Same IP with different MACs).\n- **Cleartext Credentials:** Detect unencrypted Username/Passwords sent over Telnet, FTP, HTTP.\n- **DNS Tunneling:** Analyze abnormal payloads in DNS Queries (used to sneak data past Firewalls).\n- **Malware C2 Traffic:** Observe Malware Beacon Patterns communicating with Command & Control Servers.\n\n**Conclusion**\nIn the hands of a Security Analyst, Wireshark identifies abnormal network behaviors that other Security Tools might miss."
+  }
+]

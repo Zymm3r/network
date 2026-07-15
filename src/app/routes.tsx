@@ -16,7 +16,6 @@ import { Profile } from './pages/Profile';
 import { Dashboard } from './pages/Dashboard';
 import { Auth } from './pages/Auth';
 import { AuthCallback } from './pages/AuthCallback';
-import { VerifyCertificate } from './pages/VerifyCertificate';
 
 function NotFound() {
   const { t } = useI18n();
@@ -68,7 +67,6 @@ export const router = createBrowserRouter([
       { path: 'equipment/:slug', Component: EquipmentDetailPage },
       { path: 'profile', Component: Profile },
       { path: 'dashboard', Component: Dashboard },
-      { path: 'verify/:certificateNumber', Component: VerifyCertificate },
       { path: '*', Component: NotFound },
     ],
   },

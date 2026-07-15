@@ -10,7 +10,7 @@ import { getInitials } from '../lib/utils';
 import { Button } from '../lib/components/ui/button';
 import { Progress } from '../lib/components/ui/progress';
 import { Badge } from '../lib/components/ui/badge';
-import { BookOpen, Award, LogOut, Clock, Trophy, Target, Zap, Play, ChevronRight } from 'lucide-react';
+import { BookOpen, Award, LogOut, Clock, Trophy, Target, Zap, Play, ChevronRight, AlertTriangle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 export function Profile() {
@@ -25,7 +25,7 @@ export function Profile() {
   const [courses, setCourses] = useState<any[]>([]);
   const [lessons, setLessons] = useState<any[]>([]);
   const [userProgress, setUserProgress] = useState<any[]>([]);
-  const [certificates, setCertificates] = useState<any[]>([]);
+
   const [statsLoading, setStatsLoading] = useState(true);
 
 
@@ -42,19 +42,16 @@ export function Profile() {
         const [
           { data: coursesData },
           { data: lessonsData },
-          { data: progressData },
-          { data: certData }
+          { data: progressData }
         ] = await Promise.all([
           supabase.from('courses').select('*'),
           supabase.from('lessons').select('*'),
-          supabase.from('user_progress').select('*').eq('user_id', user.id),
-          supabase.from('certificates').select('*').eq('user_id', user.id)
+          supabase.from('user_progress').select('*').eq('user_id', user.id)
         ]);
 
         setCourses(coursesData || []);
         setLessons(lessonsData || []);
         setUserProgress(progressData || []);
-        setCertificates(certData || []);
       } catch (err) {
         console.error('Error fetching profile data:', err);
       } finally {
@@ -456,56 +453,7 @@ export function Profile() {
         </CardContent>
       </Card>
 
-      {/* Certificates */}
-      {certificates.length > 0 && (
-        <Card className="bg-white/60 backdrop-blur-md shadow-sm border-slate-100">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-slate-800">
-              <Award className="w-5 h-5 text-indigo-600" />
-              {t.profileStats.certTitle}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 sm:grid-cols-2">
-              {certificates.map((cert) => {
-                const courseName = courses.find(c => c.id === cert.course_id)
-                  ? (courses.find(c => c.id === cert.course_id)![`name_${language}` as 'name_th' | 'name_en'] || courses.find(c => c.id === cert.course_id)!.name_en || 'Course')
-                  : 'Course';
-                return (
-                  <div
-                    key={cert.id}
-                    className="flex items-center justify-between p-4 rounded-xl border border-slate-100 bg-white/80 hover:bg-slate-50/50 hover:border-indigo-100 hover:shadow-sm cursor-pointer transition-all duration-200"
-                    onClick={() => navigate(`/verify/${cert.certificate_number}`)}
-                  >
-                    <div className="space-y-1">
-                      <p className="font-semibold text-slate-800 text-sm sm:text-base leading-tight">
-                        {courseName}
-                      </p>
-                      <p className="text-xs text-muted-foreground font-mono">
-                        {cert.certificate_number}
-                      </p>
-                      <p className="text-xs text-indigo-600 font-medium">
-                        {t.profileStats.issuedAt}
-                        {(() => {
-                          const localeMap = { th: 'th-TH', en: 'en-US' } as const;
-                          return new Date(cert.issued_at).toLocaleDateString(localeMap[language], {
-                            day: 'numeric',
-                            month: 'short',
-                            year: 'numeric'
-                          });
-                        })()}
-                      </p>
-                    </div>
-                    <Badge variant="default" className="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border-0">
-                      {t.profileStats.viewCert}
-                    </Badge>
-                  </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+
 
       {/* My Courses */}
       <Card className="bg-white/60 backdrop-blur-md shadow-sm border-slate-100">
@@ -576,6 +524,43 @@ export function Profile() {
                   </Badge>
                 </div>
               ))}
+              <Button 
+                  variant="outline" 
+                  className="w-full text-red-600 hover:text-red-700 hover:bg-red-50 border-red-100 mt-4"
+                  onClick={async () => {
+                    if (window.confirm('Are you sure you want to completely reset your learning progress? This cannot be undone.')) {
+                      try {
+                        const { error: progressError } = await supabase
+                          .from('user_progress')
+                          .delete()
+                          .eq('user_id', user.id);
+                        if (progressError) throw progressError;
+
+                        const { error: statsError } = await supabase
+                          .from('user_stats')
+                          .delete()
+                          .eq('user_id', user.id);
+                        if (statsError) throw statsError;
+
+                        const { error: enrollmentsError } = await supabase
+                          .from('enrollments')
+                          .delete()
+                          .eq('user_id', user.id);
+                        if (enrollmentsError) throw enrollmentsError;
+
+                        localStorage.removeItem('pending-progress-saves');
+                        alert('Progress has been successfully reset. The page will now reload.');
+                        window.location.reload();
+                      } catch (e) {
+                        alert('Failed to reset progress.');
+                        console.error(e);
+                      }
+                    }
+                  }}
+                >
+                  <AlertTriangle className="w-4 h-4 mr-2" />
+                  Reset My Progress
+                </Button>
             </div>
           )}
         </CardContent>

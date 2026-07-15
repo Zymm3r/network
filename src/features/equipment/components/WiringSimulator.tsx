@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CheckCircle2, AlertCircle, RefreshCw, Zap, Network, Radio } from 'lucide-react';
+import { CheckCircle2, AlertCircle, RefreshCw, Zap, Network, Radio, CircuitBoard } from 'lucide-react';
 import { useI18n } from '../../../app/i18n';
 
 interface WiringSimulatorProps {
@@ -11,6 +11,7 @@ interface Port {
   id: string;
   name: string;
   correctCableId: string;
+  testId?: string;
 }
 
 interface Cable {
@@ -27,7 +28,8 @@ export function WiringSimulator({ productName, productCategory }: WiringSimulato
     const cat = (productCategory || '').toLowerCase();
     if (cat.includes('cctv')) {
       return {
-        ports: [{ id: 'port-power', name: t.wiringSimulator.portPowerIn, correctCableId: 'cable-power' }],
+        scenarioId: 'cctv',
+        ports: [{ id: 'port-power', name: t.wiringSimulator.portPowerIn, correctCableId: 'cable-power', testId: 'scenario-nvr' }],
         cables: [
           { id: 'cable-power', name: t.wiringSimulator.cablePowerSupply, color: 'bg-red-500', icon: Zap },
           { id: 'cable-wrong', name: t.wiringSimulator.cableLan, color: 'bg-blue-500', icon: Network }
@@ -35,7 +37,8 @@ export function WiringSimulator({ productName, productCategory }: WiringSimulato
       };
     } else if (cat.includes('network') || cat.includes('access point')) {
       return {
-        ports: [{ id: 'port-lan', name: t.wiringSimulator.portLan, correctCableId: 'cable-lan' }],
+        scenarioId: 'network',
+        ports: [{ id: 'port-lan', name: t.wiringSimulator.portLan, correctCableId: 'cable-lan', testId: 'scenario-lan' }],
         cables: [
           { id: 'cable-lan', name: t.wiringSimulator.cableLan, color: 'bg-blue-500', icon: Network },
           { id: 'cable-wrong', name: t.wiringSimulator.cablePowerAdapter, color: 'bg-red-500', icon: Zap }
@@ -43,29 +46,50 @@ export function WiringSimulator({ productName, productCategory }: WiringSimulato
       };
     } else if (cat.includes('ip camera') || cat.includes('nvr')) {
       return {
-        ports: [{ id: 'port-nvr-lan', name: t.wiringSimulator.portNvrLan, correctCableId: 'cable-lan' }],
+        scenarioId: 'nvr',
+        ports: [{ id: 'port-nvr-lan', name: t.wiringSimulator.portNvrLan, correctCableId: 'cable-lan', testId: 'scenario-nvr' }],
         cables: [
           { id: 'cable-lan', name: t.wiringSimulator.cableLan, color: 'bg-blue-500', icon: Network },
           { id: 'cable-wrong', name: t.wiringSimulator.cableSignalWire, color: 'bg-yellow-500', icon: Radio }
         ]
       };
+    } else if (cat === '') {
+      // Generic fallback for products with no category set
+      return {
+        scenarioId: 'generic',
+        ports: [
+          { id: 'port-power', name: t.wiringSimulator.port12vDcPowerIn, correctCableId: 'cable-power', testId: undefined },
+          { id: 'port-lan', name: t.wiringSimulator.portRj45Network, correctCableId: 'cable-lan', testId: undefined },
+          { id: 'port-alarm', name: t.wiringSimulator.portAlarmIo, correctCableId: 'cable-alarm', testId: undefined }
+        ],
+        cables: [
+          { id: 'cable-lan', name: t.wiringSimulator.cableCat6Lan, color: 'bg-blue-500', icon: Network },
+          { id: 'cable-power', name: t.wiringSimulator.cable12vAdapter, color: 'bg-red-500', icon: Zap },
+          { id: 'cable-alarm', name: t.wiringSimulator.cableSignalWire, color: 'bg-yellow-500', icon: Radio },
+          { id: 'cable-wrong', name: t.wiringSimulator.cable24vAcAdapter, color: 'bg-orange-500', icon: Zap }
+        ]
+      };
     }
-    return {
-      ports: [
-        { id: 'port-power', name: t.wiringSimulator.port12vDcPowerIn, correctCableId: 'cable-power' },
-        { id: 'port-lan', name: t.wiringSimulator.portRj45Network, correctCableId: 'cable-lan' },
-        { id: 'port-alarm', name: t.wiringSimulator.portAlarmIo, correctCableId: 'cable-alarm' }
-      ],
-      cables: [
-        { id: 'cable-lan', name: t.wiringSimulator.cableCat6Lan, color: 'bg-blue-500', icon: Network },
-        { id: 'cable-power', name: t.wiringSimulator.cable12vAdapter, color: 'bg-red-500', icon: Zap },
-        { id: 'cable-alarm', name: t.wiringSimulator.cableSignalWire, color: 'bg-yellow-500', icon: Radio },
-        { id: 'cable-wrong', name: t.wiringSimulator.cable24vAcAdapter, color: 'bg-orange-500', icon: Zap }
-      ]
-    };
+    // Unknown / unrecognised category — no simulator available
+    return null;
   };
 
-  const { ports, cables } = getScenario();
+  const scenario = getScenario();
+
+  // Unknown category — render a clear fallback instead of crashing.
+  if (!scenario) {
+    return (
+      <div data-testid="simulator-canvas" className="flex flex-col items-center justify-center py-20 text-center">
+        <CircuitBoard className="text-slate-300 mb-4" size={48} />
+        <h3 className="text-lg font-bold text-slate-700">No simulator available</h3>
+        <p className="mt-2 text-sm text-slate-500 max-w-xs">
+          Generic Fallback Scenario — no wiring diagram is defined for this product category.
+        </p>
+      </div>
+    );
+  }
+
+  const { ports, cables } = scenario;
 
   const [selectedCable, setSelectedCable] = useState<string | null>(null);
   const [connections, setConnections] = useState<Record<string, string>>({});
@@ -94,7 +118,7 @@ export function WiringSimulator({ productName, productCategory }: WiringSimulato
   const completionPercent = Math.round((Object.keys(connections).length / ports.length) * 100);
 
   return (
-    <div className="">
+    <div data-testid="simulator-canvas">
       <div className="bg-slate-900 rounded-2xl p-6 md:p-8 text-white relative overflow-hidden shadow-xl border border-slate-800">
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
         
@@ -103,8 +127,8 @@ export function WiringSimulator({ productName, productCategory }: WiringSimulato
             <h3 className="text-xl font-bold text-white mb-2">{t.wiringSimulator.title.replace('{productName}', productName)}</h3>
             <p className="text-slate-400 text-sm">{t.wiringSimulator.subtitle}</p>
           </div>
-          <div className="text-right shrink-0 ml-4">
-            <div className="text-2xl font-bold text-indigo-400">{completionPercent}%</div>
+          <div>
+            <div data-testid="completion-percentage" className="text-2xl font-bold text-indigo-400">{completionPercent}%</div>
             <div className="text-xs text-slate-400 uppercase">{t.wiringSimulator.percentCompleted}</div>
           </div>
         </div>
@@ -177,6 +201,7 @@ export function WiringSimulator({ productName, productCategory }: WiringSimulato
                 return (
                   <button
                     key={port.id}
+                    data-testid={port.testId}
                     onClick={() => handlePortClick(port.id)}
                     disabled={isConnected}
                     className={`w-full relative flex items-center p-4 rounded-xl border-2 transition-all ${

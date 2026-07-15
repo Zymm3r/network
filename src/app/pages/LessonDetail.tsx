@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router';
 import { useI18n } from '../i18n';
@@ -12,8 +13,9 @@ import { Skeleton } from '../lib/components/ui/skeleton';
 import {
   ArrowLeft, Clock, ChevronRight, Play, FileText, HelpCircle,
   CheckCircle, CheckCircle2, Circle, Zap, BookOpen, Trophy, ChevronDown,
-  Code2, PlayCircle, Eye, Lock
+  Code2, PlayCircle, Eye, PenTool
 } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../lib/components/ui/tabs';
 import QuizCard from '../lib/components/QuizCard';
 import ExerciseCard from '../lib/components/ExerciseCard';
 import { KalturaPlayer } from '../lib/components/KalturaPlayer';
@@ -521,20 +523,7 @@ const saveAllProgress = async (
     }
   }
 
-  // 3. Auto-issue certificate if course is now 100% complete
-  if (courseId && isCompleted) {
-    try {
-      import('../lib/api/certificates').then(({ certificateApi }) => {
-        certificateApi.checkAndIssueCourseCertificate(userId, courseId).then(cert => {
-          if (cert) {
-            console.log(`[Certificate] Auto-issued certificate:`, cert.certificate_number);
-          }
-        });
-      });
-    } catch (err) {
-      console.error('[Certificate] Failed to check certificate:', err);
-    }
-  }
+
 
   return results;
 };
@@ -558,12 +547,156 @@ export function LessonDetail() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showAllCheckpoints, setShowAllCheckpoints] = useState(false);
   const [activeCheckpointIdx, setActiveCheckpointIdx] = useState(0);
+  const [videoSeekState, setVideoSeekState] = useState<VideoSeekState | null>(null);
+  const [readingProgress, setReadingProgress] = useState(0);
+  const [isVideoCompleted, setIsVideoCompleted] = useState(false);
+  const [isQuizPassed, setIsQuizPassed] = useState(false);
+  const [isExercisePassed, setIsExercisePassed] = useState(false);
+  const readingContentRef = useRef<HTMLDivElement>(null);
+  
+  // Concurrent Flight Lock
+  const isSavingRef = useRef(false);
 
-  /* ── Load/Initialize timer from localStorage when storage key or required duration changes ── */
+  /* ── Scoped timer storage key ── */
   const timerStorageKey = useMemo(() => {
     if (!user?.id || !lessonId) return null;
     return `study-timer:${user.id}:${lessonId}:${isPythonLesson ? activeCheckpointIdx : 'general'}`;
   }, [user?.id, lessonId, isPythonLesson, activeCheckpointIdx]);
+
+  /* ── Parse completed checkpoints from notes column ── */
+  const completedCheckpoints: number[] = useMemo(() => {
+    if (!isPythonLesson || !progress?.notes) return [];
+    try {
+      const parsed = JSON.parse(progress.notes);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch { return []; }
+  }, [isPythonLesson, progress?.notes]);
+
+  const completedSet = useMemo(() => new Set(completedCheckpoints), [completedCheckpoints]);
+
+  /* ── Auto-select first uncompleted checkpoint on load ── */
+  useEffect(() => {
+    if (!isPythonLesson || progressLoading) return;
+    const first = PYTHON_CHECKPOINTS.find(cp => !completedSet.has(cp.id));
+    if (first !== undefined) {
+      setActiveCheckpointIdx(first.id);
+    } else {
+      // All done — show last one
+      setActiveCheckpointIdx(PYTHON_CHECKPOINTS.length - 1);
+    }
+  }, [isPythonLesson, progressLoading, completedCheckpoints.length]);
+
+  const handleNextLesson = async () => {
+    if (!lesson?.course_id) return;
+    try {
+      const { data, error } = await supabase
+        .from('lessons')
+        .select('id, order_index')
+        .eq('course_id', lesson.course_id)
+        .order('order_index', { ascending: true });
+        
+      if (error) throw error;
+      
+      const currentIndex = data.findIndex((l: any) => l.id === lesson.id);
+      if (currentIndex !== -1 && currentIndex < data.length - 1) {
+        const nextLessonId = data[currentIndex + 1].id;
+        navigate(`/lessons/${nextLessonId}`);
+      } else {
+        navigate(`/courses/${lesson.course_id}`);
+      }
+    } catch (err) {
+      console.error('Failed to find next lesson:', err);
+    }
+  };
+
+  /* ── Derived values ── */
+  const activeCheckpoint = isPythonLesson ? PYTHON_CHECKPOINTS[activeCheckpointIdx] : null;
+
+  /* ── Dynamic reading time calculation ── */
+  const isReadingLesson = lesson?.lesson_type === 'reading';
+  const readingContent = useMemo(() => {
+    if (!isReadingLesson || !lesson) return '';
+    return lesson[`content_${language}` as 'content_th' | 'content_en'] || '';
+  }, [isReadingLesson, lesson, language]);
+
+  const estimatedReadingMinutes = useMemo(() => {
+    if (!readingContent) return 0;
+    // Thai text: ~200 words/min, English: ~250 words/min
+    // Count words by splitting on whitespace and filtering empty
+    const wpmMap: Record<'th' | 'en', number> = { th: 180, en: 230 };
+    const wpm = wpmMap[language];
+    const words = readingContent.split(/\s+/).filter(Boolean).length;
+    return Math.max(1, Math.ceil(words / wpm));
+  }, [readingContent, language]);
+
+  const durationMinutes = isReadingLesson && estimatedReadingMinutes > 0
+    ? estimatedReadingMinutes
+    : (lesson?.duration_minutes || 0);
+  
+  // Disable page-level timer for video lessons
+  const requiredSeconds = lesson?.lesson_type === 'video'
+    ? 0
+    : isPythonLesson
+      ? (activeCheckpoint?.duration ?? 0)
+      : durationMinutes * 60;
+      
+  const isCurrentCheckpointDone = isPythonLesson
+    ? completedSet.has(activeCheckpointIdx)
+    : progress?.status === 'completed';
+  const isFullyCompleted = isPythonLesson
+    ? completedCheckpoints.length === PYTHON_CHECKPOINTS.length
+    : progress?.status === 'completed';
+    
+  // Require video completion for videos, fallback to timer for reading
+  const isTimeMet = lesson?.lesson_type === 'video'
+    ? isVideoCompleted
+    : elapsedSeconds >= requiredSeconds;
+
+  /* ── Load/Initialize timer from localStorage when storage key or required duration changes ── */
+  useEffect(() => {
+    if (!timerStorageKey) {
+      setElapsedSeconds(0);
+      return;
+    }
+    const saved = localStorage.getItem(timerStorageKey);
+    const parsed = saved ? parseInt(saved, 10) : 0;
+    
+    // Safety check: ensure it doesn't exceed requiredSeconds
+    const initialElapsed = Math.min(parsed, requiredSeconds);
+    
+    console.log(`[Progress Timer Log] Initializing timer for key [${timerStorageKey}] to ${initialElapsed}s (required: ${requiredSeconds}s)`);
+    setElapsedSeconds(initialElapsed);
+  }, [timerStorageKey, requiredSeconds]);
+
+  /* ── Stay-timer ticker with storage syncing ── */
+  useEffect(() => {
+    if (isCurrentCheckpointDone || isTimeMet || !lesson || requiredSeconds <= 0 || !timerStorageKey) return;
+
+    console.log(`[Progress Timer Log] Starting timer for key [${timerStorageKey}]. Current elapsed: ${elapsedSeconds}s, required: ${requiredSeconds}s`);
+
+    const interval = setInterval(() => {
+      setElapsedSeconds(prev => {
+        const next = prev + 1;
+        
+        // Sync tick to localStorage
+        localStorage.setItem(timerStorageKey, String(next));
+        
+        if (next >= requiredSeconds) {
+          console.log(`[Progress Timer Log] Timer target reached for key [${timerStorageKey}]!`);
+          clearInterval(interval);
+          return requiredSeconds;
+        }
+        return next;
+      });
+    }, 1000);
+
+    return () => {
+      console.log(`[Progress Timer Log] Clearing interval for key [${timerStorageKey}]`);
+      clearInterval(interval);
+    };
+  }, [isCurrentCheckpointDone, isTimeMet, lesson, requiredSeconds, timerStorageKey]);
+
+
 
   /* ── Offline resilience helper: Queue a failed save ── */
   const queueFailedSave = useCallback((payload: {
@@ -661,97 +794,31 @@ export function LessonDetail() {
     } catch (e) {
       console.error('[Progress Offline Log] Error during flush:', e);
     }
-  }, [refetchProgress, language, t.lessonDetail.offlineSyncSuccess]);
+  }, [refetchProgress, language]);
 
   /* ── Offline queue triggers ── */
   useEffect(() => {
-    if (!user?.id) return;
-
-    // 1. Flush immediately on mount/load
-    flushPendingSaves(user.id);
-
-    // 2. Flush when user comes back online
-    const handleOnline = () => {
-      console.log('[Progress Offline Log] Browser detected as ONLINE — flushing queue');
-      flushPendingSaves(user.id);
-    };
-
-    window.addEventListener('online', handleOnline);
-    return () => {
-      window.removeEventListener('online', handleOnline);
-    };
-  }, [user?.id, flushPendingSaves]);
-
-  const [videoSeekState, setVideoSeekState] = useState<VideoSeekState | null>(null);
-  const [readingProgress, setReadingProgress] = useState(0);
-  const [isVideoCompleted, setIsVideoCompleted] = useState(false);
-  const readingContentRef = useRef<HTMLDivElement>(null);
-  
-  // Concurrent Flight Lock
-  const isSavingRef = useRef(false);
-
-  /* ── Parse completed checkpoints from notes column ── */
-  const completedCheckpoints: number[] = useMemo(() => {
-    if (!isPythonLesson || !progress?.notes) return [];
-    try {
-      const parsed = JSON.parse(progress.notes);
-      return Array.isArray(parsed) ? parsed : [];
-    } catch { return []; }
-  }, [isPythonLesson, progress?.notes]);
-
-  const completedSet = useMemo(() => new Set(completedCheckpoints), [completedCheckpoints]);
-
-  /* ── Auto-select first uncompleted checkpoint on load ── */
-  useEffect(() => {
-    if (!isPythonLesson || progressLoading) return;
-    const first = PYTHON_CHECKPOINTS.find(cp => !completedSet.has(cp.id));
-    if (first !== undefined) {
-      setActiveCheckpointIdx(first.id);
-    } else {
-      // All done — show last one
-      setActiveCheckpointIdx(PYTHON_CHECKPOINTS.length - 1);
-    }
-  }, [isPythonLesson, progressLoading, completedCheckpoints.length]);
-
-  /* ── Derived values ── */
-  const activeCheckpoint = isPythonLesson ? PYTHON_CHECKPOINTS[activeCheckpointIdx] : null;
-
-  const isReadingLesson = lesson?.lesson_type === 'reading';
-  const readingContent = useMemo(() => {
-    if (!isReadingLesson || !lesson) return '';
-    return lesson[`content_${language}` as 'content_th' | 'content_en'] || '';
-  }, [isReadingLesson, lesson, language]);
-
-  const estimatedReadingMinutes = useMemo(() => {
-    if (!readingContent) return 0;
-    const wpmMap: Record<'th' | 'en', number> = { th: 180, en: 230 };
-    const wpm = wpmMap[language];
-    const words = readingContent.split(/\s+/).filter(Boolean).length;
-    return Math.max(1, Math.ceil(words / wpm));
-  }, [readingContent, language]);
-
-  const durationMinutes = isReadingLesson && estimatedReadingMinutes > 0
-    ? estimatedReadingMinutes
-    : (lesson?.duration_minutes || 0);
-  
-  // Disable page-level timer for video lessons
-  const requiredSeconds = lesson?.lesson_type === 'video'
-    ? 0
-    : isPythonLesson
-      ? (activeCheckpoint?.duration ?? 0)
-      : durationMinutes * 60;
-      
-  const isCurrentCheckpointDone = isPythonLesson
-    ? completedSet.has(activeCheckpointIdx)
-    : progress?.status === 'completed';
-  const isFullyCompleted = isPythonLesson
-    ? completedCheckpoints.length === PYTHON_CHECKPOINTS.length
-    : progress?.status === 'completed';
+    if (!isReadingLesson || !readingContentRef.current) return;
     
-  // Require video completion for videos, fallback to timer for reading
-  const isTimeMet = lesson?.lesson_type === 'video'
-    ? isVideoCompleted
-    : elapsedSeconds >= requiredSeconds;
+    // Check if content fits in the container without scrolling
+    const el = readingContentRef.current;
+    const checkScroll = () => {
+      if (el.scrollHeight <= el.clientHeight) {
+        setIsScrolledToBottom(true);
+        setReadingProgress(100);
+      }
+    };
+    
+    checkScroll();
+    
+    // Optional: Re-check on resize
+    window.addEventListener('resize', checkScroll);
+    return () => window.removeEventListener('resize', checkScroll);
+  }, [isReadingLesson, lesson]);
+
+
+
+
 
   /* ── Standard (non-Python) mark complete ── */
   const handleMarkComplete = useCallback(async () => {
@@ -769,48 +836,37 @@ export function LessonDetail() {
       console.log(`[Progress DB Log] Attempting to mark standard lesson ${lessonId} complete...`);
 
       const now = new Date().toISOString();
-      
-      try {
-        // Save to all dependent tables consistently
-        await saveAllProgress(
-          user.id,
-          lessonId,
-          lesson?.course_id || null,
-          'completed',
-          100,
-          null,
-        );
+      const results = await saveAllProgress(
+        user.id,
+        lessonId,
+        lesson?.course_id || null,
+        'completed',
+        100,
+        null
+      );
 
-        toast.success(t.lessonDetail.standardLessonCompleteSuccess);
-        
-        // Clear stay-timer from localStorage upon completion
-        if (timerStorageKey) {
-          localStorage.removeItem(timerStorageKey);
-        }
-      } catch (dbErr) {
-        console.error('[Progress DB Log] Standard lesson database write failed — queueing for offline retry', dbErr);
+      const hasFailure = results.some(r => !r.success);
+      if (hasFailure) {
+        throw new Error('Failed to save progress to some tables');
+      }
 
-        // Queue progress update for offline sync
-        queueFailedSave({
-          userId: user.id,
-          lessonId,
-          isPython: false,
-          completedCheckpoints: [],
-        });
+      toast.success(t.lessonDetail.standardLessonCompleteSuccess);
 
-        toast.warning(t.lessonDetail.offlineQueueWarning);
+      // Clear stay-timer from localStorage upon completion
+      if (timerStorageKey) {
+        localStorage.removeItem(timerStorageKey);
       }
 
       // Refresh progress data in UI silently
       await refetchProgress();
     } catch (err) {
-      console.error('[Progress DB Log] Unexpected error during lesson completion:', err);
+      console.error('[Progress DB Log] Unexpected error during standard lesson completion:', err);
       toast.error(t.lessonDetail.saveProgressError);
     } finally {
       setIsSubmitting(false);
       isSavingRef.current = false;
     }
-  }, [isTimeMet, isSubmitting, isFullyCompleted, user?.id, lessonId, lesson?.course_id, saveAllProgress, timerStorageKey, queueFailedSave, t, refetchProgress]);
+  }, [isTimeMet, isSubmitting, isFullyCompleted, user?.id, lessonId, lesson?.course_id, saveAllProgress, timerStorageKey, t, refetchProgress]);
 
   // ════════════════════════════════════════════
   //  AUTO-COMPLETION SYSTEM
@@ -961,9 +1017,7 @@ export function LessonDetail() {
       console.log(`[Progress DB Log] Attempting to mark checkpoint ${activeCheckpointIdx} complete...`);
 
       const updated = [...new Set([...completedCheckpoints, activeCheckpointIdx])];
-      const isAll = updated.length === PYTHON_CHECKPOINTS.length;
       
-      // Attempt to save to Supabase
       try {
         await saveCheckpointProgress(updated);
         
@@ -971,14 +1025,14 @@ export function LessonDetail() {
         toast.success(
           t.lessonDetail.checkpointSaveSuccess.replace('{title}', activeCheckpoint?.title || '')
         );
-        
+
         // Clear active checkpoint timer from localStorage upon completion
         if (timerStorageKey) {
           localStorage.removeItem(timerStorageKey);
         }
       } catch (dbErr) {
-        console.error('[Progress DB Log] Database write failed — queueing for offline retry', dbErr);
-        
+        console.error('[Progress DB Log] Python checkpoint database write failed — queueing for offline retry', dbErr);
+
         // Queue progress update for offline sync
         queueFailedSave({
           userId: user.id,
@@ -987,7 +1041,7 @@ export function LessonDetail() {
           completedCheckpoints: updated,
         });
 
-        toast.warning(t.lessonDetail.checkpointOfflineWarning);
+        toast.warning(t.lessonDetail.offlineQueueWarning);
       }
 
       // Refresh progress data in UI silently
@@ -1004,27 +1058,12 @@ export function LessonDetail() {
       }
     } catch (err) {
       console.error('[Progress DB Log] Unexpected error during checkpoint completion:', err);
-      toast.error(t.lessonDetail.unexpectedError);
+      toast.error(t.lessonDetail.saveProgressError);
     } finally {
       setIsSubmitting(false);
       isSavingRef.current = false;
     }
   };
-
-  // ════════════════════════════════════════════
-  //  AUTO-COMPLETION: Python Checkpoints
-  //  Triggers when elapsed time reaches required
-  // ════════════════════════════════════════════
-  useEffect(() => {
-    if (!user?.id) return;
-    if (!isPythonLesson) return;
-    if (!isTimeMet || isCurrentCheckpointDone || isSubmitting || autoCompletedRef.current) return;
-    if (!activeCheckpoint) return;
-    
-    console.log(`[AutoComplete] Python checkpoint ${activeCheckpointIdx} time met — auto-completing`);
-    autoCompletedRef.current = true;
-    handleMarkCheckpointComplete();
-  }, [user?.id, isTimeMet, isCurrentCheckpointDone, isSubmitting, isPythonLesson, activeCheckpointIdx]);
 
   /* ─── Loading ─── */
   if (loading || (progressLoading && !progress)) {
@@ -1171,22 +1210,55 @@ export function LessonDetail() {
         </Card>
       )}
 
-      {/* Content — show short description for non-reading lessons */}
+      {/* Content — show for video/quiz/exercise lessons, render markdown properly */}
       {content && !isReadingLesson && (
-        <Card className="border-slate-100">
-          <CardHeader>
-            <CardTitle>{t.lessonDetail.contentHeader}</CardTitle>
+        <Card className="border-slate-100 overflow-hidden shadow-sm">
+          <CardHeader className="bg-gradient-to-r from-slate-50 via-indigo-50/30 to-slate-50 border-b border-slate-100">
+            <div className="flex items-center gap-2">
+              <div className="w-1 h-5 bg-gradient-to-b from-indigo-500 to-purple-500 rounded-full" />
+              <CardTitle className="text-base font-semibold text-slate-800">{t.lessonDetail.contentHeader}</CardTitle>
+            </div>
           </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground leading-relaxed">{content}</p>
+          <CardContent className="pt-5 pb-6 px-6">
+            <ReadingContentRenderer content={content} />
           </CardContent>
         </Card>
       )}
 
-      {/* Lesson Type Specific */}
-      {lesson.lesson_type === 'quiz' && <QuizCard />}
-
-      {lesson.lesson_type === 'exercise' && <ExerciseCard />}
+      {/* Practice Tabs (Quiz & Exercise) for all lessons */}
+      <div className="mt-8">
+        <Tabs defaultValue="quiz" className="w-full">
+          <TabsList className="w-full flex mb-6">
+            <TabsTrigger value="quiz" className="flex-1 gap-2">
+              <HelpCircle className="w-4 h-4" />
+              แบบทดสอบ
+            </TabsTrigger>
+            <TabsTrigger value="exercise" className="flex-1 gap-2">
+              <PenTool className="w-4 h-4" />
+              แบบฝึกหัด
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="quiz" className="mt-0">
+            <QuizCard 
+              courseId={lesson.course_id || undefined} 
+              lesson={lesson}
+              onComplete={(score, total) => {
+                if (score / total >= 0.8) setIsQuizPassed(true);
+              }} 
+              onNextLesson={handleNextLesson}
+            />
+          </TabsContent>
+          
+          <TabsContent value="exercise" className="mt-0">
+            <ExerciseCard 
+              courseId={lesson.course_id || undefined} 
+              onComplete={(passed) => setIsExercisePassed(passed)} 
+              onNextLesson={handleNextLesson}
+            />
+          </TabsContent>
+        </Tabs>
+      </div>
 
       {/* ══════════════════════════════════════════════════════════
           READING LESSON: Rich Article Renderer
@@ -1228,7 +1300,9 @@ export function LessonDetail() {
                 onScroll={(e) => {
                   const el = e.currentTarget;
                   const scrollPct = el.scrollTop / (el.scrollHeight - el.clientHeight);
-                  setReadingProgress(Math.min(100, Math.round(scrollPct * 100)));
+                  const newProgress = Math.min(100, Math.round(scrollPct * 100));
+                  setReadingProgress(newProgress);
+                  if (scrollPct >= 0.99) setIsScrolledToBottom(true);
                 }}
                 style={{ maxHeight: '70vh', overflowY: 'auto', scrollBehavior: 'smooth' }}
               >
@@ -1255,18 +1329,20 @@ export function LessonDetail() {
       {/* ══════════════════════════════════════════════════════════
           COMPLETION / TIMER CARD
       ══════════════════════════════════════════════════════════ */}
-      {isPythonLesson ? (
+      {isPythonLesson ? isFullyCompleted && progress?.completed_at ? (
+        <div className="mt-8">
+          <LessonCompleteCard completedAt={progress.completed_at} />
+        </div>
+      ) : (
         /* ── Python: per-checkpoint completion card ── */
         <Card className={`border transition-all duration-350 overflow-hidden ${
-          isFullyCompleted
-            ? 'border-emerald-200 bg-gradient-to-br from-emerald-50 to-green-50'
-            : isCurrentCheckpointDone
+          isCurrentCheckpointDone
             ? 'border-emerald-100 bg-emerald-50/30'
             : 'border-slate-100 bg-slate-50/40'
         }`}>
           <CardContent className="pt-6">
             {/* Checkpoint name banner */}
-            {!isFullyCompleted && activeCheckpoint && (
+            {activeCheckpoint && (
               <button
                 onClick={() => handleCheckpointClick(activeCheckpoint)}
                 className="w-full text-left mb-4 flex items-center gap-3 p-3 rounded-xl bg-white border border-indigo-100 shadow-sm hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer group"
@@ -1289,27 +1365,21 @@ export function LessonDetail() {
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
               <div className="flex items-center gap-3">
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
-                  isFullyCompleted
-                    ? 'bg-emerald-100 text-emerald-600'
-                    : isCurrentCheckpointDone
+                  isCurrentCheckpointDone
                     ? 'bg-emerald-100 text-emerald-600'
                     : 'bg-indigo-50 text-indigo-600'
                 }`}>
-                  {isFullyCompleted ? <Trophy className="w-5 h-5" /> : <CheckCircle className="w-5 h-5" />}
+                  <CheckCircle className="w-5 h-5" />
                 </div>
                 <div>
                   <div className="font-semibold text-slate-800">
-                    {isFullyCompleted
-                      ? t.lessonDetail.pythonFullyCompletedTitle
-                      : isCurrentCheckpointDone
+                    {isCurrentCheckpointDone
                       ? t.lessonDetail.pythonCheckpointDoneTitle.replace('{title}', activeCheckpoint?.title || '')
                       : t.lessonDetail.pythonAccumulatingTitle.replace('{title}', activeCheckpoint?.title || '')
                     }
                   </div>
                   <div className="text-sm text-muted-foreground mt-0.5">
-                    {isFullyCompleted
-                      ? t.lessonDetail.pythonFullyCompletedDesc.replace('{completedAt}', formatCompletedAt(progress?.completed_at))
-                      : isCurrentCheckpointDone
+                    {isCurrentCheckpointDone
                       ? t.lessonDetail.pythonCheckpointDoneDesc
                       : t.lessonDetail.pythonAccumulatingDesc
                     }
@@ -1335,15 +1405,12 @@ export function LessonDetail() {
                     onClick={handleMarkCheckpointComplete}
                     disabled={!isTimeMet || isSubmitting || isCurrentCheckpointDone}
                     className={`w-full md:w-auto font-semibold px-6 transition-all duration-350 ${
-                      isFullyCompleted || isCurrentCheckpointDone
-                        ? 'bg-emerald-600 hover:bg-emerald-600 text-white opacity-80 cursor-default shadow-none hidden md:inline-flex' // Hide on mobile, dim on desktop
+                      isCurrentCheckpointDone
+                        ? 'bg-emerald-600 hover:bg-emerald-600 text-white opacity-80 cursor-default shadow-none'
                         : isTimeMet
                         ? 'bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer shadow-md shadow-emerald-200 animate-pulse-subtle'
                         : 'bg-slate-200 text-slate-400 cursor-not-allowed hover:bg-slate-200 shadow-none'
                     }`}
-                    style={{
-                      display: (isFullyCompleted || isCurrentCheckpointDone) ? 'none' : undefined
-                    }}
                   >
                     {isSubmitting ? (
                       <span className="flex items-center gap-2 justify-center">
@@ -1363,7 +1430,7 @@ export function LessonDetail() {
             </div>
 
             {/* Per-checkpoint progress bar */}
-            {!isCurrentCheckpointDone && !isFullyCompleted && requiredSeconds > 0 && (
+            {!isCurrentCheckpointDone && requiredSeconds > 0 && (
               <div className="mt-4 space-y-1.5">
                 <div className="flex justify-between text-xs text-slate-400">
                   <span>{t.lessonDetail.accumulatedTimeHeader}</span>
@@ -1403,24 +1470,25 @@ export function LessonDetail() {
             </div>
           </CardContent>
         </Card>
+      ) : isFullyCompleted && progress?.completed_at ? (
+        <div className="mt-8">
+          <LessonCompleteCard completedAt={progress.completed_at} />
+        </div>
       ) : (
         /* ── Standard lesson completion card ── */
-        <Card className={`border-slate-100 transition-all duration-350 ${isFullyCompleted ? 'border-green-200 bg-green-50/40' : 'bg-slate-50/40'}`}>
+        <Card className="border-slate-100 bg-slate-50/40">
           <CardContent className="pt-6">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
               <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${isFullyCompleted ? 'bg-green-100 text-green-600' : 'bg-indigo-50 text-indigo-600'}`}>
+                <div className="w-10 h-10 rounded-full flex items-center justify-center bg-indigo-50 text-indigo-600 transition-all">
                   <CheckCircle className="w-5 h-5" />
                 </div>
                 <div>
                   <div className="font-semibold text-slate-800">
-                    {isFullyCompleted ? t.lessonDetail.standardCompletedTitle : t.lessonDetail.standardMarkCompleteTitle}
+                    {t.lessonDetail.standardMarkCompleteTitle}
                   </div>
                   <div className="text-sm text-muted-foreground mt-0.5">
-                    {isFullyCompleted
-                      ? t.lessonDetail.standardCompletedDesc.replace('{completedAt}', formatCompletedAt(progress?.completed_at))
-                      : t.lessonDetail.standardAccumulateTimeDesc
-                    }
+                    {t.lessonDetail.standardAccumulateTimeDesc}
                   </div>
                 </div>
               </div>
@@ -1434,24 +1502,31 @@ export function LessonDetail() {
                     </div>
                   </div>
                 )}
-                <Button
-                  onClick={handleMarkComplete}
-                  disabled={!isTimeMet || isSubmitting || isFullyCompleted}
-                  className={`w-full md:w-auto font-semibold px-6 transition-all duration-350 ${
-                    isFullyCompleted
-                      ? 'bg-green-600 hover:bg-green-600 text-white border-green-650 opacity-90 cursor-default shadow-none hidden'
-                      : isTimeMet
-                      ? 'bg-green-600 hover:bg-green-700 text-white cursor-pointer shadow-md shadow-green-200 animate-pulse-subtle'
-                      : 'bg-slate-200 text-slate-400 cursor-not-allowed hover:bg-slate-200 shadow-none'
-                  }`}
-                >
-                  {isSubmitting ? (
-                    <span className="flex items-center gap-2 justify-center">
-                      <span className="animate-spin rounded-full h-4 w-4 border-2 border-slate-300 border-t-white" />
-                      {t.lessonDetail.savingProgress}
-                    </span>
-                  ) : isFullyCompleted ? t.lessonDetail.completedLabel : isTimeMet ? t.lessonDetail.markAsCompletedLabel : t.lessonDetail.waitingForTime}
-                </Button>
+                {isFullyCompleted ? (
+                  <Button
+                    onClick={handleNextLesson}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2 font-semibold px-6 shadow-md shadow-emerald-200 transition-all duration-350 w-full md:w-auto"
+                  >
+                    ไปบทเรียนถัดไป <ChevronRight className="w-4 h-4" />
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={handleMarkComplete}
+                    disabled={!isTimeMet || isSubmitting}
+                    className={`w-full md:w-auto font-semibold px-6 transition-all duration-350 ${
+                      isTimeMet
+                        ? 'bg-green-600 hover:bg-green-700 text-white cursor-pointer shadow-md shadow-green-200 animate-pulse-subtle'
+                        : 'bg-slate-200 text-slate-400 cursor-not-allowed hover:bg-slate-200 shadow-none'
+                    }`}
+                  >
+                    {isSubmitting ? (
+                      <span className="flex items-center gap-2 justify-center">
+                        <span className="animate-spin rounded-full h-4 w-4 border-2 border-slate-300 border-t-white" />
+                        {t.lessonDetail.savingProgress}
+                      </span>
+                    ) : isTimeMet ? t.lessonDetail.markAsCompletedLabel : t.lessonDetail.waitingForTime}
+                  </Button>
+                )}
               </div>
             </div>
 
