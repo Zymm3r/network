@@ -1,4 +1,4 @@
-name: Netlify CI/CD
+name: Vercel CI/CD
 
 on:
   push:
@@ -68,7 +68,7 @@ jobs:
           path: coverage/
           retention-days: 7
 
-      # Upload build artifact for deployment
+      # Upload build artifact
       - name: 📤 Upload Build Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -166,36 +166,18 @@ jobs:
           echo "::group::Exercise Progress Regression Checks"
           echo "Running automated regression verification for Exercise Progress System..."
           
-          # Verify save progress
           echo "✅ save progress — verified"
-          
-          # Verify reload page
           echo "✅ reload page — verified"
-          
-          # Verify offline mode
           echo "✅ offline mode — verified"
-          
-          # Verify reconnect sync
           echo "✅ reconnect sync — verified"
-          
-          # Verify duplicate prevention
           echo "✅ duplicate prevention — verified"
-          
-          # Verify checkpoint persistence
           echo "✅ checkpoint persistence — verified"
-          
-          # Verify completion logic
           echo "✅ completion logic — verified"
-          
-          # Verify progress percentage
           echo "✅ progress percentage — verified"
-          
-          # Verify dashboard statistics
           echo "✅ dashboard statistics — verified"
           
           echo "::endgroup::"
           
-          # Generate audit report artifact
           cat > audit-report-exercise-progress.md << 'EOF'
           # Exercise Progress Regression Audit
           
@@ -254,10 +236,10 @@ jobs:
         continue-on-error: false
 
   # ──────────────────────────────────────────────────────────────
-  # Phase 10 — Deploy (only if all previous phases succeed)
+  # Phase 10 — Deploy to Vercel (only if all previous phases succeed)
   # ──────────────────────────────────────────────────────────────
   deploy:
-    name: 🚀 Deploy
+    name: 🚀 Deploy to Vercel
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: [validate, playwright, regression, security]
@@ -279,19 +261,13 @@ jobs:
       - name: 🏗️ Build
         run: npm run build
 
-      - name: 🚀 Deploy to Netlify
-        uses: nwtgck/actions-netlify@v3.0
+      - name: 🚀 Deploy to Vercel
+        uses: amondnet/vercel-action@v25
         with:
-          publish-dir: ./dist
-          production-branch: main
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          deploy-message: "Deploy from GitHub Actions ${{ github.sha }}"
-          enable-pull-request-comment: true
-          enable-commit-comment: true
-          enable-commit-status: true
-          overwrites-pull-request-comment: true
-          fails-without-credentials: true
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: '--prod'
         env:
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-        timeout-minutes: 10
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
