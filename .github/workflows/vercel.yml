@@ -261,13 +261,14 @@ jobs:
       - name: 🏗️ Build
         run: npm run build
 
-      - name: 🚀 Deploy to Vercel
-        uses: amondnet/vercel-action@v25
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          vercel-args: '--prod'
+      - name: 🚀 Deploy to Vercel (CLI)
+        run: |
+          npx vercel deploy --prod \
+            --token=${{ secrets.VERCEL_TOKEN }} \
+            --yes \
+            --debug 2>&1
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
