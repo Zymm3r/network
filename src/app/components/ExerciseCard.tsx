@@ -123,6 +123,13 @@ export default function ExerciseCard({ courseName, courseId, onComplete, onNextL
   useEffect(() => {
     setCode(typeof exerciseProgress?.answers?.code === 'string' ? exerciseProgress.answers.code : exercise.starterCode);
   }, [courseId, exercise.starterCode, exerciseProgress?.answers?.code]);
+  useEffect(() => {
+    if (exerciseProgress?.status !== 'completed') return;
+    setAllPassed(true);
+    setRunComplete(true);
+    setXpEarned(exercise.xpReward);
+    setAttempts(previous => Math.max(previous, exerciseProgress.attempts || 0));
+  }, [exerciseProgress?.status, exerciseProgress?.attempts, exercise.xpReward]);
   useEffect(() => { updateTimer(totalSeconds); }, [totalSeconds, updateTimer]);
   const [isRunning, setIsRunning] = useState(false);
   const [runComplete, setRunComplete] = useState(false);

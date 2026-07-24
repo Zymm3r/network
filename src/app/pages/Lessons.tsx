@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useI18n } from '../i18n';
 import { useAuth } from '../hooks/useAuth';
 import { Card, CardContent } from '../components/ui/card';
@@ -12,6 +12,8 @@ import {
 import QuizCard from '../components/QuizCard';
 import ExerciseCard from '../components/ExerciseCard';
 import { COURSE_QUIZ_MAP, COURSE_EXERCISE_MAP } from '../data/courseQuizData';
+import { exerciseProgressService } from '../../application/services/ExerciseProgressService';
+import { studyProgressService, type CourseChapterCompletion } from '../../application/services/StudyProgressService';
 
 /* ─────────────────────────────────────────
    Course catalogue — ordered easy → hard
@@ -84,11 +86,50 @@ export function Lessons() {
   const [activeCourseId, setActiveCourseId] = useState<string | null>(null);
   const [quizScores, setQuizScores] = useState<ScoreMap>({});
   const [exerciseScores, setExerciseScores] = useState<ScoreMap>({});
+  const [chapterCompletion, setChapterCompletion] = useState<CourseChapterCompletion>({});
+  const [progressHydrated, setProgressHydrated] = useState(false);
 
   const quizCourses  = COURSES.filter(c => !!COURSE_QUIZ_MAP[c.id]);
   const exCourses    = COURSES.filter(c => !!COURSE_EXERCISE_MAP[c.id]);
   const displayList  = activeTab === 'quiz' ? quizCourses : exCourses;
   const scoreMap     = activeTab === 'quiz' ? quizScores  : exerciseScores;
+
+  // `/lessons` must never use session state as the authority for exercise
+  // completion or its chapter gate.  Hydrate both from the user's RLS-scoped
+  // Supabase records whenever the signed-in account changes.
+  useEffect(() => {
+    let cancelled = false;
+    if (!user?.id) {
+      setExerciseScores({});
+      setChapterCompletion({});
+      setProgressHydrated(true);
+      return () => { cancelled = true; };
+    }
+
+    const courseIds = COURSES.map(course => course.id);
+    setProgressHydrated(false);
+    void Promise.all([
+      studyProgressService.getCourseChapterCompletion(user.id, courseIds),
+      exerciseProgressService.getCompletedExercises(user.id, courseIds),
+    ]).then(([chapters, completedExercises]) => {
+      if (cancelled) return;
+      setChapterCompletion(chapters);
+      setExerciseScores(Object.fromEntries(completedExercises.map(exercise => [exercise.exercise_id, {
+        score: exercise.score ?? 1,
+        total: 1,
+        passed: true,
+      }])));
+    }).catch(error => {
+      // Fail closed: exercise access is not granted unless chapter completion
+      // was confirmed by Supabase.
+      console.error('[Lessons] Failed to hydrate exercise access:', error);
+      if (!cancelled) setChapterCompletion({});
+    }).finally(() => {
+      if (!cancelled) setProgressHydrated(true);
+    });
+
+    return () => { cancelled = true; };
+  }, [user?.id]);
 
   const totalPassed  = Object.values(scoreMap).filter(s => s.passed).length;
   const totalAttempted = Object.values(scoreMap).length;
@@ -194,7 +235,13 @@ export function Lessons() {
           const isPassed     = sessionScore?.passed ?? false;
           const isAttempted  = !!sessionScore;
           const isActive     = activeCourseId === course.id;
-          const isLocked     = idx > 0 && !scoreMap[displayList[idx - 1].id]?.passed && !isAttempted;
+          const chapters = chapterCompletion[course.id];
+          const isExerciseLocked = activeTab === 'exercise' && (
+            !progressHydrated || !user?.id || !chapters?.complete
+          );
+          const isLocked = isExerciseLocked || (
+            activeTab === 'quiz' && idx > 0 && !scoreMap[displayList[idx - 1].id]?.passed && !isAttempted
+          );
           const tc           = TRACK_COLORS[course.trackColor];
           const TrackIcon    = course.trackIcon;
 
@@ -252,6 +299,11 @@ export function Lessons() {
                     )}
                   </div>
                   <p className="font-semibold text-slate-800 mt-1 text-sm leading-snug">{course.name}</p>
+                  {isExerciseLocked && progressHydrated && (
+                    <p className="mt-1 text-xs text-slate-500">
+                      เรียนให้ครบทุกบทก่อน ({chapters?.completed || 0}/{chapters?.total || 0} บท)
+                    </p>
+                  )}
                 </div>
 
                 {/* Right: XP + chevron */}

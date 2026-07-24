@@ -9,6 +9,11 @@ export interface ExerciseProgressData {
   created_at?: string; updated_at?: string;
 }
 
+export interface CompletedExerciseProgress {
+  exercise_id: string;
+  score: number | null;
+}
+
 type QueueItem = { userId: string; exerciseId: string; payload: ExerciseProgressData };
 const queueKey = (userId: string) => `exercise-progress-offline-${userId}`;
 const safeParse = (value: string | null): QueueItem[] => { try { const parsed = JSON.parse(value || '[]'); return Array.isArray(parsed) ? parsed : []; } catch { return []; } };
@@ -21,6 +26,28 @@ export class ExerciseProgressService {
     const { data, error } = await supabase.from('exercise_progress').select('*').eq('user_id', userId).eq('exercise_id', exerciseId).maybeSingle();
     if (error) throw error;
     return data as ExerciseProgressData | null;
+  }
+
+  /**
+   * Returns durable completion records for the requested exercises.  This is
+   * intentionally backed by Supabase rather than UI/session state so a reload
+   * and a new browser session show the same result.
+   */
+  async getCompletedExercises(userId: string, exerciseIds: string[]): Promise<CompletedExerciseProgress[]> {
+    if (!userId || exerciseIds.length === 0) return [];
+
+    const { data, error } = await supabase
+      .from('exercise_progress')
+      .select('exercise_id, score')
+      .eq('user_id', userId)
+      .eq('status', 'completed')
+      .in('exercise_id', exerciseIds);
+
+    if (error) throw error;
+    return (data || []).map((row: { exercise_id: string; score: number | string | null }) => ({
+      exercise_id: row.exercise_id,
+      score: row.score === null ? null : Number(row.score),
+    }));
   }
 
   async saveProgress(data: ExerciseProgressData, queueOnFailure = true): Promise<ExerciseProgressData | null> {

@@ -2,6 +2,8 @@ import { supabase } from '../../app/lib/supabase';
 import { analyticsApi } from '../../app/lib/api/analytics';
 import type { UserProgress } from '../../app/types';
 
+export type CourseChapterCompletion = Record<string, { total: number; completed: number; complete: boolean }>;
+
 /**
  * SINGLE shared service for all lesson types.
  * Every lesson type must call this same service:
@@ -55,6 +57,40 @@ class StudyProgressService {
     }
 
     return new Set((data || []).map((row: { lesson_id: string }) => row.lesson_id));
+  }
+
+  /**
+   * Resolves the chapter gate for multiple courses in two bounded queries.
+   * A course with no published chapters remains locked: completion cannot be
+   * proven until its curriculum has been configured.
+   */
+  async getCourseChapterCompletion(userId: string, courseIds: string[]): Promise<CourseChapterCompletion> {
+    const result: CourseChapterCompletion = Object.fromEntries(
+      courseIds.map(courseId => [courseId, { total: 0, completed: 0, complete: false }])
+    );
+    if (!userId || courseIds.length === 0) return result;
+
+    const { data: lessons, error: lessonsError } = await supabase
+      .from('lessons')
+      .select('id, course_id')
+      .in('course_id', courseIds);
+    if (lessonsError) throw lessonsError;
+
+    const lessonRows = (lessons || []) as Array<{ id: string; course_id: string }>;
+    const lessonIds = lessonRows.map(lesson => lesson.id);
+    if (lessonIds.length === 0) return result;
+
+    const completedLessonIds = await this.getCompletedLessonIds(userId, lessonIds);
+    for (const lesson of lessonRows) {
+      const entry = result[lesson.course_id];
+      if (!entry) continue;
+      entry.total += 1;
+      if (completedLessonIds.has(lesson.id)) entry.completed += 1;
+    }
+    for (const entry of Object.values(result)) {
+      entry.complete = entry.total > 0 && entry.completed === entry.total;
+    }
+    return result;
   }
 
   /**
