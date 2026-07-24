@@ -20,6 +20,7 @@ const navItems = [
   { to: '/dashboard', labelKey: 'nav.dashboard', icon: LayoutDashboard, end: false },
   { to: '/courses', labelKey: 'nav.courses', icon: BookOpen, end: false },
   { to: '/lessons', labelKey: 'nav.lessons', icon: FlaskConical, end: false },
+  { to: '/practice', labelKey: 'Practice Catalog', icon: FlaskConical, end: false },
   { to: '/paths', labelKey: 'nav.paths', icon: Route, end: false },
   { to: '/resources', labelKey: 'nav.resources', icon: MapPin, end: false },
   { to: '/equipment', labelKey: 'nav.equipment', icon: PackageSearch, end: false },

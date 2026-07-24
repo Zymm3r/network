@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router';
 import { useI18n } from '../i18n';
 import { useAuth } from '../hooks/useAuth';
 import { Card, CardContent } from '../components/ui/card';
@@ -14,6 +15,7 @@ import ExerciseCard from '../components/ExerciseCard';
 import { COURSE_QUIZ_MAP, COURSE_EXERCISE_MAP } from '../data/courseQuizData';
 import { exerciseProgressService } from '../../application/services/ExerciseProgressService';
 import { studyProgressService, type CourseChapterCompletion } from '../../application/services/StudyProgressService';
+import { supabase } from '../lib/supabase';
 
 /* ─────────────────────────────────────────
    Course catalogue — ordered easy → hard
@@ -81,6 +83,7 @@ type ScoreMap = Record<string, { score: number; total: number; passed: boolean }
 export function Lessons() {
   const { t } = useI18n();
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState<'quiz' | 'exercise'>('quiz');
   const [activeCourseId, setActiveCourseId] = useState<string | null>(null);
@@ -88,6 +91,7 @@ export function Lessons() {
   const [exerciseScores, setExerciseScores] = useState<ScoreMap>({});
   const [chapterCompletion, setChapterCompletion] = useState<CourseChapterCompletion>({});
   const [progressHydrated, setProgressHydrated] = useState(false);
+  const [assessmentLessonIds, setAssessmentLessonIds] = useState<Record<string, string>>({});
 
   const quizCourses  = COURSES.filter(c => !!COURSE_QUIZ_MAP[c.id]);
   const exCourses    = COURSES.filter(c => !!COURSE_EXERCISE_MAP[c.id]);
@@ -110,11 +114,11 @@ export function Lessons() {
     setProgressHydrated(false);
     void Promise.all([
       studyProgressService.getCourseChapterCompletion(user.id, courseIds),
-      exerciseProgressService.getCompletedExercises(user.id, courseIds),
+      exerciseProgressService.getCompletedExercisesForCourses(user.id, courseIds),
     ]).then(([chapters, completedExercises]) => {
       if (cancelled) return;
       setChapterCompletion(chapters);
-      setExerciseScores(Object.fromEntries(completedExercises.map(exercise => [exercise.exercise_id, {
+      setExerciseScores(Object.fromEntries(completedExercises.filter(exercise => exercise.course_id).map(exercise => [exercise.course_id as string, {
         score: exercise.score ?? 1,
         total: 1,
         passed: true,
@@ -131,11 +135,32 @@ export function Lessons() {
     return () => { cancelled = true; };
   }, [user?.id]);
 
+  // The legacy catalog is now only a launcher. Activities themselves render
+  // in LessonDetail and receive this real, FK-valid lesson ID.
+  useEffect(() => {
+    let cancelled = false;
+    void supabase
+      .from('lessons')
+      .select('id, course_id, order_index')
+      .in('course_id', COURSES.map(course => course.id))
+      .order('order_index', { ascending: false })
+      .then(({ data, error }) => {
+        if (cancelled || error) return;
+        const mapping: Record<string, string> = {};
+        for (const lesson of data || []) {
+          if (!mapping[lesson.course_id]) mapping[lesson.course_id] = lesson.id;
+        }
+        setAssessmentLessonIds(mapping);
+      });
+    return () => { cancelled = true; };
+  }, []);
+
   const totalPassed  = Object.values(scoreMap).filter(s => s.passed).length;
   const totalAttempted = Object.values(scoreMap).length;
 
   function handleToggle(courseId: string) {
-    setActiveCourseId(prev => prev === courseId ? null : courseId);
+    const lessonId = assessmentLessonIds[courseId];
+    if (lessonId) navigate(`/lessons/${lessonId}`);
   }
 
   function handleQuizComplete(courseId: string, score: number, total: number) {
@@ -236,10 +261,11 @@ export function Lessons() {
           const isAttempted  = !!sessionScore;
           const isActive     = activeCourseId === course.id;
           const chapters = chapterCompletion[course.id];
+          const hasAssessmentLesson = !!assessmentLessonIds[course.id];
           const isExerciseLocked = activeTab === 'exercise' && (
-            !progressHydrated || !user?.id || !chapters?.complete
+            !progressHydrated || !user?.id || !chapters?.complete || !hasAssessmentLesson
           );
-          const isLocked = isExerciseLocked || (
+          const isLocked = !hasAssessmentLesson || isExerciseLocked || (
             activeTab === 'quiz' && idx > 0 && !scoreMap[displayList[idx - 1].id]?.passed && !isAttempted
           );
           const tc           = TRACK_COLORS[course.trackColor];
@@ -397,6 +423,7 @@ export function Lessons() {
                     <QuizCard
                       courseId={course.id}
                       courseName={course.name}
+                      lessonId={assessmentLessonIds[course.id]}
                       onComplete={(score, total) => handleQuizComplete(course.id, score, total)}
                       onNextLesson={
                         (() => {
@@ -408,6 +435,7 @@ export function Lessons() {
                   ) : (
                     <ExerciseCard
                       courseId={course.id}
+                      lessonId={assessmentLessonIds[course.id]}
                       onComplete={(passed) => handleExerciseComplete(course.id, passed)}
                     />
                   )}

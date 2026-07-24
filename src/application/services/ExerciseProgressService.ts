@@ -11,6 +11,7 @@ export interface ExerciseProgressData {
 
 export interface CompletedExerciseProgress {
   exercise_id: string;
+  course_id?: string | null;
   score: number | null;
 }
 
@@ -46,6 +47,24 @@ export class ExerciseProgressService {
     if (error) throw error;
     return (data || []).map((row: { exercise_id: string; score: number | string | null }) => ({
       exercise_id: row.exercise_id,
+      score: row.score === null ? null : Number(row.score),
+    }));
+  }
+
+  async getCompletedExercisesForCourses(userId: string, courseIds: string[]): Promise<CompletedExerciseProgress[]> {
+    if (!userId || courseIds.length === 0) return [];
+
+    const { data, error } = await supabase
+      .from('exercise_progress')
+      .select('exercise_id, course_id, score')
+      .eq('user_id', userId)
+      .eq('status', 'completed')
+      .in('course_id', courseIds);
+
+    if (error) throw error;
+    return (data || []).map((row: { exercise_id: string; course_id: string | null; score: number | string | null }) => ({
+      exercise_id: row.exercise_id,
+      course_id: row.course_id,
       score: row.score === null ? null : Number(row.score),
     }));
   }

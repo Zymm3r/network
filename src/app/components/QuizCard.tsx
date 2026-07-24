@@ -12,6 +12,7 @@ import { useDailyStreak } from '../hooks/useDailyStreak';
 import { useActivity } from '../contexts/ActivityContext';
 import { playFeedback } from '../utils/feedback';
 import { getQuizForCourse, QuizQuestion } from '../data/courseQuizData';
+import { studyProgressService } from '../../application/services/StudyProgressService';
 
 /* ─────────────────────────────────────────
    Types & Data
@@ -41,11 +42,12 @@ function getRandomItem<T>(arr: T[]): T {
 interface QuizCardProps {
   courseName?: string;
   courseId?: string;
+  lessonId?: string;
   onComplete?: (score: number, totalQuestions: number) => void;
   onNextLesson?: () => void;
 }
 
-export default function QuizCard({ courseName, courseId, onComplete, onNextLesson }: QuizCardProps = {}) {
+export default function QuizCard({ courseName, courseId, lessonId, onComplete, onNextLesson }: QuizCardProps = {}) {
   const { user } = useAuth();
   const { currentStreak, recordActivity } = useDailyStreak(user?.id);
   const { totalSeconds } = useActivity();
@@ -148,7 +150,7 @@ export default function QuizCard({ courseName, courseId, onComplete, onNextLesso
     }
   }, [selectedIdx, question.correctIndex, streak]);
 
-  const handleNext = useCallback(() => {
+  const handleNext = useCallback(async () => {
     if (currentQ < totalQuestions - 1) {
       setCurrentQ(q => q + 1);
       setQuestionKey(k => k + 1); // trigger transition animation
@@ -167,11 +169,20 @@ export default function QuizCard({ courseName, courseId, onComplete, onNextLesso
         setTimeout(() => setShowAchievement(null), 3000);
       }
       
+      const finalScore = score + (selectedIdx === question.correctIndex ? 1 : 0);
+      const passed = finalScore / totalQuestions >= 0.8;
+      if (passed && user?.id && lessonId) {
+        const result = await studyProgressService.markLessonComplete(user.id, lessonId, courseId || null, finalScore);
+        if (result.error) {
+          console.error('[QuizCard] Failed to persist lesson completion:', result.error);
+          return;
+        }
+      }
       if (onComplete) {
-        onComplete(score + (selectedIdx === question.correctIndex ? 1 : 0), totalQuestions);
+        onComplete(finalScore, totalQuestions);
       }
     }
-  }, [currentQ, totalQuestions, score, selectedIdx, question.correctIndex, recordActivity, onComplete]);
+  }, [currentQ, totalQuestions, score, selectedIdx, question.correctIndex, recordActivity, onComplete, user?.id, lessonId, courseId]);
 
   const handleRestart = useCallback(() => {
     setCurrentQ(0);

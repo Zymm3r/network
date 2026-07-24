@@ -6,6 +6,7 @@ import { Courses } from './pages/Courses';
 import { CourseDetail } from './pages/CourseDetail';
 import { CourseLearn } from './pages/CourseLearn';
 import { Lessons } from './pages/Lessons';
+import { ChapterCatalog } from './pages/ChapterCatalog';
 import { LessonDetail } from './pages/LessonDetail';
 import { Paths } from './pages/Paths';
 import { PathDetail } from './pages/PathDetail';
@@ -58,7 +59,8 @@ export const router = createBrowserRouter([
       { path: 'courses', Component: Courses },
       { path: 'courses/:courseId', Component: CourseDetail },
       { path: 'courses/:courseId/learn', Component: CourseLearn },
-      { path: 'lessons', Component: Lessons },
+      { path: 'lessons', Component: ChapterCatalog },
+      { path: 'practice', Component: Lessons },
       { path: 'lessons/:lessonId', Component: LessonDetail },
       { path: 'paths', Component: Paths },
       { path: 'paths/:pathId', Component: PathDetail },

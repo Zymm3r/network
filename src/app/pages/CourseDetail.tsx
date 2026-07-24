@@ -11,8 +11,6 @@ import { Button } from '../components/ui/button';
 import { Skeleton } from '../components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { ArrowLeft, Clock, BookOpen, Users, ChevronRight, Play, FileText, HelpCircle, CheckCircle2, PenTool, FlaskConical, Video } from 'lucide-react';
-import QuizCard from '../components/QuizCard';
-import ExerciseCard from '../components/ExerciseCard';
 import { useState } from 'react';
 
 const lessonTypeIcons: Record<string, typeof Play> = {
@@ -235,14 +233,18 @@ export function CourseDetail() {
           </TabsList>
         </Tabs>
 
-        {activeTab === 'quiz' ? (
-          <div className="max-w-4xl mx-auto">
-            <QuizCard courseName={name} courseId={courseId} />
-          </div>
-        ) : activeTab === 'exercise' ? (
-          <div className="max-w-5xl mx-auto">
-            <ExerciseCard courseName={name} courseId={courseId} />
-          </div>
+        {activeTab === 'quiz' || activeTab === 'exercise' ? (
+          <Card className="border-slate-200">
+            <CardContent className="py-10 text-center space-y-4">
+              <BookOpen className="w-10 h-10 mx-auto text-indigo-600" />
+              <p className="text-slate-600">กิจกรรมจะทำภายใน chapter เพื่อให้บันทึกความคืบหน้ากับ lesson ที่ถูกต้อง</p>
+              {lessons.length > 0 && (
+                <Button onClick={() => navigate(`/lessons/${lessons[lessons.length - 1].id}`)}>
+                  เปิดกิจกรรมในบทเรียน
+                </Button>
+              )}
+            </CardContent>
+          </Card>
         ) : lessonsLoading ? (
           <div className="space-y-3">
             {Array.from({ length: 4 }).map((_, i) => (

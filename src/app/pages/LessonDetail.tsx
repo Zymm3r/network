@@ -996,6 +996,7 @@ export function LessonDetail() {
           <TabsContent value="quiz" className="mt-0">
             <QuizCard 
               courseId={lesson.course_id || undefined} 
+              lessonId={lesson.id}
               onComplete={(score, total) => {
                 if (score / total >= 0.8) setIsQuizPassed(true);
               }} 
@@ -1006,6 +1007,7 @@ export function LessonDetail() {
           <TabsContent value="exercise" className="mt-0">
             <ExerciseCard 
               courseId={lesson.course_id || undefined} 
+              lessonId={lesson.id}
               onComplete={(passed) => setIsExercisePassed(passed)} 
               onNextLesson={handleNextLesson}
             />

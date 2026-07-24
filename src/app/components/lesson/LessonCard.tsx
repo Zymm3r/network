@@ -11,6 +11,7 @@ import { supabase } from '../../lib/supabase';
 
 interface LessonCardProps {
   lesson: Lesson;
+  isCompleted?: boolean;
 }
 
 const lessonTypeIcons: Record<string, typeof Video> = {
@@ -29,15 +30,13 @@ const lessonTypeColors: Record<string, string> = {
 
 
 
-export function LessonCard({ lesson }: LessonCardProps) {
+export function LessonCard({ lesson, isCompleted = false }: LessonCardProps) {
   const { language, t } = useI18n();
   const [imgError, setImgError] = useState(false);
 
   const name = lesson[`title_${language}` as 'title_th' | 'title_en'];
   const description = lesson[`content_${language}` as 'content_th' | 'content_en'];
   const Icon = lessonTypeIcons[lesson.lesson_type] || Video;
-
-  const isCompleted = false; // This would come from user progress
 
   const thumbnailUrl = lesson.thumbnail_url?.startsWith('lesson-thumbnails/')
     ? supabase.storage.from('lesson-thumbnails').getPublicUrl(lesson.thumbnail_url.replace('lesson-thumbnails/', '')).data.publicUrl

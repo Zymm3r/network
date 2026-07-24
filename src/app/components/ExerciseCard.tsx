@@ -101,19 +101,22 @@ class ExerciseErrorBoundary extends Component<{children: ReactNode}, {hasError: 
 interface ExerciseCardProps {
   courseName?: string;
   courseId?: string;
+  lessonId?: string;
   onComplete?: (passed: boolean) => void;
   onNextLesson?: () => void;
 }
 
-export default function ExerciseCard({ courseName, courseId, onComplete, onNextLesson }: ExerciseCardProps = {}) {
+export default function ExerciseCard({ courseName, courseId, lessonId, onComplete, onNextLesson }: ExerciseCardProps = {}) {
   const { user } = useAuth();
   const { currentStreak, recordActivity } = useDailyStreak(user?.id);
   const { totalSeconds } = useActivity();
 
   const exercise = getExerciseForCourse(courseId);
+  const activityLessonId = lessonId || exercise.lessonId || '';
+  const activityExerciseId = exercise.id || (activityLessonId ? `${activityLessonId}:exercise` : courseId || 'unknown');
   const { progress: exerciseProgress, markCompleted, updateTimer, updateAnswer, saveProgress } = useExerciseProgress(
-    exercise.id || courseId || 'unknown',
-    exercise.lessonId || '',
+    activityExerciseId,
+    activityLessonId,
     courseId || ''
   );
 
@@ -295,8 +298,8 @@ export default function ExerciseCard({ courseName, courseId, onComplete, onNextL
         if (user?.id) {
           recordAttempt({
             user_id: user.id,
-            exercise_id: exercise.id || courseId || 'unknown',
-            lesson_id: exercise.lessonId || '',
+            exercise_id: activityExerciseId,
+            lesson_id: activityLessonId,
             course_id: courseId || '',
             passed: false,
             score: null,
@@ -321,7 +324,7 @@ export default function ExerciseCard({ courseName, courseId, onComplete, onNextL
       // Simulate progressive UI feedback using ONLY visible results
       const visibleResults = gradingResult.visibleResults || [];
       let idx = 0;
-      const interval = setInterval(() => {
+      const interval = setInterval(async () => {
         if (idx < visibleResults.length) {
           if (visibleResults[idx]) {
             setTestResults(prev => [...prev, visibleResults[idx]]);
@@ -340,8 +343,8 @@ export default function ExerciseCard({ courseName, courseId, onComplete, onNextL
             const stdout = visibleResults.map(r => r.actual || '').join('\n');
             recordAttempt({
               user_id: user.id,
-              exercise_id: exercise.id || courseId || 'unknown',
-              lesson_id: exercise.lessonId || '',
+              exercise_id: activityExerciseId,
+              lesson_id: activityLessonId,
               course_id: courseId || '',
               passed: gradingResult.passed,
               score: gradingResult.score,
@@ -366,15 +369,17 @@ export default function ExerciseCard({ courseName, courseId, onComplete, onNextL
               recordActivity(); // Record daily streak
               
               // Mark the lesson as complete via shared service
-              if (exercise.lessonId && user?.id) {
-                studyProgressService.markLessonComplete(
+              if (activityLessonId && user?.id) {
+                const completion = await studyProgressService.markLessonComplete(
                   user.id,
-                  exercise.lessonId,
+                  activityLessonId,
                   courseId || null,
                   gradingResult.score
-                ).catch(err => {
-                  console.error('[ExerciseCard] Failed to mark lesson progress:', err);
-                });
+                );
+                if (completion.error) {
+                  console.error('[ExerciseCard] Failed to persist lesson completion:', completion.error);
+                  return;
+                }
               }
               
               if (onComplete) {
@@ -418,8 +423,8 @@ export default function ExerciseCard({ courseName, courseId, onComplete, onNextL
       if (user?.id) {
         recordAttempt({
           user_id: user.id,
-          exercise_id: exercise.id || courseId || 'unknown',
-          lesson_id: exercise.lessonId || '',
+          exercise_id: activityExerciseId,
+          lesson_id: activityLessonId,
           course_id: courseId || '',
           passed: false,
           score: null,
@@ -435,7 +440,7 @@ export default function ExerciseCard({ courseName, courseId, onComplete, onNextL
         }).catch(err => console.error('[Exercise Tracking] Failed to persist failed attempt:', err));
       }
     }
-  }, [code, exercise, xpEarned, attempts, runPythonTests, recordActivity, user?.id, courseId, recordAttempt, markCompleted, saveProgress]);
+  }, [code, exercise, xpEarned, attempts, runPythonTests, recordActivity, user?.id, courseId, recordAttempt, markCompleted, saveProgress, activityExerciseId, activityLessonId, onComplete]);
 
   const handleReset = useCallback(() => {
     setCode(exercise.starterCode);
