@@ -217,6 +217,7 @@ class StudyProgressService {
           user_id: userId,
           course_id: courseId,
           status: isComplete ? 'completed' : 'active',
+          progress_percentage: progressPercentage,
           completed_at: isComplete ? new Date().toISOString() : null,
         },
         {

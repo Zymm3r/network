@@ -111,7 +111,7 @@ export default function ExerciseCard({ courseName, courseId, onComplete, onNextL
   const { totalSeconds } = useActivity();
 
   const exercise = getExerciseForCourse(courseId);
-  const { progress: exerciseProgress, markStarted, markCompleted, updateTimer } = useExerciseProgress(
+  const { progress: exerciseProgress, markCompleted, updateTimer, updateAnswer, saveProgress } = useExerciseProgress(
     exercise.id || courseId || 'unknown',
     exercise.lessonId || '',
     courseId || ''
@@ -121,8 +121,9 @@ export default function ExerciseCard({ courseName, courseId, onComplete, onNextL
   
   // Ensure code updates if course changes
   useEffect(() => {
-    setCode(exercise.starterCode);
-  }, [courseId, exercise.starterCode]);
+    setCode(typeof exerciseProgress?.answers?.code === 'string' ? exerciseProgress.answers.code : exercise.starterCode);
+  }, [courseId, exercise.starterCode, exerciseProgress?.answers?.code]);
+  useEffect(() => { updateTimer(totalSeconds); }, [totalSeconds, updateTimer]);
   const [isRunning, setIsRunning] = useState(false);
   const [runComplete, setRunComplete] = useState(false);
   const [testResults, setTestResults] = useState<TestCase[]>([]);
@@ -259,6 +260,7 @@ export default function ExerciseCard({ courseName, courseId, onComplete, onNextL
     setTestResults([]);
     setAllPassed(false);
     setAttempts(a => a + 1);
+    void saveProgress({ attempts: attempts + 1 });
     setRunPhase('compiling');
     playFeedback('run');
 
@@ -349,6 +351,7 @@ export default function ExerciseCard({ courseName, courseId, onComplete, onNextL
           }
 
             if (gradingResult.passed && xpEarned === 0) {
+              void markCompleted({ score: gradingResult.score, attempts: attempts + 1, answers: { code } });
               setXpEarned(exercise.xpReward);
               setShowXpPopup(true);
               setShowConfetti(true);
@@ -425,7 +428,7 @@ export default function ExerciseCard({ courseName, courseId, onComplete, onNextL
         }).catch(err => console.error('[Exercise Tracking] Failed to persist failed attempt:', err));
       }
     }
-  }, [code, exercise, xpEarned, attempts, runPythonTests, recordActivity, user?.id, courseId, recordAttempt]);
+  }, [code, exercise, xpEarned, attempts, runPythonTests, recordActivity, user?.id, courseId, recordAttempt, markCompleted, saveProgress]);
 
   const handleReset = useCallback(() => {
     setCode(exercise.starterCode);
@@ -699,7 +702,7 @@ export default function ExerciseCard({ courseName, courseId, onComplete, onNextL
                 <textarea
                   ref={textareaRef}
                   value={code}
-                  onChange={(e) => setCode(e.target.value)}
+                  onChange={(e) => { const next = e.target.value; setCode(next); updateAnswer('code', next); }}
                   className="absolute inset-0 w-full h-full resize-none cursor-text bg-transparent text-transparent caret-white outline-none"
                   style={{
                     paddingTop: '1rem',
