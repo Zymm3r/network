@@ -43,12 +43,13 @@ function getRandomItem<T>(arr: T[]): T {
 interface QuizCardProps {
   courseName?: string;
   courseId?: string;
+  lessonId: string;
   lesson?: Lesson;
   onComplete?: (score: number, totalQuestions: number) => void;
   onNextLesson?: () => void;
 }
 
-export default function QuizCard({ courseName, courseId, lesson, onComplete, onNextLesson }: QuizCardProps = {}) {
+export default function QuizCard({ courseName, courseId, lessonId, lesson, onComplete, onNextLesson }: QuizCardProps) {
   const { user } = useAuth();
   const { currentStreak, recordActivity } = useDailyStreak(user?.id);
   const { totalSeconds } = useActivity();

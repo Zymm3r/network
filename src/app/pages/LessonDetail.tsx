@@ -19,6 +19,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../lib/components/ui/t
 import QuizCard from '../lib/components/QuizCard';
 import ExerciseCard from '../lib/components/ExerciseCard';
 import { KalturaPlayer } from '../lib/components/KalturaPlayer';
+import { LessonCompletionService } from '../services/LessonCompletionService';
 
 /* ─────────────────────────────────────────
    Static look-up tables
@@ -880,42 +881,24 @@ export function LessonDetail() {
     autoCompletedRef.current = false;
   }, [lessonId]);
 
-  // Auto-completion: Standard lessons (time-based / reading scroll)
   useEffect(() => {
-    if (!user?.id) return;
-    if (isPythonLesson) return;
-    if (!isTimeMet || isFullyCompleted || isSubmitting || autoCompletedRef.current) return;
-    if (isReadingLesson && readingProgress < 90) return;
-    
-    console.log('[AutoComplete] Triggering auto-completion for standard lesson', lessonId);
-    autoCompletedRef.current = true;
-    handleMarkComplete();
-  }, [user?.id, isTimeMet, isFullyCompleted, isSubmitting, isPythonLesson, isReadingLesson, readingProgress, lessonId, handleMarkComplete]);
-
-  // Auto-completion: Video lessons (KalturaPlayer onComplete)
-  useEffect(() => {
-    if (!user?.id) return;
-    if (!isVideoCompleted) return;
-    if (isPythonLesson) return;
+    if (!user?.id || !lesson || isPythonLesson) return;
     if (isFullyCompleted || isSubmitting || autoCompletedRef.current) return;
     
-    console.log('[AutoComplete] Video completed — auto-completing lesson', lessonId);
-    autoCompletedRef.current = true;
-    handleMarkComplete();
-  }, [user?.id, isVideoCompleted, isPythonLesson, isFullyCompleted, isSubmitting, lessonId, handleMarkComplete]);
+    const state = {
+      isTimeMet,
+      isVideoCompleted,
+      isQuizPassed,
+      isExercisePassed,
+      readingProgress
+    };
 
-  // Auto-completion: Reading lessons (scroll 100% + time met)
-  useEffect(() => {
-    if (!user?.id) return;
-    if (!isReadingLesson) return;
-    if (readingProgress < 100) return;
-    if (isFullyCompleted || isSubmitting || autoCompletedRef.current) return;
-    if (!isTimeMet) return;
-    
-    console.log('[AutoComplete] Reading scroll 100% — auto-completing lesson', lessonId);
-    autoCompletedRef.current = true;
-    handleMarkComplete();
-  }, [user?.id, readingProgress, isTimeMet, isReadingLesson, isFullyCompleted, isSubmitting, lessonId, handleMarkComplete]);
+    if (LessonCompletionService.evaluateCompletion(lesson, state)) {
+      console.log('[AutoComplete] All requirements met — auto-completing lesson', lessonId);
+      autoCompletedRef.current = true;
+      handleMarkComplete();
+    }
+  }, [user?.id, lesson, isTimeMet, isVideoCompleted, isQuizPassed, isExercisePassed, readingProgress, isFullyCompleted, isSubmitting, isPythonLesson, lessonId, handleMarkComplete]);
 
 
 

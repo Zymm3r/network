@@ -13,7 +13,7 @@
 | 1 | M1: Database Schema Migration | Add `quiz_data` JSONB column to `lessons` table | none | DONE |
 | 2 | M2: Quiz Data Generation | Read `content_en` of 73 lessons and generate 5 multiple-choice questions for each matching `QuizQuestion` schema | M1 | DONE |
 | 3 | M3: Database Insertion Migration | Create migrations with `UPDATE` statements to backfill generated JSON quiz data | M2 | DONE |
-| 4 | M4: UI Integration & Verification | Update `types/index.ts`, `QuizCard.tsx`, `LessonDetail.tsx`. Compile, run E2E/auditor verification. | M3 | IN_PROGRESS |
+| 4 | M4: UI Integration & Verification | Update `types/index.ts`, `QuizCard.tsx`, `LessonDetail.tsx`. Compile, run E2E/auditor verification. | M3 | DONE |
 
 ## Interface Contracts
 ### `QuizCard` ↔ `Lesson`
