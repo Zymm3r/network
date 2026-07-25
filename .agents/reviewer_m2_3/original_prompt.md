@@ -1,2 +1,0 @@
-## 2026-06-08T09:57:53+07:00
-Resume Milestone 2, Iteration 3. Review the changes in `src/import`. Ensure that `import-documents.ts`, `import-faqs.ts`, `import-training.ts`, `import-troubleshooting.ts` all contain genuine `supabase.from(...).upsert(data)` logic and `fs.existsSync` checks, and do NOT contain `console.log("pending implementation")`. Verify `products` is in `purge.ts`. Provide your review verdict. Note that crashing/exiting if `SUPABASE_SERVICE_ROLE_KEY` is missing is expected and NOT a failure.

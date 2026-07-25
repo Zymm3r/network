@@ -1,7 +1,7 @@
 import { createBrowserRouter, useParams, Link } from 'react-router';
 import { Unplug } from 'lucide-react';
 import { useI18n } from './i18n';
-import { AppLayout } from './components/layout/AppLayout';
+import { AppLayout } from './lib/components/layout/AppLayout';
 import { Courses } from './pages/Courses';
 import { CourseDetail } from './pages/CourseDetail';
 import { CourseLearn } from './pages/CourseLearn';

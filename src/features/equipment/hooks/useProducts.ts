@@ -15,6 +15,16 @@ const getCategory = (title: string): string => {
   return 'Accessories';
 };
 
+const cleanProductName = (name: string): string => {
+  if (!name) return '';
+  return name
+    .replace(/Product Brand\s*>\s*/ig, '')
+    .replace(/Product Category\s*>\s*/ig, '')
+    .replace(/Brand\s*>\s*/ig, '')
+    .replace(/Category\s*>\s*/ig, '')
+    .trim();
+};
+
 export function useProducts() {
   const [dbProducts, setDbProducts] = useState<any[]>([]);
   const [useLocalOnly, setUseLocalOnly] = useState(false);
@@ -28,7 +38,7 @@ export function useProducts() {
         setIsLoading(true);
         const { data, error: dbError } = await supabase
           .from('products')
-          .select('*');
+          .select('*, categories(id, name, slug), documents(*), faqs(*), troubleshooting_guides(*), training_courses(*, training_lessons(*))');
 
         if (dbError) throw dbError;
 
@@ -50,7 +60,8 @@ export function useProducts() {
 
   const parsedLocalProducts = useMemo(() => {
     return (productsData as RawProduct[]).map((p, index) => {
-      const name = p.title || 'Unknown Product';
+      const rawName = p.title || 'Unknown Product';
+      const name = cleanProductName(rawName);
       const slug = slugify(name, { lower: true, strict: true, locale: 'th' });
       return {
         id: p.id || `product-${index}`,
@@ -80,7 +91,8 @@ export function useProducts() {
       }
 
       const nameFallback = dbProd.name || localProd?.name || 'Unknown Product';
-      const finalName = dbProd[`name_${language}` as 'name_th' | 'name_en']?.trim() || nameFallback;
+      const rawFinalName = dbProd[`name_${language}` as 'name_th' | 'name_en']?.trim() || nameFallback;
+      const finalName = cleanProductName(rawFinalName);
 
       const descFallback = dbProd.description?.trim() ? dbProd.description : localProd?.description || 'No description available.';
       const finalDesc = dbProd[`description_${language}` as 'description_th' | 'description_en']?.trim() || descFallback;
@@ -93,7 +105,7 @@ export function useProducts() {
         ...dbProd,
         name: finalName,
         slug: dbProd.slug || localProd?.slug || slugify(finalName, { lower: true, strict: true, locale: 'th' }),
-        category: localProd?.category || getCategory(finalName),
+        category: dbProd.categories?.name || localProd?.category || getCategory(finalName),
         description: finalDesc,
         content: finalContent,
         image_url: dbProd.image_url || localProd?.image_url || '',

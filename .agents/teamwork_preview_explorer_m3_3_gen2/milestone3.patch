@@ -1,0 +1,68 @@
+diff --git a/src/app/components/QuizCard.tsx b/src/app/components/QuizCard.tsx
+index 4b9b940..2df1d96 100644
+--- a/src/app/components/QuizCard.tsx
++++ b/src/app/components/QuizCard.tsx
+@@ -1,4 +1,4 @@
+-import { useState, useEffect, useCallback, useRef } from 'react';
++import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+ import { Card, CardContent } from './ui/card';
+ import { Badge } from './ui/badge';
+ import { Button } from './ui/button';
+@@ -12,6 +12,8 @@
+ import { useDailyStreak } from '../hooks/useDailyStreak';
+ import { useActivity } from '../contexts/ActivityContext';
+ import { playFeedback } from '../utils/feedback';
++import { useI18n } from '../i18n';
++import type { Lesson } from '../types';
+ import { getQuizForCourse, QuizQuestion } from '../data/courseQuizData';
+ 
+ /* ─────────────────────────────────────────
+@@ -43,10 +45,12 @@
+   courseId?: string;
+   onComplete?: (score: number, totalQuestions: number) => void;
+   onNextLesson?: () => void;
++  lesson?: Lesson;
+ }
+ 
+-export default function QuizCard({ courseName, courseId, onComplete, onNextLesson }: QuizCardProps = {}) {
++export default function QuizCard({ courseName, courseId, onComplete, onNextLesson, lesson }: QuizCardProps = {}) {
+   const { user } = useAuth();
++  const { language } = useI18n();
+   const { currentStreak, recordActivity } = useDailyStreak(user?.id);
+   const { totalSeconds } = useActivity();
+ 
+@@ -69,7 +73,18 @@
+   const [showAchievement, setShowAchievement] = useState<string | null>(null);
+   const correctAudioRef = useRef<HTMLAudioElement | null>(null);
+ 
+-  const questions = getQuizForCourse(courseId);
++  const questions = useMemo(() => {
++    if (lesson?.quiz_data?.questions && lesson.quiz_data.questions.length > 0) {
++      return lesson.quiz_data.questions.map((q, index) => ({
++        id: index + 1,
++        question: language === 'th' ? q.question_th : q.question_en,
++        choices: q.options,
++        correctIndex: q.correct_index,
++        explanation: (language === 'th' ? q.explanation_th : q.explanation_en) || '',
++        hint: undefined,
++      }));
++    }
++    return getQuizForCourse(courseId);
++  }, [lesson, courseId, language]);
++
+   const question = questions[currentQ];
+   const totalQuestions = questions.length;
+   const progressPct = ((currentQ + (isSubmitted ? 1 : 0)) / totalQuestions) * 100;
+diff --git a/src/app/pages/LessonDetail.tsx b/src/app/pages/LessonDetail.tsx
+index db349c2..f2e0394 100644
+--- a/src/app/pages/LessonDetail.tsx
++++ b/src/app/pages/LessonDetail.tsx
+@@ -1029,7 +1029,8 @@
+           
+           <TabsContent value="quiz" className="mt-0">
+             <QuizCard 
+               courseId={lesson.course_id || undefined} 
++              lesson={lesson}
+               onComplete={(score, total) => {
+                 if (score / total >= 0.8) setIsQuizPassed(true);
+               }} 

@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { Navigate } from 'react-router';
 import { useI18n } from '../i18n';
 import { useAuth } from '../hooks/useAuth';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
-import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
-import { Label } from '../components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../lib/components/ui/card';
+import { Button } from '../lib/components/ui/button';
+import { Input } from '../lib/components/ui/input';
+import { Label } from '../lib/components/ui/label';
 import { Network, Mail, ArrowRight, CheckCircle2, Sparkles } from 'lucide-react';
 
 export function Auth() {

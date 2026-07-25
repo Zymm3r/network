@@ -1,4 +1,4 @@
-import { useMemo, useState, memo } from 'react';
+import { useMemo, useState, memo, useRef } from 'react';
 import { Product } from '../types/product';
 import { EquipmentCard } from './EquipmentCard';
 import { Search, Filter, PackageOpen } from 'lucide-react';
@@ -12,6 +12,38 @@ export const EquipmentGrid = memo(({ products }: EquipmentGridProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const { t } = useI18n();
+
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const isDragging = useRef(false);
+  const startX = useRef(0);
+  const scrollLeft = useRef(0);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    isDragging.current = true;
+    if (scrollRef.current) {
+      startX.current = e.pageX - scrollRef.current.offsetLeft;
+      scrollLeft.current = scrollRef.current.scrollLeft;
+      scrollRef.current.style.cursor = 'grabbing';
+    }
+  };
+
+  const handleMouseLeave = () => {
+    isDragging.current = false;
+    if (scrollRef.current) scrollRef.current.style.cursor = 'grab';
+  };
+
+  const handleMouseUp = () => {
+    isDragging.current = false;
+    if (scrollRef.current) scrollRef.current.style.cursor = 'grab';
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging.current || !scrollRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - scrollRef.current.offsetLeft;
+    const walk = (x - startX.current) * 2; // scroll speed multiplier
+    scrollRef.current.scrollLeft = scrollLeft.current - walk;
+  };
 
   const categories = useMemo(() => {
     const cats = new Set(products.map(p => p.category));
@@ -42,8 +74,8 @@ export const EquipmentGrid = memo(({ products }: EquipmentGridProps) => {
   return (
     <div className="space-y-6">
       {/* Filters & Search */}
-      <div className="flex flex-col lg:flex-row gap-4 justify-between bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
-        <div className="relative flex-1 max-w-md">
+      <div className="flex flex-col lg:flex-row gap-4 justify-between bg-white p-4 rounded-2xl shadow-sm border border-slate-100 min-w-0">
+        <div className="relative flex-1 lg:max-w-xs xl:max-w-md shrink-0">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
           <input
             type="text"
@@ -53,12 +85,19 @@ export const EquipmentGrid = memo(({ products }: EquipmentGridProps) => {
             className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all text-sm bg-slate-50/50 focus:bg-white"
           />
         </div>
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 lg:pb-0 flex-1 lg:justify-end">
+        <div 
+          ref={scrollRef}
+          onMouseDown={handleMouseDown}
+          onMouseLeave={handleMouseLeave}
+          onMouseUp={handleMouseUp}
+          onMouseMove={handleMouseMove}
+          className="flex items-center gap-2 overflow-x-auto flex-nowrap flex-1 min-w-0 cursor-grab active:cursor-grabbing [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]" 
+        >
           {categories.map(cat => (
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
-              className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
+              className={`shrink-0 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
                 selectedCategory === cat 
                   ? 'bg-indigo-500 text-white shadow-md shadow-indigo-200/50' 
                   : 'bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100'

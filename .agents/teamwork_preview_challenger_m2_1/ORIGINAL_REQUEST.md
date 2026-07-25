@@ -1,3 +1,0 @@
-## 2026-06-23T02:48:33Z
-You are a Challenger agent (challenger_m2_1). Your working directory is c:\Users\UTHtest\Downloads\app.hotel\.agents\teamwork_preview_challenger_m2_1.
-Your task is to write a script or verify via Vite build and manual/automated script execution that the updated hooks (`useProductDetail`, `useProducts`, `useGlobalSearch`) compile without TypeScript errors and function correctly. Check that the search query works and that fallback logic returns appropriate values even if Supabase is queried using different language states. Execute `npm run build` inside the project to verify that the bundle builds cleanly. Report your verification findings.

@@ -1,0 +1,44 @@
+diff --git a/src/app/types/index.ts b/src/app/types/index.ts
+index b0fa8ce..3d2ff96 100644
+--- a/src/app/types/index.ts
++++ b/src/app/types/index.ts
+@@ -31,6 +31,19 @@ export interface Course {
+   updated_at: string;
+ }
+ 
++export interface QuizQuestionData {
++  question_en: string;
++  question_th: string;
++  options: string[];
++  correct_index: number;
++  explanation_en?: string | null;
++  explanation_th?: string | null;
++}
++
++export interface QuizData {
++  questions: QuizQuestionData[];
++}
++
+ export interface Lesson {
+   id: string;
+   course_id: string;
+@@ -41,7 +54,7 @@ export interface Lesson {
+   video_url: string | null;
+   thumbnail_url: string | null;
+   difficulty: ExerciseDifficulty | null;
+-  quiz_data?: any;
++  quiz_data?: QuizData | null;
+   created_at: string;
+   updated_at: string;
+ }
+diff --git a/src/app/types/types.spec.ts b/src/app/types/types.spec.ts
+index fdf8ee9..8327915 100644
+--- a/src/app/types/types.spec.ts
++++ b/src/app/types/types.spec.ts
+@@ -1,6 +1,6 @@
+ import { describe, it, expect } from 'vitest';
+-import { Lesson } from '../index';
++import { Lesson } from './index';
+ 
+ describe('Lesson interface type checks', () => {
+   it('should allow quiz_data property on a Lesson object', () => {

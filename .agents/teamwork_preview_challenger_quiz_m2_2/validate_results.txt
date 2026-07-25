@@ -1,0 +1,235 @@
+Fetching all lessons from Supabase...
+Fetched 73 lessons in total.
+Found 73 lessons with non-null quiz_data.
+
+--- VALIDATION RESULTS ---
+Total lessons evaluated: 73
+Lessons with non-null quiz_data: 73
+Total questions validated: 365
+Errors found: 0
+Warnings found: 0
+
+No errors found!
+
+No warnings found!
+
+--- SAMPLE RECORDS (3 lessons) ---
+
+Lesson ID: lesson-adv002-01
+Title: EIGRP Architecture
+Quiz Data:
+{
+  "questions": [
+    {
+      "options": [
+        "Dijkstra SPF",
+        "Bellman-Ford",
+        "DUAL (Diffusing Update Algorithm)",
+        "Path Vector"
+      ],
+      "question_en": "What is the primary routing algorithm used by EIGRP?",
+      "question_th": "อัลกอริทึมหลักที่ใช้ในการหาเส้นทางของ EIGRP คืออะไร?",
+      "correct_index": 2,
+      "explanation_en": "EIGRP uses the DUAL (Diffusing Update Algorithm) to calculate shortest path and maintain loop-free topology.",
+      "explanation_th": "EIGRP ใช้อัลกอริทึม DUAL (Diffusing Update Algorithm) ในการคำนวณหาเส้นทางที่สั้นที่สุดและรับประกันโครงสร้างที่ปลอดลูป"
+    },
+    {
+      "options": [
+        "Neighbor Table",
+        "Routing Table",
+        "Topology Table",
+        "ARP Table"
+      ],
+      "question_en": "Which EIGRP table holds the list of all backup routes (Feasible Successors)?",
+      "question_th": "ตาราง EIGRP ใดที่เก็บรายการของเส้นทางสำรองทั้งหมด (Feasible Successors)?",
+      "correct_index": 2,
+      "explanation_en": "The EIGRP Topology Table contains all Successors and Feasible Successors (backup routes) discovered.",
+      "explanation_th": "ตาราง Topology ของ EIGRP จะบันทึกข้อมูล Successor และ Feasible Successor (เส้นทางสำรอง) ทั้งหมดที่ค้นพบ"
+    },
+    {
+      "options": [
+        "Its Feasible Distance must be less than the Successor's Reported Distance.",
+        "Its Reported Distance (RD) must be less than the Feasible Distance (FD) of the current Successor.",
+        "Its metric must be equal to the primary route metric.",
+        "Its hop count must be less than 15."
+      ],
+      "question_en": "What condition must a backup route meet to be classified as a Feasible Successor?",
+      "question_th": "เงื่อนไขใดที่เส้นทางสำรองต้องผ่านเกณฑ์เพื่อจัดเป็น Feasible Successor?",
+      "correct_index": 1,
+      "explanation_en": "The Feasibility Condition states that a neighbor's Reported Distance (RD) must be strictly less than the current Successor's Feasible Distance (FD).",
+      "explanation_th": "เงื่อนไขการทำงานเสมือนจริง (Feasibility Condition) ระบุว่า Reported Distance (RD) ของเพื่อนบ้านต้องน้อยกว่า Feasible Distance (FD) ของ Successor ปัจจุบัน"
+    },
+    {
+      "options": [
+        "Hello",
+        "Update",
+        "Query",
+        "Reply"
+      ],
+      "question_en": "Which EIGRP packet type is sent to neighbors to request alternative routing information when a route fails and has no backup?",
+      "question_th": "แพ็กเก็ต EIGRP ประเภทใดที่ส่งไปยังเพื่อนบ้านเพื่อขอข้อมูลเส้นทางอื่น เมื่อเส้นทางเดิมล้มเหลวและไม่มีเส้นทางสำรอง?",
+      "correct_index": 2,
+      "explanation_en": "A Query packet is sent by EIGRP when a route fails and no Feasible Successor exists, asking neighbors for paths.",
+      "explanation_th": "แพ็กเก็ต Query จะถูกส่งโดย EIGRP เมื่อเส้นทางเสียหายและไม่มี Feasible Successor โดยถามเพื่อนบ้านว่ามีเส้นทางอื่นหรือไม่"
+    },
+    {
+      "options": [
+        "Classic Mode",
+        "Named EIGRP Mode",
+        "Autonomous System Mode",
+        "Global Config Mode"
+      ],
+      "question_en": "What configuration mode in EIGRP unifies all IPv4 and IPv6 Address Families in a single configuration block?",
+      "question_th": "โหมดการตั้งค่าใดใน EIGRP ที่รวบรวม Address Family ของทั้ง IPv4 และ IPv6 ไว้ในบล็อกเดียวกัน?",
+      "correct_index": 1,
+      "explanation_en": "Named EIGRP Mode unifies address-families configuration for IPv4 and IPv6 under a single virtual instance name.",
+      "explanation_th": "Named EIGRP Mode จะรวมการกำหนดค่า address-family ของ IPv4 และ IPv6 ไว้ภายใต้ชื่อ virtual instance เดียวกัน"
+    }
+  ]
+}
+
+Lesson ID: lesson-ccna004-02
+Title: PPP 
+Quiz Data:
+{
+  "questions": [
+    {
+      "options": [
+        "HDLC",
+        "PPP (Point-to-Point Protocol)",
+        "Frame Relay",
+        "Ethernet"
+      ],
+      "question_en": "Which Layer 2 protocol is commonly used on point-to-point serial links and supports both PAP and CHAP authentication?",
+      "question_th": "โปรโตคอล Layer 2 ใดนิยมใช้งานอย่างแพร่หลายบนลิงก์เชื่อมต่อแบบ Serial และรองรับการตรวจสอบสิทธิ์แบบ PAP/CHAP?",
+      "correct_index": 1,
+      "explanation_en": "PPP is a robust WAN protocol that provides link quality monitoring, multilink bonding, and authentication via PAP or CHAP.",
+      "explanation_th": "Point-to-Point Protocol (PPP) เป็นมาตรฐานการสื่อสารแบบสองจุดที่มีฟังก์ชันตรวจสอบคุณภาพสาย และระบบระบุตัวตน PAP/CHAP"
+    },
+    {
+      "options": [
+        "PAP sends passwords in cleartext; CHAP uses a secure three-way handshake with MD5 hashing to hide passwords.",
+        "PAP is secure; CHAP is insecure.",
+        "PAP is developed by Cisco; CHAP is open standard.",
+        "PAP is used on fiber links; CHAP is used on copper cables."
+      ],
+      "question_en": "What is the primary difference between PAP and CHAP authentication in PPP?",
+      "question_th": "ข้อแตกต่างที่สำคัญยิ่งระหว่างระบบตรวจสอบสิทธิ์ PAP และ CHAP ในโปรโตคอล PPP คืออะไร?",
+      "correct_index": 0,
+      "explanation_en": "PAP transmits credentials in plaintext, making it vulnerable. CHAP uses a challenge-response handshake with MD5 hashing, never transmitting the password directly.",
+      "explanation_th": "PAP จะส่งรหัสผ่านผ่านสายเป็นแบบข้อความดิบอ่านออกได้ทันที ส่วน CHAP จะเข้ารหัสแฮชด้วย MD5 คุยแบบสามด่านย่อย"
+    },
+    {
+      "options": [
+        "LCP (Link Control Protocol)",
+        "NCP (Network Control Protocol)",
+        "PAP",
+        "HDLC encapsulation"
+      ],
+      "question_en": "Which component of PPP is responsible for negotiating and configuring the network layer protocols (e.g., IPv4 or IPv6)?",
+      "question_th": "ส่วนประกอบย่อยใดของ PPP ที่ทำหน้าที่เจรจาต่อรองเพื่อจัดระเบียบตกลงโหมดกับระดับเลเยอร์เครือข่าย (เช่น IPv4/IPv6)?",
+      "correct_index": 1,
+      "explanation_en": "Network Control Protocol (NCP) is used to establish and configure different network layer protocols over a PPP link.",
+      "explanation_th": "Network Control Protocol (NCP) ทำหน้าที่ตกลงและเลือกชนิดโปรโตคอลในระดับเน็ตเวิร์กเลเยอร์ขี่บนสายสัญญาณ PPP"
+    },
+    {
+      "options": [
+        "NCP",
+        "LCP (Link Control Protocol)",
+        "CHAP",
+        "SDLC"
+      ],
+      "question_en": "Which component of PPP is responsible for establishing, configuring, and testing the Layer 2 physical connection?",
+      "question_th": "ส่วนประกอบย่อยใดของ PPP ที่คอยดูแลเรื่องการสร้าง คอนฟิก และทดสอบสถานะการเชื่อมต่อทางกายภาพในระดับ Layer 2?",
+      "correct_index": 1,
+      "explanation_en": "Link Control Protocol (LCP) handles link establishment, configuration options negotiation, and link termination.",
+      "explanation_th": "Link Control Protocol (LCP) ดูแลการตกลงเจรจาเงื่อนไขเบื้องต้นของเฟรมและตรวจสอบคุณภาพสายสัญญาณ Layer 2"
+    },
+    {
+      "options": [
+        "Error detection only.",
+        "Authentication (PAP/CHAP) and Multilink bonding.",
+        "IP addressing support.",
+        "Speed limits definition."
+      ],
+      "question_en": "What features does PPP offer that standard HDLC does not?",
+      "question_th": "ฟีเจอร์เด่นใดที่โปรโตคอล PPP มีให้ใช้งานแต่ใน HDLC มาตรฐานทั่วไปไม่รองรับ?",
+      "correct_index": 1,
+      "explanation_en": "PPP supports authentication (PAP/CHAP) and multilink grouping for load balancing, which standard HDLC does not support.",
+      "explanation_th": "PPP รองรับการทำยืนยันตัวตนและการรวมลิงก์ (Multilink) เพื่อกระจายทราฟฟิก ซึ่งคุณสมบัติเหล่านี้ไม่มีอยู่ใน HDLC ดั้งเดิม"
+    }
+  ]
+}
+
+Lesson ID: lesson-adv-002
+Title: OSPF Route Summarization
+Quiz Data:
+{
+  "questions": [
+    {
+      "options": [
+        "summary-address",
+        "area range",
+        "ip summary-address ospf",
+        "ip route summary"
+      ],
+      "question_en": "What OSPF command is used to configure inter-area route summarization on an ABR?",
+      "question_th": "คำสั่ง OSPF ใดที่ใช้กำหนดค่าการย่อเส้นทางระหว่างพื้นที่ (Inter-area route summarization) บน ABR?",
+      "correct_index": 1,
+      "explanation_en": "The 'area <area-id> range <network> <mask>' command is used on ABRs to summarize routes between OSPF areas.",
+      "explanation_th": "คำสั่ง 'area <area-id> range <network> <mask>' ใช้บน ABR เพื่อรวบรวมและย่อเส้นทางระหว่างพื้นที่ OSPF"
+    },
+    {
+      "options": [
+        "area range",
+        "summary-address",
+        "redistribute summary",
+        "ip route-summary"
+      ],
+      "question_en": "Which command is used on an ASBR to summarize external routes redistributed into OSPF?",
+      "question_th": "คำสั่งใดใช้กำหนดค่าบน ASBR เพื่อย่อเส้นทางภายนอก (External routes) ที่ถูกดึงเข้ามาใน OSPF?",
+      "correct_index": 1,
+      "explanation_en": "The 'summary-address <network> <mask>' command is used on OSPF ASBRs to summarize external routes (Type 5 LSAs).",
+      "explanation_th": "คำสั่ง 'summary-address <network> <mask>' ใช้บน OSPF ASBR เพื่อย่อเส้นทางภายนอก (Type 5 LSA)"
+    },
+    {
+      "options": [
+        "172.16.0.0/23",
+        "172.16.0.0/22",
+        "172.16.0.0/25",
+        "172.16.0.0/16"
+      ],
+      "question_en": "What is the summary prefix for the subnets 172.16.0.0/24 and 172.16.1.0/24?",
+      "question_th": "การย่อเส้นทาง (Route Summarization) สำหรับเครือข่ายย่อย 172.16.0.0/24 และ 172.16.1.0/24 จะได้ผลลัพธ์เป็น Prefix ใด?",
+      "correct_index": 0,
+      "explanation_en": "172.16.0.0/24 and 172.16.1.0/24 share the first 23 bits, resulting in the summary address 172.16.0.0/23.",
+      "explanation_th": "172.16.0.0/24 และ 172.16.1.0/24 มีบิตที่เหมือนกันใน 23 บิตแรก ส่งผลให้สรุปเป็น 172.16.0.0/23"
+    },
+    {
+      "options": [
+        "To speed up packet forwarding.",
+        "To prevent routing loops for packets destined to unassigned subnets within the summary range.",
+        "To backup the physical interface in case of failure.",
+        "To block malicious attacks."
+      ],
+      "question_en": "Why does OSPF automatically create a discard route to Null0 when summarization is configured?",
+      "question_th": "ทำไม OSPF จึงสร้าง Discard Route ไปยังอินเตอร์เฟส Null0 โดยอัตโนมัติเมื่อมีการกำหนดค่า Summarization?",
+      "correct_index": 1,
+      "explanation_en": "OSPF creates a discard route to Null0 to drop packets destined to non-existent subnets within the summarized range, preventing loops.",
+      "explanation_th": "OSPF สร้าง discard route ไปยัง Null0 เพื่อทิ้งแพ็กเก็ตที่ส่งไปยังซับเน็ตที่ไม่มีอยู่จริงภายในช่วงที่ทำการสรุป เพื่อป้องกันการเกิดลูปการส่งข้อมูล"
+    },
+    {
+      "options": [
+        "It eliminates the need for Area 0.",
+        "It reduces routing table size, SPF CPU computation, and LSA flooding.",
+        "It automatically encrypts OSPF packets.",
+        "It enables unequal cost load balancing."
+      ],
+      "question_en": "Which of the following is a primary benefit of route summarization in OSPF?",
+      "question_th": "ข้อใดคือประโยชน์หลักของการรวบรวมและย่อเส้นทาง (Route summarization) ใน OSPF?",
+      "correct_index": 1,
+      "explanation_en": "Route summarization reduces routing table sizes, minimizes LSA updates, and limits SPF algorithm re-calculations.",
+      "explanation_th": "การย่อเส้นทางช่วยลดขนาดตารางเส้นทาง ลดการส่งอัปเดต LSA และลดการคำนวณใหม่ของอัลกอริทึม SPF"
+    }
+  ]
+}

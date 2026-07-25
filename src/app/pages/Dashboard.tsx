@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useI18n } from '../i18n';
 import { analyticsApi, StudentMetrics, AdminMetrics, HardestExercise } from '../lib/api/analytics';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
-import { Skeleton } from '../components/ui/skeleton';
-import { BookOpen, CheckCircle, GraduationCap, Clock, Award, Activity, Users, AlertCircle, Play, Flame, Star, Zap } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../lib/components/ui/card';
+import { Skeleton } from '../lib/components/ui/skeleton';
+import { BookOpen, CheckCircle, GraduationCap, Clock, Award, Activity, Users, AlertCircle, FileText, Play, Flame, Star, Zap } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '../lib/components/ui/alert';
 import { Link } from 'react-router';
 
 export function Dashboard() {
@@ -69,9 +69,9 @@ export function Dashboard() {
 
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return 'Good Morning';
-    if (hour < 18) return 'Good Afternoon';
-    return 'Good Evening';
+    if (hour < 12) return t.dashboardStudent.goodMorning;
+    if (hour < 18) return t.dashboardStudent.goodAfternoon;
+    return t.dashboardStudent.goodEvening;
   };
 
   return (
@@ -105,12 +105,12 @@ export function Dashboard() {
                   {getGreeting()}, {user.email?.split('@')[0]}!
                 </h2>
                 <p className="text-indigo-100 text-lg opacity-90 max-w-md">
-                  Keep up the great work. You're on a <strong className="text-white">{studentMetrics.streak_days}-day learning streak! 🔥</strong>
+                  <span dangerouslySetInnerHTML={{ __html: t.dashboardStudent.keepUpWork.replace('{streak}', `<strong class="text-white">${studentMetrics.streak_days}</strong>`) }} />
                 </p>
                 <div className="pt-4 flex gap-3 justify-center md:justify-start">
                   <Link to="/courses" className="inline-flex items-center justify-center rounded-full bg-white text-indigo-600 px-6 py-2.5 text-sm font-semibold shadow-sm hover:bg-indigo-50 transition-colors">
                     <Play className="w-4 h-4 mr-2" />
-                    Resume Learning
+                    {t.dashboardStudent.resumeLearning}
                   </Link>
                 </div>
               </div>
@@ -118,7 +118,7 @@ export function Dashboard() {
               <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 w-full sm:w-72 text-center shadow-inner">
                 <div className="flex items-center justify-center gap-2 mb-2">
                   <Star className="w-5 h-5 text-yellow-300 fill-yellow-300" />
-                  <div className="text-sm font-semibold text-indigo-50 uppercase tracking-widest">Level {studentMetrics.level}</div>
+                  <div className="text-sm font-semibold text-indigo-50 uppercase tracking-widest">{t.dashboardStudent.level} {studentMetrics.level}</div>
                 </div>
                 <div className="text-5xl font-black mb-4 tracking-tighter">
                   {studentMetrics.xp} <span className="text-2xl text-indigo-200 font-medium tracking-normal">XP</span>
@@ -130,8 +130,8 @@ export function Dashboard() {
                   ></div>
                 </div>
                 <div className="text-xs text-indigo-100 font-medium flex justify-between px-1">
-                  <span>Current Progress</span>
-                  <span>{100 - (studentMetrics.xp % 100)} XP to Next Level</span>
+                  <span>{t.dashboardStudent.currentProgress}</span>
+                  <span>{100 - (studentMetrics.xp % 100)} {t.dashboardStudent.xpToNextLevel}</span>
                 </div>
               </div>
             </div>
@@ -150,7 +150,7 @@ export function Dashboard() {
                     <BookOpen className="w-6 h-6" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-slate-500">Enrolled</p>
+                    <p className="text-sm font-medium text-slate-500">{t.dashboardStudent.enrolled}</p>
                     <p className="text-2xl font-bold text-slate-900">{studentMetrics.enrolled_courses}</p>
                   </div>
                 </div>
@@ -164,7 +164,7 @@ export function Dashboard() {
                     <CheckCircle className="w-6 h-6" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-slate-500">Completed</p>
+                    <p className="text-sm font-medium text-slate-500">{t.dashboardStudent.completed}</p>
                     <p className="text-2xl font-bold text-slate-900">{studentMetrics.completed_lessons}</p>
                   </div>
                 </div>
@@ -178,8 +178,8 @@ export function Dashboard() {
                     <Clock className="w-6 h-6" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-slate-500">Study Time</p>
-                    <p className="text-2xl font-bold text-slate-900">{Math.ceil(studentMetrics.study_time / 60)}<span className="text-sm font-normal text-slate-500 ml-1">hrs</span></p>
+                    <p className="text-sm font-medium text-slate-500">{t.dashboardStudent.studyTime}</p>
+                    <p className="text-2xl font-bold text-slate-900">{Math.ceil(studentMetrics.study_time / 60)}<span className="text-sm font-normal text-slate-500 ml-1">{t.dashboardStudent.hrs}</span></p>
                   </div>
                 </div>
               </CardContent>
@@ -192,8 +192,8 @@ export function Dashboard() {
                     <Flame className="w-6 h-6" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-slate-500">Streak</p>
-                    <p className="text-2xl font-bold text-slate-900">{studentMetrics.streak_days}<span className="text-sm font-normal text-slate-500 ml-1">days</span></p>
+                    <p className="text-sm font-medium text-slate-500">{t.dashboardStudent.streak}</p>
+                    <p className="text-2xl font-bold text-slate-900">{studentMetrics.streak_days}<span className="text-sm font-normal text-slate-500 ml-1">{t.dashboardStudent.days}</span></p>
                   </div>
                 </div>
               </CardContent>
@@ -206,15 +206,15 @@ export function Dashboard() {
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Activity className="w-5 h-5 text-indigo-500" />
-                  Learning Activity
+                  {t.dashboardStudent.learningActivity}
                 </CardTitle>
-                <CardDescription>Your performance across all exercises.</CardDescription>
+                <CardDescription>{t.dashboardStudent.learningActivityDesc}</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-6">
                   <div>
                     <div className="flex justify-between text-sm mb-2">
-                      <span className="font-medium text-slate-700">Exercise Success Rate</span>
+                      <span className="font-medium text-slate-700">{t.dashboardStudent.exerciseSuccessRate}</span>
                       <span className="font-bold text-indigo-600">{studentMetrics.avg_score}%</span>
                     </div>
                     <div className="w-full bg-slate-100 rounded-full h-2.5">
@@ -224,7 +224,7 @@ export function Dashboard() {
                   
                   <div>
                     <div className="flex justify-between text-sm mb-2">
-                      <span className="font-medium text-slate-700">Overall Completion Rate</span>
+                      <span className="font-medium text-slate-700">{t.dashboardStudent.overallCompletionRate}</span>
                       <span className="font-bold text-indigo-600">{studentMetrics.completion_rate}%</span>
                     </div>
                     <div className="w-full bg-slate-100 rounded-full h-2.5">
@@ -239,9 +239,9 @@ export function Dashboard() {
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Award className="w-5 h-5 text-yellow-500" />
-                  Achievements
+                  {t.dashboardStudent.achievements}
                 </CardTitle>
-                <CardDescription>Milestones you have reached.</CardDescription>
+                <CardDescription>{t.dashboardStudent.achievementsDesc}</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 gap-4">
@@ -250,8 +250,8 @@ export function Dashboard() {
                       <BookOpen className="w-5 h-5 text-blue-500" />
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-slate-800">First Steps</p>
-                      <p className="text-xs text-slate-500 mt-1">Enrolled in 1+ courses</p>
+                      <p className="text-sm font-semibold text-slate-800">{t.dashboardStudent.firstSteps}</p>
+                      <p className="text-xs text-slate-500 mt-1">{t.dashboardStudent.firstStepsDesc}</p>
                     </div>
                   </div>
                   
@@ -260,8 +260,8 @@ export function Dashboard() {
                       <Zap className={`w-5 h-5 ${studentMetrics.completed_lessons >= 10 ? 'text-indigo-500' : 'text-slate-400'}`} />
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-slate-800">Fast Learner</p>
-                      <p className="text-xs text-slate-500 mt-1">Completed 10+ lessons</p>
+                      <p className="text-sm font-semibold text-slate-800">{t.dashboardStudent.fastLearner}</p>
+                      <p className="text-xs text-slate-500 mt-1">{t.dashboardStudent.fastLearnerDesc}</p>
                     </div>
                   </div>
                   
@@ -270,8 +270,8 @@ export function Dashboard() {
                       <Clock className={`w-5 h-5 ${studentMetrics.study_time >= 600 ? 'text-purple-500' : 'text-slate-400'}`} />
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-slate-800">Dedicated</p>
-                      <p className="text-xs text-slate-500 mt-1">10+ hours studied</p>
+                      <p className="text-sm font-semibold text-slate-800">{t.dashboardStudent.dedicated}</p>
+                      <p className="text-xs text-slate-500 mt-1">{t.dashboardStudent.dedicatedDesc}</p>
                     </div>
                   </div>
                   
@@ -280,8 +280,8 @@ export function Dashboard() {
                       <Flame className={`w-5 h-5 ${studentMetrics.streak_days >= 7 ? 'text-orange-500 fill-orange-500' : 'text-slate-400'}`} />
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-slate-800">Unstoppable</p>
-                      <p className="text-xs text-slate-500 mt-1">7-day learning streak</p>
+                      <p className="text-sm font-semibold text-slate-800">{t.dashboardStudent.unstoppable}</p>
+                      <p className="text-xs text-slate-500 mt-1">{t.dashboardStudent.unstoppableDesc}</p>
                     </div>
                   </div>
                 </div>

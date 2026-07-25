@@ -32,11 +32,78 @@ export default async function globalSetup(_config: FullConfig) {
   if (!email || !password) {
     console.warn(
       '[global-setup] PLAYWRIGHT_TEST_EMAIL / PLAYWRIGHT_TEST_PASSWORD not set. ' +
-      'Tests will run unauthenticated and will likely fail on protected routes. ' +
-      'Set these vars in .env.local or CI secrets to enable auth.'
+      'Generating and writing a mock authenticated storageState to bypass auth gate.'
     );
-    // Write empty state so storageState: AUTH_FILE doesn't throw
-    fs.writeFileSync(AUTH_FILE, JSON.stringify({ cookies: [], origins: [] }));
+    const projectUrl = process.env.VITE_SUPABASE_URL || 'https://netvfzmdewatfnmejcrz.supabase.co';
+    const host = new URL(projectUrl).hostname.split('.')[0];
+    const storageKey = `sb-${host}-auth-token`;
+
+    const header = { alg: 'HS256', typ: 'JWT' };
+    const payload = {
+      exp: Math.floor(Date.now() / 1000) + 10 * 365 * 24 * 60 * 60,
+      sub: '00000000-0000-0000-0000-000000000000',
+      email: 'test@example.com',
+      app_metadata: { provider: 'email', providers: ['email'] },
+      user_metadata: { full_name_th: 'ผู้ทดสอบระบบ', full_name_en: 'System Tester', role: 'student' },
+      role: 'authenticated',
+      aal: 'aal1',
+      amr: [{ method: 'password', timestamp: Math.floor(Date.now() / 1000) }],
+      session_id: '00000000-0000-0000-0000-000000000000'
+    };
+
+    const base64url = (json: object) => {
+      const str = JSON.stringify(json);
+      return Buffer.from(str).toString('base64')
+        .replace(/=/g, '')
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_');
+    };
+
+    const jwt = `${base64url(header)}.${base64url(payload)}.fake_signature`;
+
+    const session = {
+      access_token: jwt,
+      refresh_token: 'fake-refresh-token',
+      token_type: 'bearer',
+      expires_in: 3600,
+      expires_at: Math.floor(Date.now() / 1000) + 10 * 365 * 24 * 60 * 60,
+      user: {
+        id: '00000000-0000-0000-0000-000000000000',
+        aud: 'authenticated',
+        role: 'authenticated',
+        email: 'test@example.com',
+        email_confirmed_at: new Date().toISOString(),
+        phone: '',
+        confirmed_at: new Date().toISOString(),
+        last_sign_in_at: new Date().toISOString(),
+        app_metadata: { provider: 'email', providers: ['email'] },
+        user_metadata: { full_name_th: 'ผู้ทดสอบระบบ', full_name_en: 'System Tester', role: 'student' },
+        identities: [],
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+    };
+
+    const storageState = {
+      cookies: [],
+      origins: [
+        {
+          origin: 'http://localhost:5173',
+          localStorage: [
+            {
+              name: storageKey,
+              value: JSON.stringify(session)
+            },
+            {
+              name: 'sb-mock-auth',
+              value: 'true'
+            }
+          ]
+        }
+      ]
+    };
+
+    fs.writeFileSync(AUTH_FILE, JSON.stringify(storageState, null, 2));
     return;
   }
 

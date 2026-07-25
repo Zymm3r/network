@@ -1,17 +1,87 @@
 import { useState } from 'react';
 import { useI18n } from '../i18n';
 import { useAuth } from '../hooks/useAuth';
-import { Card, CardContent } from '../components/ui/card';
-import { Badge } from '../components/ui/badge';
-import { Button } from '../components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '../lib/components/ui/card';
+import { Badge } from '../lib/components/ui/badge';
+import { Button } from '../lib/components/ui/button';
+import { Skeleton } from '../lib/components/ui/skeleton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../lib/components/ui/tabs';
 import {
-  FileQuestion, PenTool, ChevronRight, ChevronDown,
+  FlaskConical, Video, FileQuestion, PenTool, ChevronRight, ChevronDown,
   CheckCircle2, Trophy, Zap, Star, Lock, Play, RotateCcw,
-  BookOpen, Shield, Network, Cpu, Wrench, Code2
+  BookOpen, Shield, Network, Cpu, Wrench, Code2, Clock
 } from 'lucide-react';
-import QuizCard from '../components/QuizCard';
-import ExerciseCard from '../components/ExerciseCard';
+import QuizCard from '../lib/components/QuizCard';
+import ExerciseCard from '../lib/components/ExerciseCard';
+import { LessonCard } from '../lib/components/lesson/LessonCard';
+import { supabase } from '../lib/supabase';
 import { COURSE_QUIZ_MAP, COURSE_EXERCISE_MAP } from '../data/courseQuizData';
+import { useLessons } from '../hooks/useLessons';
+import { Lesson } from '../types';
+
+/* ─────────────────────────────────────────
+   CourseLessonsList Component
+───────────────────────────────────────── */
+function CourseLessonsList({ courseId, courseName, activeTab, onNextCourse }: { courseId: string, courseName: string, activeTab: 'quiz' | 'exercise', onNextCourse: () => void }) {
+  const { lessons, loading } = useLessons({ courseId });
+  const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
+
+  if (loading) return <div className="p-4 flex justify-center"><Skeleton className="h-8 w-8 rounded-full" /></div>;
+
+  const displayLessons = lessons.filter(l => {
+    if (activeTab === 'quiz') return l.quiz_data && (l.quiz_data as any).questions?.length > 0;
+    return l.lesson_type === 'exercise' || l.id.startsWith('lesson-python');
+  });
+
+  if (displayLessons.length === 0) {
+    return <div className="text-center p-4 text-slate-500">ไม่มีข้อมูลสำหรับหลักสูตรนี้</div>;
+  }
+
+  return (
+    <div className="space-y-4 mt-4">
+      {displayLessons.map((lesson, idx) => (
+        <div key={lesson.id} className="border border-slate-200 rounded-lg overflow-hidden bg-white">
+          <div 
+            className="p-3 bg-slate-50 cursor-pointer flex justify-between items-center hover:bg-slate-100 transition-colors"
+            onClick={() => setActiveLessonId(prev => prev === lesson.id ? null : lesson.id)}
+          >
+            <div className="font-medium text-slate-700">
+              {idx + 1}. {lesson.title}
+            </div>
+            <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${activeLessonId === lesson.id ? 'rotate-180' : ''}`} />
+          </div>
+          {activeLessonId === lesson.id && (
+            <div className="p-4 border-t border-slate-100">
+              {activeTab === 'quiz' ? (
+                <QuizCard
+                  courseId={courseId}
+                  courseName={courseName}
+                  lessonId={lesson.id}
+                  lesson={lesson}
+                  onNextLesson={() => {
+                    const next = displayLessons[idx + 1];
+                    if (next) setActiveLessonId(next.id);
+                    else onNextCourse();
+                  }}
+                />
+              ) : (
+                <ExerciseCard
+                  courseId={courseId}
+                  lessonId={lesson.id}
+                  onNextLesson={() => {
+                    const next = displayLessons[idx + 1];
+                    if (next) setActiveLessonId(next.id);
+                    else onNextCourse();
+                  }}
+                />
+              )}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
 
 /* ─────────────────────────────────────────
    Course catalogue — ordered easy → hard
@@ -307,58 +377,19 @@ export function Lessons() {
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2 text-sm font-semibold text-slate-700">
                       {activeTab === 'quiz'
-                        ? <><FileQuestion className="w-4 h-4 text-indigo-500" /> กำลังทำแบบทดสอบ</>
-                        : <><PenTool className="w-4 h-4 text-emerald-500" /> กำลังทำแบบฝึกหัด Python</>
+                        ? <><FileQuestion className="w-4 h-4 text-indigo-500" /> เลือกบทเรียนเพื่อทำแบบทดสอบ</>
+                        : <><PenTool className="w-4 h-4 text-emerald-500" /> เลือกบทเรียนเพื่อทำแบบฝึกหัด Python</>
                       }
-                    </div>
-                    <div className="flex gap-2">
-                      {isAttempted && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="gap-1.5 h-8 text-xs"
-                          onClick={() => {
-                            if (activeTab === 'quiz') {
-                              setQuizScores(prev => { const n = {...prev}; delete n[course.id]; return n; });
-                            } else {
-                              setExerciseScores(prev => { const n = {...prev}; delete n[course.id]; return n; });
-                            }
-                          }}
-                        >
-                          <RotateCcw className="w-3.5 h-3.5" /> เริ่มใหม่
-                        </Button>
-                      )}
-                      {isPassed && (
-                        <Button
-                          size="sm"
-                          className="gap-1.5 h-8 text-xs bg-emerald-600 hover:bg-emerald-700"
-                          onClick={() => handleNextCourse(course.id)}
-                        >
-                          <Play className="w-3.5 h-3.5" /> ไปถัดไป
-                        </Button>
-                      )}
                     </div>
                   </div>
 
-                  {/* The actual card */}
-                  {activeTab === 'quiz' ? (
-                    <QuizCard
-                      courseId={course.id}
-                      courseName={course.name}
-                      onComplete={(score, total) => handleQuizComplete(course.id, score, total)}
-                      onNextLesson={
-                        (() => {
-                          const idx2 = quizCourses.findIndex(c => c.id === course.id);
-                          return quizCourses[idx2 + 1] ? () => handleNextCourse(course.id) : undefined;
-                        })()
-                      }
-                    />
-                  ) : (
-                    <ExerciseCard
-                      courseId={course.id}
-                      onComplete={(passed) => handleExerciseComplete(course.id, passed)}
-                    />
-                  )}
+                  {/* List lessons for this course */}
+                  <CourseLessonsList 
+                    courseId={course.id} 
+                    courseName={course.name} 
+                    activeTab={activeTab} 
+                    onNextCourse={() => handleNextCourse(course.id)}
+                  />
                 </div>
               )}
             </div>

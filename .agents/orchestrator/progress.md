@@ -1,12 +1,20 @@
 ## Current Status
-Last visited: 2026-06-08T16:00:00+07:00
-*Status: Waiting for user explicit approval in SAFE MODE before applying migration.*
+Last visited: 2026-07-15T14:08:00+07:00
+- [ ] Initial assessment and planning [done]
+- [x] M1: Database schema migration [done]
+- [x] M2: Generate 5 multiple-choice quiz questions for all 73 lessons [done]
+- [x] M3: Database insertion migration [done]
+- [x] M4: UI Integration & Verification [done]
 
 ## Iteration Status
 Current iteration: 1 / 32
 
 ## Checklist
-- [ ] Investigate Supabase environment and check the migration file.
-- [ ] Apply `20260607000001_analytics_views.sql` migration.
-- [ ] Check `Dashboard.tsx` and ensure it invokes the right RPCs.
-- [ ] Verify functionality (build, tests, or manual check).
+- [x] Verify Supabase configuration and schema.
+- [x] Apply database schema migration (adds `quiz_data` JSONB column).
+- [x] Fetch English content of all 73 lessons.
+- [x] Generate 5 multiple-choice quiz questions per lesson matching QuizQuestion structure.
+- [x] Create and apply insertion migrations.
+- [x] Refactor UI components: type updates, QuizCard update, LessonDetail update.
+- [x] Verify compilation and execution (Vite build, Vitest unit tests, Playwright E2E tests).
+- [x] Run Forensic Auditor checks and E2E verification.
