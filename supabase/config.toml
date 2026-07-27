@@ -1,0 +1,5 @@
+# Supabase project configuration
+# Docs: https://supabase.com/docs/guides/cli/config
+
+[project]
+id = "netvfzmdewatfnmejcrz"
