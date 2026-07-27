@@ -22,16 +22,16 @@ import { Lesson } from '../types';
 /* ─────────────────────────────────────────
    CourseLessonsList Component
 ───────────────────────────────────────── */
-function CourseLessonsList({ courseId, courseName, activeTab, onNextCourse }: { courseId: string, courseName: string, activeTab: 'quiz' | 'exercise', onNextCourse: () => void }) {
+function CourseLessonsList({ courseId, courseName, onNextCourse }: { courseId: string, courseName: string, onNextCourse: () => void }) {
   const { lessons, loading } = useLessons({ courseId });
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
 
   if (loading) return <div className="p-4 flex justify-center"><Skeleton className="h-8 w-8 rounded-full" /></div>;
 
-  const displayLessons = lessons.filter(l => {
-    if (activeTab === 'quiz') return l.quiz_data && (l.quiz_data as any).questions?.length > 0;
-    return l.lesson_type === 'exercise' || l.id.startsWith('lesson-python');
-  });
+  // Exercise tab handled at course level — filter only for quiz
+  const displayLessons = lessons.filter(l =>
+    l.quiz_data && (l.quiz_data as any).questions?.length > 0
+  );
 
   if (displayLessons.length === 0) {
     return <div className="text-center p-4 text-slate-500">ไม่มีข้อมูลสำหรับหลักสูตรนี้</div>;
@@ -52,29 +52,17 @@ function CourseLessonsList({ courseId, courseName, activeTab, onNextCourse }: { 
           </div>
           {activeLessonId === lesson.id && (
             <div className="p-4 border-t border-slate-100">
-              {activeTab === 'quiz' ? (
-                <QuizCard
-                  courseId={courseId}
-                  courseName={courseName}
-                  lessonId={lesson.id}
-                  lesson={lesson}
-                  onNextLesson={() => {
-                    const next = displayLessons[idx + 1];
-                    if (next) setActiveLessonId(next.id);
-                    else onNextCourse();
-                  }}
-                />
-              ) : (
-                <ExerciseCard
-                  courseId={courseId}
-                  lessonId={lesson.id}
-                  onNextLesson={() => {
-                    const next = displayLessons[idx + 1];
-                    if (next) setActiveLessonId(next.id);
-                    else onNextCourse();
-                  }}
-                />
-              )}
+              <QuizCard
+                courseId={courseId}
+                courseName={courseName}
+                lessonId={lesson.id}
+                lesson={lesson}
+                onNextLesson={() => {
+                  const next = displayLessons[idx + 1];
+                  if (next) setActiveLessonId(next.id);
+                  else onNextCourse();
+                }}
+              />
             </div>
           )}
         </div>
@@ -373,23 +361,29 @@ export function Lessons() {
               {/* ── Expanded: Quiz / Exercise ── */}
               {isActive && (
                 <div className="border-t border-slate-100 bg-slate-50/50 p-4">
-                  {/* start/restart bar */}
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                      {activeTab === 'quiz'
-                        ? <><FileQuestion className="w-4 h-4 text-indigo-500" /> เลือกบทเรียนเพื่อทำแบบทดสอบ</>
-                        : <><PenTool className="w-4 h-4 text-emerald-500" /> เลือกบทเรียนเพื่อทำแบบฝึกหัด Python</>
-                      }
-                    </div>
-                  </div>
-
-                  {/* List lessons for this course */}
-                  <CourseLessonsList 
-                    courseId={course.id} 
-                    courseName={course.name} 
-                    activeTab={activeTab} 
-                    onNextCourse={() => handleNextCourse(course.id)}
-                  />
+                  {activeTab === 'quiz' ? (
+                    <>
+                      <div className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-4">
+                        <FileQuestion className="w-4 h-4 text-indigo-500" /> เลือกบทเรียนเพื่อทำแบบทดสอบ
+                      </div>
+                      <CourseLessonsList
+                        courseId={course.id}
+                        courseName={course.name}
+                        onNextCourse={() => handleNextCourse(course.id)}
+                      />
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-4">
+                        <PenTool className="w-4 h-4 text-emerald-500" /> แบบฝึกหัด Python
+                      </div>
+                      <ExerciseCard
+                        courseId={course.id}
+                        lessonId={course.id}
+                        onNextLesson={() => handleNextCourse(course.id)}
+                      />
+                    </>
+                  )}
                 </div>
               )}
             </div>
