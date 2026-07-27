@@ -15,6 +15,7 @@ import { playFeedback } from '../../utils/feedback';
 import { usePython } from "../../../application/hooks/usePython";
 import { getExerciseForCourse, ExerciseData, TestCase } from '../../data/courseQuizData';
 import { gradingService } from '../api/grading';
+import { exerciseApi } from '../api/exercises';
 
 /* ─────────────────────────────────────────
    Terminal Output Line
@@ -138,6 +139,31 @@ export default function ExerciseCard({ courseName, courseId, lessonId, onComplet
   const [showAchievement, setShowAchievement] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const terminalRef = useRef<HTMLDivElement>(null);
+
+  // ── Restore previous progress on mount ──
+  useEffect(() => {
+    if (!user?.id) return;
+    const exerciseKey = exercise.id || courseId || 'unknown';
+
+    exerciseApi.getLatestExerciseAttempt(user.id, exerciseKey)
+      .then((latest) => {
+        if (!latest) return;
+        // Restore attempt count
+        if (latest.attempts_count) setAttempts(latest.attempts_count);
+        // If user previously passed, restore completed state
+        if (latest.passed) {
+          setAllPassed(true);
+          setRunComplete(true);
+          setRunPhase('done');
+          setXpEarned(exercise.xpReward);
+          // Restore their submitted code so they can see what they wrote
+          if (latest.submitted_code) setCode(latest.submitted_code);
+        }
+      })
+      .catch((err) => {
+        console.warn('[ExerciseCard] Could not load previous attempt:', err);
+      });
+  }, [user?.id, courseId, exercise.id]);
 
   // Auto-scroll terminal to bottom
   useEffect(() => {
