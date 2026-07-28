@@ -46,4 +46,12 @@ describe('buildPracticeScoreMap', () => {
     expect(scores['ccna-001']).toEqual({ score: 1, total: 1, passed: true });
     expect(scores['ccna-002']).toEqual({ score: 0, total: 1, passed: false });
   });
+
+  it('does not mix lesson quiz attempts into the course summary', () => {
+    const scores = buildPracticeScoreMap([
+      attempt({ exercise_id: 'quiz:lesson:lesson-ccna-001', passed: true, score: 100 }),
+    ], 'quiz');
+
+    expect(scores).toEqual({});
+  });
 });

@@ -41,8 +41,25 @@ export interface Lesson {
   video_url: string | null;
   thumbnail_url: string | null;
   difficulty: ExerciseDifficulty | null;
+  quiz_data?: LessonQuizData | null;
+  exercise_data?: unknown;
   created_at: string;
   updated_at: string;
+}
+
+export interface LessonQuizQuestion {
+  question_th: string;
+  question_en: string;
+  options: string[];
+  correct_index: number;
+  explanation_th?: string | null;
+  explanation_en?: string | null;
+  hint_th?: string | null;
+  hint_en?: string | null;
+}
+
+export interface LessonQuizData {
+  questions: LessonQuizQuestion[];
 }
 
 export interface Enrollment {

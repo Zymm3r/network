@@ -13,6 +13,10 @@ export function buildPracticeScoreMap(
   kind: 'quiz' | 'python'
 ): PracticeScoreMap {
   return attempts.reduce<PracticeScoreMap>((scores, attempt) => {
+    if (kind === 'quiz' && attempt.exercise_id.startsWith('quiz:lesson:')) {
+      return scores;
+    }
+
     const courseId = attempt.course_id;
     if (!courseId) return scores;
 

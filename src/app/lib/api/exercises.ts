@@ -130,12 +130,17 @@ export const exerciseApi = {
     userId: string,
     kind: 'quiz' | 'python'
   ): Promise<ExerciseAttempt[]> {
-    const response = await supabase
+    let query = supabase
       .from('exercise_attempts')
       .select('*')
       .eq('user_id', userId)
-      .like('exercise_id', `${kind}:%`)
-      .order('created_at', { ascending: false });
+      .like('exercise_id', `${kind}:%`);
+
+    if (kind === 'quiz') {
+      query = query.not('exercise_id', 'like', 'quiz:lesson:%');
+    }
+
+    const response = await query.order('created_at', { ascending: false });
 
     return handleSupabaseResponse(response, `load ${kind} practice history`);
   },

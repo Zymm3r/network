@@ -19,6 +19,7 @@ import QuizCard from '../components/QuizCard';
 import ExerciseCard from '../components/ExerciseCard';
 import { KalturaPlayer } from '../components/KalturaPlayer';
 import { LessonCompleteCard } from '../components/LessonCompleteCard';
+import { getLessonQuizQuestions } from '../lib/lessonQuiz';
 
 /* ─────────────────────────────────────────
    Static look-up tables
@@ -455,6 +456,13 @@ export function LessonDetail() {
   const [isQuizPassed, setIsQuizPassed] = useState(false);
   const [isExercisePassed, setIsExercisePassed] = useState(false);
   const [isScrolledToBottom, setIsScrolledToBottom] = useState(false);
+  const lessonQuizQuestions = useMemo(
+    () => getLessonQuizQuestions(lesson?.quiz_data, language),
+    [language, lesson?.quiz_data]
+  );
+  const handleQuizProgressRestored = useCallback((score: number, total: number) => {
+    setIsQuizPassed(total > 0 && score / total >= 0.8);
+  }, []);
   
   // Reset completion states when lesson changes
   useEffect(() => {
@@ -1027,6 +1035,8 @@ export function LessonDetail() {
             <QuizCard 
               courseId={lesson.course_id || undefined} 
               lessonId={lessonId}
+              questions={lessonQuizQuestions}
+              onProgressRestored={handleQuizProgressRestored}
               onComplete={(score, total) => {
                 if (score / total >= 0.8) setIsQuizPassed(true);
               }} 

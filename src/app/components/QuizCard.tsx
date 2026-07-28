@@ -43,15 +43,27 @@ interface QuizCardProps {
   courseName?: string;
   courseId?: string;
   lessonId?: string;
+  questions?: QuizQuestion[];
   onComplete?: (score: number, totalQuestions: number) => void;
+  onProgressRestored?: (score: number, totalQuestions: number) => void;
   onNextLesson?: () => void;
 }
 
-export default function QuizCard({ courseName, courseId, lessonId, onComplete, onNextLesson }: QuizCardProps = {}) {
+export default function QuizCard({
+  courseName,
+  courseId,
+  lessonId,
+  questions: suppliedQuestions,
+  onComplete,
+  onProgressRestored,
+  onNextLesson,
+}: QuizCardProps = {}) {
   const { user } = useAuth();
   const { currentStreak, recordActivity } = useDailyStreak(user?.id);
   const { totalSeconds } = useActivity();
-  const quizAttemptId = `quiz:${courseId || 'default'}`;
+  const quizAttemptId = lessonId
+    ? `quiz:lesson:${lessonId}`
+    : `quiz:${courseId || 'default'}`;
   const { recordAttempt, latestAttempt } = useExerciseProgress(
     quizAttemptId,
     lessonId || '',
@@ -77,7 +89,7 @@ export default function QuizCard({ courseName, courseId, lessonId, onComplete, o
   const [showAchievement, setShowAchievement] = useState<string | null>(null);
   const correctAudioRef = useRef<HTMLAudioElement | null>(null);
 
-  const questions = getQuizForCourse(courseId);
+  const questions = suppliedQuestions?.length ? suppliedQuestions : getQuizForCourse(courseId);
   const question = questions[currentQ];
   const totalQuestions = questions.length;
   const progressPct = ((currentQ + (isSubmitted ? 1 : 0)) / totalQuestions) * 100;
@@ -89,7 +101,8 @@ export default function QuizCard({ courseName, courseId, lessonId, onComplete, o
       ?? Math.round(((latestAttempt.score || 0) / 100) * totalQuestions);
     setScore(previousScore);
     setShowResults(true);
-  }, [latestAttempt, totalQuestions]);
+    onProgressRestored?.(previousScore, totalQuestions);
+  }, [latestAttempt, onProgressRestored, totalQuestions]);
 
   // Motivational sub-text based on progress
   const getMotivationalText = () => {
