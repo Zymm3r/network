@@ -357,6 +357,12 @@ export function Lessons() {
                     <ExerciseCard
                       courseId={course.id}
                       onComplete={(passed) => handleExerciseComplete(course.id, passed)}
+                      onNextLesson={
+                        (() => {
+                          const idx2 = exCourses.findIndex(c => c.id === course.id);
+                          return exCourses[idx2 + 1] ? () => handleNextCourse(course.id) : undefined;
+                        })()
+                      }
                     />
                   )}
                 </div>
