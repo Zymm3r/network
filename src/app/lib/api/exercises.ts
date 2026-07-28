@@ -145,6 +145,17 @@ export const exerciseApi = {
     return handleSupabaseResponse(response, `load ${kind} practice history`);
   },
 
+  async getLessonQuizAttempts(userId: string): Promise<ExerciseAttempt[]> {
+    const response = await supabase
+      .from('exercise_attempts')
+      .select('*')
+      .eq('user_id', userId)
+      .like('exercise_id', 'quiz:lesson:%')
+      .order('created_at', { ascending: false });
+
+    return handleSupabaseResponse(response, 'load lesson quiz history');
+  },
+
   /**
    * Get the latest exercise attempt for a user on a specific exercise
    */

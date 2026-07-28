@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useI18n } from '../i18n';
 import { useAuth } from '../hooks/useAuth';
 import { Card, CardContent } from '../components/ui/card';
@@ -11,9 +11,15 @@ import {
 } from 'lucide-react';
 import QuizCard from '../components/QuizCard';
 import ExerciseCard from '../components/ExerciseCard';
-import { COURSE_QUIZ_MAP, COURSE_EXERCISE_MAP } from '../data/courseQuizData';
+import { COURSE_EXERCISE_MAP, type QuizQuestion } from '../data/courseQuizData';
 import { exerciseApi } from '../lib/api';
-import { buildPracticeScoreMap, type PracticeScoreMap } from '../lib/practiceProgress';
+import {
+  buildLessonQuizScoreMap,
+  buildPracticeScoreMap,
+  type PracticeScoreMap,
+} from '../lib/practiceProgress';
+import { getLessonQuizQuestions } from '../lib/lessonQuiz';
+import { useLessons } from '../hooks/useLessons';
 
 /* ─────────────────────────────────────────
    Course catalogue — ordered easy → hard
@@ -27,6 +33,9 @@ interface CourseEntry {
   difficulty: 'beginner' | 'intermediate' | 'advanced';
   difficultyLabel: string;
   xp: number;
+  courseId?: string;
+  lessonId?: string;
+  questions?: QuizQuestion[];
 }
 
 const DIFFICULTY_ORDER = { beginner: 0, intermediate: 1, advanced: 2 };
@@ -76,8 +85,9 @@ const DIFF_STYLE: Record<string, string> = {
    Main Component
 ═══════════════════════════════════════ */
 export function Lessons() {
-  const { t } = useI18n();
+  const { language, t } = useI18n();
   const { user } = useAuth();
+  const { lessons, loading: lessonsLoading } = useLessons({ limit: 100 });
 
   const [activeTab, setActiveTab] = useState<'quiz' | 'exercise'>('quiz');
   const [activeCourseId, setActiveCourseId] = useState<string | null>(null);
@@ -94,12 +104,12 @@ export function Lessons() {
     }
 
     Promise.all([
-      exerciseApi.getPracticeAttempts(user.id, 'quiz'),
+      exerciseApi.getLessonQuizAttempts(user.id),
       exerciseApi.getPracticeAttempts(user.id, 'python'),
     ])
       .then(([quizAttempts, pythonAttempts]) => {
         if (cancelled) return;
-        setQuizScores(buildPracticeScoreMap(quizAttempts, 'quiz'));
+        setQuizScores(buildLessonQuizScoreMap(quizAttempts));
         setExerciseScores(buildPracticeScoreMap(pythonAttempts, 'python'));
       })
       .catch(error => {
@@ -111,13 +121,65 @@ export function Lessons() {
     };
   }, [user?.id]);
 
-  const quizCourses  = COURSES.filter(c => !!COURSE_QUIZ_MAP[c.id]);
+  const quizCourses = useMemo<CourseEntry[]>(() => {
+    const courseOrder = new Map(COURSES.map((course, index) => [course.id, index]));
+
+    return lessons
+      .map(lesson => {
+        const questions = getLessonQuizQuestions(lesson.quiz_data, language);
+        if (questions.length !== 5) return null;
+
+        const course = COURSES.find(entry => entry.id === lesson.course_id);
+        const prefix = lesson.course_id.split('-')[0];
+        const fallbackTrack = prefix === 'sec'
+          ? { track: 'Security', trackIcon: Shield, trackColor: 'rose' }
+          : prefix === 'adv'
+          ? { track: 'Advanced', trackIcon: Cpu, trackColor: 'violet' }
+          : prefix === 'devnet'
+          ? { track: 'DevNet', trackIcon: Code2, trackColor: 'emerald' }
+          : prefix === 'troubleshoot'
+          ? { track: 'Troubleshoot', trackIcon: Wrench, trackColor: 'amber' }
+          : { track: 'CCNA', trackIcon: Network, trackColor: 'indigo' };
+        const difficulty = lesson.difficulty === 'challenging'
+          ? 'advanced'
+          : lesson.difficulty === 'moderate'
+          ? 'intermediate'
+          : 'beginner';
+
+        return {
+          id: lesson.id,
+          courseId: lesson.course_id,
+          lessonId: lesson.id,
+          name: language === 'th'
+            ? lesson.title_th || lesson.title_en
+            : lesson.title_en || lesson.title_th,
+          track: course?.track || fallbackTrack.track,
+          trackIcon: course?.trackIcon || fallbackTrack.trackIcon,
+          trackColor: course?.trackColor || fallbackTrack.trackColor,
+          difficulty,
+          difficultyLabel: difficulty === 'advanced'
+            ? 'ยาก'
+            : difficulty === 'intermediate'
+            ? 'ปานกลาง'
+            : 'เบื้องต้น',
+          xp: 25,
+          questions,
+        } satisfies CourseEntry;
+      })
+      .filter((entry): entry is CourseEntry => entry !== null)
+      .sort((a, b) => {
+        const courseDifference = (courseOrder.get(a.courseId || '') ?? 999)
+          - (courseOrder.get(b.courseId || '') ?? 999);
+        if (courseDifference !== 0) return courseDifference;
+        return a.id.localeCompare(b.id);
+      });
+  }, [language, lessons]);
   const exCourses    = COURSES.filter(c => !!COURSE_EXERCISE_MAP[c.id]);
   const displayList  = activeTab === 'quiz' ? quizCourses : exCourses;
   const scoreMap     = activeTab === 'quiz' ? quizScores  : exerciseScores;
 
-  const totalPassed  = Object.values(scoreMap).filter(s => s.passed).length;
-  const totalAttempted = Object.values(scoreMap).length;
+  const totalPassed = displayList.filter(entry => scoreMap[entry.id]?.passed).length;
+  const totalAttempted = displayList.filter(entry => !!scoreMap[entry.id]).length;
 
   function handleToggle(courseId: string) {
     setActiveCourseId(prev => prev === courseId ? null : courseId);
@@ -201,6 +263,15 @@ export function Lessons() {
       </div>
 
       {/* ── Progress Bar ── */}
+      {activeTab === 'quiz' && !lessonsLoading && (
+        <div className="flex items-center gap-2 rounded-xl border border-indigo-100 bg-indigo-50 px-4 py-3 text-sm text-indigo-700">
+          <BookOpen className="h-4 w-4" />
+          <span className="font-semibold">{quizCourses.length} หัวข้อย่อย</span>
+          <span className="text-indigo-400">•</span>
+          <span>5 ข้อต่อหัวข้อ</span>
+        </div>
+      )}
+
       {totalAttempted > 0 && (
         <div className="flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-slate-50 to-indigo-50 border border-slate-100">
           <div className="flex items-center gap-2 text-indigo-600">
@@ -221,6 +292,13 @@ export function Lessons() {
       )}
 
       {/* ── Course List ── */}
+      {activeTab === 'quiz' && lessonsLoading && (
+        <Card className="border-slate-200">
+          <CardContent className="p-6 text-center text-sm text-slate-500">
+            กำลังโหลดแบบทดสอบทุกหัวข้อย่อย...
+          </CardContent>
+        </Card>
+      )}
       <div className="space-y-3">
         {displayList.map((course, idx) => {
           const sessionScore = scoreMap[course.id];
@@ -376,8 +454,10 @@ export function Lessons() {
                   {/* The actual card */}
                   {activeTab === 'quiz' ? (
                     <QuizCard
-                      courseId={course.id}
+                      courseId={course.courseId}
+                      lessonId={course.lessonId}
                       courseName={course.name}
+                      questions={course.questions}
                       onComplete={(score, total) => handleQuizComplete(course.id, score, total)}
                       onNextLesson={
                         (() => {

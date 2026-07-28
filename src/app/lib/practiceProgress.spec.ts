@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { ExerciseAttempt } from '../types';
-import { buildPracticeScoreMap } from './practiceProgress';
+import { buildLessonQuizScoreMap, buildPracticeScoreMap } from './practiceProgress';
 
 function attempt(overrides: Partial<ExerciseAttempt>): ExerciseAttempt {
   return {
@@ -53,5 +53,26 @@ describe('buildPracticeScoreMap', () => {
     ], 'quiz');
 
     expect(scores).toEqual({});
+  });
+
+  it('restores the best quiz result for each lesson', () => {
+    const scores = buildLessonQuizScoreMap([
+      attempt({
+        exercise_id: 'quiz:lesson:lesson-ccna-001',
+        lesson_id: 'lesson-ccna-001',
+        passed_tests: 3,
+        score: 60,
+      }),
+      attempt({
+        exercise_id: 'quiz:lesson:lesson-ccna-001',
+        lesson_id: 'lesson-ccna-001',
+        passed_tests: 5,
+        score: 100,
+        passed: true,
+        status: 'passed',
+      }),
+    ]);
+
+    expect(scores['lesson-ccna-001']).toEqual({ score: 5, total: 5, passed: true });
   });
 });
