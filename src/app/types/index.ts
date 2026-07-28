@@ -148,7 +148,7 @@ export interface ExerciseAttempt {
   id: string;
   user_id: string;
   exercise_id: string;
-  lesson_id: string;
+  lesson_id: string | null;
   course_id: string;
   submitted_code: string | null;
   passed_tests: number;

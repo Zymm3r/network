@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useI18n } from '../i18n';
 import { useAuth } from '../hooks/useAuth';
 import { Card, CardContent } from '../components/ui/card';
@@ -12,6 +12,8 @@ import {
 import QuizCard from '../components/QuizCard';
 import ExerciseCard from '../components/ExerciseCard';
 import { COURSE_QUIZ_MAP, COURSE_EXERCISE_MAP } from '../data/courseQuizData';
+import { exerciseApi } from '../lib/api';
+import { buildPracticeScoreMap, type PracticeScoreMap } from '../lib/practiceProgress';
 
 /* ─────────────────────────────────────────
    Course catalogue — ordered easy → hard
@@ -29,7 +31,7 @@ interface CourseEntry {
 
 const DIFFICULTY_ORDER = { beginner: 0, intermediate: 1, advanced: 2 };
 
-const COURSES: CourseEntry[] = [
+const COURSES = ([
   // CCNA Track — Beginner
   { id: 'ccna-001', name: 'เครือข่ายพื้นฐาน (OSI / TCP/IP)', track: 'CCNA', trackIcon: Network, trackColor: 'indigo', difficulty: 'beginner', difficultyLabel: 'เบื้องต้น', xp: 25 },
   { id: 'ccna-002', name: 'Switching & VLANs', track: 'CCNA', trackIcon: Network, trackColor: 'indigo', difficulty: 'beginner', difficultyLabel: 'เบื้องต้น', xp: 25 },
@@ -53,7 +55,7 @@ const COURSES: CourseEntry[] = [
   { id: 'devnet-001', name: 'Python for Network Engineers', track: 'DevNet', trackIcon: Code2, trackColor: 'emerald', difficulty: 'intermediate', difficultyLabel: 'ปานกลาง', xp: 40 },
   { id: 'devnet-004', name: 'REST APIs for Networking', track: 'DevNet', trackIcon: Code2, trackColor: 'emerald', difficulty: 'intermediate', difficultyLabel: 'ปานกลาง', xp: 40 },
   { id: 'devnet-005', name: 'Git & CI/CD for Network Code', track: 'DevNet', trackIcon: Code2, trackColor: 'emerald', difficulty: 'intermediate', difficultyLabel: 'ปานกลาง', xp: 40 },
-].sort((a, b) => DIFFICULTY_ORDER[a.difficulty] - DIFFICULTY_ORDER[b.difficulty]);
+] satisfies CourseEntry[]).sort((a, b) => DIFFICULTY_ORDER[a.difficulty] - DIFFICULTY_ORDER[b.difficulty]);
 
 /* ─── track color helpers ─── */
 const TRACK_COLORS: Record<string, { bg: string; text: string; border: string; icon: string; badge: string }> = {
@@ -70,9 +72,6 @@ const DIFF_STYLE: Record<string, string> = {
   advanced:     'bg-rose-100 text-rose-700',
 };
 
-/* ─── Session score store (in-memory) ─── */
-type ScoreMap = Record<string, { score: number; total: number; passed: boolean }>;
-
 /* ═══════════════════════════════════════
    Main Component
 ═══════════════════════════════════════ */
@@ -82,8 +81,35 @@ export function Lessons() {
 
   const [activeTab, setActiveTab] = useState<'quiz' | 'exercise'>('quiz');
   const [activeCourseId, setActiveCourseId] = useState<string | null>(null);
-  const [quizScores, setQuizScores] = useState<ScoreMap>({});
-  const [exerciseScores, setExerciseScores] = useState<ScoreMap>({});
+  const [quizScores, setQuizScores] = useState<PracticeScoreMap>({});
+  const [exerciseScores, setExerciseScores] = useState<PracticeScoreMap>({});
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!user?.id) {
+      setQuizScores({});
+      setExerciseScores({});
+      return;
+    }
+
+    Promise.all([
+      exerciseApi.getPracticeAttempts(user.id, 'quiz'),
+      exerciseApi.getPracticeAttempts(user.id, 'python'),
+    ])
+      .then(([quizAttempts, pythonAttempts]) => {
+        if (cancelled) return;
+        setQuizScores(buildPracticeScoreMap(quizAttempts, 'quiz'));
+        setExerciseScores(buildPracticeScoreMap(pythonAttempts, 'python'));
+      })
+      .catch(error => {
+        console.error('[Lessons] Failed to load saved practice history:', error);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
 
   const quizCourses  = COURSES.filter(c => !!COURSE_QUIZ_MAP[c.id]);
   const exCourses    = COURSES.filter(c => !!COURSE_EXERCISE_MAP[c.id]);
@@ -99,7 +125,11 @@ export function Lessons() {
 
   function handleQuizComplete(courseId: string, score: number, total: number) {
     const passed = score / total >= 0.8;
-    setQuizScores(prev => ({ ...prev, [courseId]: { score, total, passed } }));
+    setQuizScores(prev => {
+      const previous = prev[courseId];
+      if (previous?.passed && !passed) return prev;
+      return { ...prev, [courseId]: { score, total, passed } };
+    });
     if (passed) {
       // auto-advance to next in list
       const idx = quizCourses.findIndex(c => c.id === courseId);
@@ -109,10 +139,13 @@ export function Lessons() {
   }
 
   function handleExerciseComplete(courseId: string, passed: boolean) {
-    setExerciseScores(prev => ({
-      ...prev,
-      [courseId]: { score: passed ? 1 : 0, total: 1, passed },
-    }));
+    setExerciseScores(prev => {
+      if (prev[courseId]?.passed && !passed) return prev;
+      return {
+        ...prev,
+        [courseId]: { score: passed ? 1 : 0, total: 1, passed },
+      };
+    });
     if (passed) {
       const idx = exCourses.findIndex(c => c.id === courseId);
       const next = exCourses[idx + 1];

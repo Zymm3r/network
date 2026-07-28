@@ -99,19 +99,21 @@ class ExerciseErrorBoundary extends Component<{children: ReactNode}, {hasError: 
 interface ExerciseCardProps {
   courseName?: string;
   courseId?: string;
+  lessonId?: string;
   onComplete?: (passed: boolean) => void;
   onNextLesson?: () => void;
 }
 
-export default function ExerciseCard({ courseName, courseId, onComplete, onNextLesson }: ExerciseCardProps = {}) {
+export default function ExerciseCard({ courseName, courseId, lessonId, onComplete, onNextLesson }: ExerciseCardProps = {}) {
   const { user } = useAuth();
   const { currentStreak, recordActivity } = useDailyStreak(user?.id);
   const { totalSeconds } = useActivity();
 
   const exercise = getExerciseForCourse(courseId);
-  const { recordAttempt, isQueuedAttempts } = useExerciseProgress(
-    exercise.id || courseId || 'unknown',
-    exercise.lessonId || '',
+  const exerciseId = `python:${courseId || 'default'}`;
+  const { recordAttempt, isQueuedAttempts, latestAttempt } = useExerciseProgress(
+    exerciseId,
+    lessonId || '',
     courseId || ''
   );
 
@@ -137,6 +139,19 @@ export default function ExerciseCard({ courseName, courseId, onComplete, onNextL
   const [showAchievement, setShowAchievement] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const terminalRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!latestAttempt) return;
+
+    setAttempts(current => Math.max(current, latestAttempt.attempts_count || 0));
+    if (latestAttempt.submitted_code) setCode(latestAttempt.submitted_code);
+    if (latestAttempt.passed) {
+      setAllPassed(true);
+      setRunComplete(true);
+      setRunPhase('done');
+      setXpEarned(exercise.xpReward);
+    }
+  }, [latestAttempt, exercise.xpReward]);
 
   // Auto-scroll terminal to bottom
   useEffect(() => {
@@ -238,8 +253,8 @@ export default function ExerciseCard({ courseName, courseId, onComplete, onNextL
         if (user?.id) {
           recordAttempt({
             user_id: user.id,
-            exercise_id: exercise.id || courseId || 'unknown',
-            lesson_id: exercise.lessonId || '',
+            exercise_id: exerciseId,
+            lesson_id: lessonId || null,
             course_id: courseId || '',
             passed: false,
             score: null,
@@ -264,7 +279,7 @@ export default function ExerciseCard({ courseName, courseId, onComplete, onNextL
       // Simulate progressive UI feedback using ONLY visible results
       const visibleResults = gradingResult.visibleResults || [];
       let idx = 0;
-      const interval = setInterval(() => {
+      const interval = setInterval(async () => {
         if (idx < visibleResults.length) {
           if (visibleResults[idx]) {
             setTestResults(prev => [...prev, visibleResults[idx]]);
@@ -277,14 +292,15 @@ export default function ExerciseCard({ courseName, courseId, onComplete, onNextL
           setIsRunning(false);
           setRunPhase('done');
 
-          // Persist attempt to database (non-blocking)
+          // Persist before reporting completion so an immediate refresh cannot
+          // race ahead of the database write.
           if (user?.id) {
             // Only join visible test results for stdout
             const stdout = visibleResults.map(r => r.actual || '').join('\n');
-            recordAttempt({
+            await recordAttempt({
               user_id: user.id,
-              exercise_id: exercise.id || courseId || 'unknown',
-              lesson_id: exercise.lessonId || '',
+              exercise_id: exerciseId,
+              lesson_id: lessonId || null,
               course_id: courseId || '',
               passed: gradingResult.passed,
               score: gradingResult.score,
@@ -297,7 +313,7 @@ export default function ExerciseCard({ courseName, courseId, onComplete, onNextL
               execution_time: executionTimeMs,
               status: gradingResult.passed ? 'passed' : 'failed',
               execution_timestamp: new Date().toISOString(),
-            }).catch(err => console.error('[Exercise Tracking] Failed to persist attempt:', err));
+            });
           }
 
           if (gradingResult.passed && xpEarned === 0) {
@@ -348,8 +364,8 @@ export default function ExerciseCard({ courseName, courseId, onComplete, onNextL
       if (user?.id) {
         recordAttempt({
           user_id: user.id,
-          exercise_id: exercise.id || courseId || 'unknown',
-          lesson_id: exercise.lessonId || '',
+          exercise_id: exerciseId,
+          lesson_id: lessonId || null,
           course_id: courseId || '',
           passed: false,
           score: null,
@@ -365,7 +381,7 @@ export default function ExerciseCard({ courseName, courseId, onComplete, onNextL
         }).catch(err => console.error('[Exercise Tracking] Failed to persist failed attempt:', err));
       }
     }
-  }, [code, exercise, xpEarned, attempts, runPythonTests, recordActivity, user?.id, courseId, recordAttempt]);
+  }, [code, exercise, exerciseId, lessonId, xpEarned, attempts, runPythonTests, recordActivity, user?.id, courseId, recordAttempt, onComplete]);
 
   const handleReset = useCallback(() => {
     setCode(exercise.starterCode);
@@ -688,7 +704,7 @@ export default function ExerciseCard({ courseName, courseId, onComplete, onNextL
                 ref={terminalRef}
                 className="p-4 font-mono text-xs space-y-1 min-h-[120px] max-h-[200px] overflow-y-auto overscroll-contain scroll-smooth"
               >
-                {!isRunning && !isInitializing && testResults.length === 0 && (
+                {!isRunning && !isInitializing && testResults.length === 0 && !allPassed && (
                   <div className="text-slate-600 flex items-center gap-2">
                     <span className="text-slate-700">$</span> กดปุ่ม "รันโค้ด" เพื่อทดสอบ...
                   </div>
@@ -762,7 +778,9 @@ export default function ExerciseCard({ courseName, courseId, onComplete, onNextL
                   <div className="terminal-line-enter mt-2 pt-2 border-t border-[#21262D]">
                     {allPassed ? (
                       <div className="text-emerald-400 font-semibold">
-                        ✅ All {testResults.length} tests passed! Great job!
+                        {testResults.length > 0
+                          ? `✅ All ${testResults.length} tests passed! Great job!`
+                          : '✅ Completed previously. Your saved result has been restored.'}
                       </div>
                     ) : (
                       <div className="text-red-400 font-semibold space-y-1">

@@ -720,10 +720,6 @@ export function LessonDetail() {
           t.lessonDetail.checkpointSaveSuccess.replace('{title}', activeCheckpoint?.title || '')
         );
 
-        if (isAll && lesson?.course_id) {
-
-        }
-
         // Clear active checkpoint timer from localStorage upon completion
         if (timerStorageKey) {
           localStorage.removeItem(timerStorageKey);
@@ -1030,6 +1026,7 @@ export function LessonDetail() {
           <TabsContent value="quiz" className="mt-0">
             <QuizCard 
               courseId={lesson.course_id || undefined} 
+              lessonId={lessonId}
               onComplete={(score, total) => {
                 if (score / total >= 0.8) setIsQuizPassed(true);
               }} 
@@ -1040,6 +1037,7 @@ export function LessonDetail() {
           <TabsContent value="exercise" className="mt-0">
             <ExerciseCard 
               courseId={lesson.course_id || undefined} 
+              lessonId={lessonId}
               onComplete={(passed) => setIsExercisePassed(passed)} 
               onNextLesson={handleNextLesson}
             />

@@ -10,6 +10,7 @@ import {
 import { useAuth } from '../hooks/useAuth';
 import { useDailyStreak } from '../hooks/useDailyStreak';
 import { useActivity } from '../contexts/ActivityContext';
+import { useExerciseProgress } from '../hooks/useExerciseProgress';
 import { playFeedback } from '../utils/feedback';
 import { getQuizForCourse, QuizQuestion } from '../data/courseQuizData';
 
@@ -41,14 +42,21 @@ function getRandomItem<T>(arr: T[]): T {
 interface QuizCardProps {
   courseName?: string;
   courseId?: string;
+  lessonId?: string;
   onComplete?: (score: number, totalQuestions: number) => void;
   onNextLesson?: () => void;
 }
 
-export default function QuizCard({ courseName, courseId, onComplete, onNextLesson }: QuizCardProps = {}) {
+export default function QuizCard({ courseName, courseId, lessonId, onComplete, onNextLesson }: QuizCardProps = {}) {
   const { user } = useAuth();
   const { currentStreak, recordActivity } = useDailyStreak(user?.id);
   const { totalSeconds } = useActivity();
+  const quizAttemptId = `quiz:${courseId || 'default'}`;
+  const { recordAttempt, latestAttempt } = useExerciseProgress(
+    quizAttemptId,
+    lessonId || '',
+    courseId || ''
+  );
 
   const [currentQ, setCurrentQ] = useState(0);
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
@@ -73,6 +81,15 @@ export default function QuizCard({ courseName, courseId, onComplete, onNextLesso
   const question = questions[currentQ];
   const totalQuestions = questions.length;
   const progressPct = ((currentQ + (isSubmitted ? 1 : 0)) / totalQuestions) * 100;
+
+  useEffect(() => {
+    if (!latestAttempt) return;
+
+    const previousScore = latestAttempt.passed_tests
+      ?? Math.round(((latestAttempt.score || 0) / 100) * totalQuestions);
+    setScore(previousScore);
+    setShowResults(true);
+  }, [latestAttempt, totalQuestions]);
 
   // Motivational sub-text based on progress
   const getMotivationalText = () => {
@@ -148,7 +165,7 @@ export default function QuizCard({ courseName, courseId, onComplete, onNextLesso
     }
   }, [selectedIdx, question.correctIndex, streak]);
 
-  const handleNext = useCallback(() => {
+  const handleNext = useCallback(async () => {
     if (currentQ < totalQuestions - 1) {
       setCurrentQ(q => q + 1);
       setQuestionKey(k => k + 1); // trigger transition animation
@@ -157,21 +174,43 @@ export default function QuizCard({ courseName, courseId, onComplete, onNextLesso
       setIsCorrect(false);
       setShowHint(false);
     } else {
+      const finalScore = score;
+      const passed = finalScore / totalQuestions >= 0.8;
       setShowResults(true);
       playFeedback('complete');
       recordActivity(); // Record daily streak
       // Check for achievements
-      if (score + (selectedIdx === question.correctIndex ? 1 : 0) === totalQuestions) {
+      if (finalScore === totalQuestions) {
         playFeedback('perfect');
         setShowAchievement('🏆 Perfect Score!');
         setTimeout(() => setShowAchievement(null), 3000);
       }
+
+      if (user?.id && courseId) {
+        await recordAttempt({
+          user_id: user.id,
+          exercise_id: quizAttemptId,
+          lesson_id: lessonId || null,
+          course_id: courseId,
+          submitted_code: null,
+          passed_tests: finalScore,
+          total_tests: totalQuestions,
+          passed,
+          score: Math.round((finalScore / totalQuestions) * 100),
+          attempts_count: (latestAttempt?.attempts_count || 0) + 1,
+          stdout: null,
+          error_message: null,
+          execution_time: null,
+          status: passed ? 'passed' : 'failed',
+          execution_timestamp: new Date().toISOString(),
+        });
+      }
       
       if (onComplete) {
-        onComplete(score + (selectedIdx === question.correctIndex ? 1 : 0), totalQuestions);
+        onComplete(finalScore, totalQuestions);
       }
     }
-  }, [currentQ, totalQuestions, score, selectedIdx, question.correctIndex, recordActivity, onComplete]);
+  }, [currentQ, totalQuestions, score, recordActivity, user?.id, courseId, lessonId, recordAttempt, quizAttemptId, latestAttempt?.attempts_count, onComplete]);
 
   const handleRestart = useCallback(() => {
     setCurrentQ(0);

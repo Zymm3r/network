@@ -123,6 +123,24 @@ export const exerciseApi = {
   },
 
   /**
+   * Load course-level quiz or Python history. The exercise id prefix keeps
+   * these attempts separate from lesson-level coding exercises.
+   */
+  async getPracticeAttempts(
+    userId: string,
+    kind: 'quiz' | 'python'
+  ): Promise<ExerciseAttempt[]> {
+    const response = await supabase
+      .from('exercise_attempts')
+      .select('*')
+      .eq('user_id', userId)
+      .like('exercise_id', `${kind}:%`)
+      .order('created_at', { ascending: false });
+
+    return handleSupabaseResponse(response, `load ${kind} practice history`);
+  },
+
+  /**
    * Get the latest exercise attempt for a user on a specific exercise
    */
   async getLatestExerciseAttempt(userId: string, exerciseId: string): Promise<ExerciseAttempt | null> {

@@ -14,6 +14,8 @@ export interface UseExerciseProgressResult {
   recordAttempt: (data: AttemptData) => Promise<ExerciseAttempt | null>;
   flushQueue: () => Promise<number>;
   isQueuedAttempts: boolean;
+  latestAttempt: ExerciseAttempt | null;
+  loadingLatestAttempt: boolean;
 }
 
 export function useExerciseProgress(
@@ -23,8 +25,37 @@ export function useExerciseProgress(
 ): UseExerciseProgressResult {
   const { user } = useAuth();
   const [isQueuedAttempts, setIsQueuedAttempts] = useState(false);
+  const [latestAttempt, setLatestAttempt] = useState<ExerciseAttempt | null>(null);
+  const [loadingLatestAttempt, setLoadingLatestAttempt] = useState(true);
 
   const queueKey = user ? `pending-exercise-attempts-${user.id}` : null;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!user?.id || !exerciseId) {
+      setLatestAttempt(null);
+      setLoadingLatestAttempt(false);
+      return;
+    }
+
+    setLoadingLatestAttempt(true);
+    exerciseApi.getLatestExerciseAttempt(user.id, exerciseId)
+      .then(attempt => {
+        if (!cancelled) setLatestAttempt(attempt);
+      })
+      .catch(error => {
+        console.error('[Exercise Tracking] Failed to load latest attempt:', error);
+        if (!cancelled) setLatestAttempt(null);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingLatestAttempt(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, exerciseId]);
 
   // Load queue from localStorage on mount
   useEffect(() => {
@@ -66,6 +97,7 @@ export function useExerciseProgress(
 
       try {
         const result = await exerciseApi.recordAttempt(data);
+        setLatestAttempt(result);
         // Clear any queued attempts for this exercise on success
         const queue = JSON.parse(localStorage.getItem(queueKey) || '[]');
         const filtered = queue.filter(
@@ -141,5 +173,7 @@ export function useExerciseProgress(
     recordAttempt,
     flushQueue,
     isQueuedAttempts,
+    latestAttempt,
+    loadingLatestAttempt,
   };
 }

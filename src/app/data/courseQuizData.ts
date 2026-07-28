@@ -16,6 +16,7 @@ export interface TestCase {
   input: string;
   expected: string;
   passed?: boolean;
+  actual?: string;
   isHidden?: boolean;
   weight?: number;
 }
