@@ -4,6 +4,20 @@ import { useProducts } from './useProducts';
 import { ProductDetailData } from '../types/product';
 import { useI18n } from '../../../app/i18n';
 
+const dedupeByVisibleContent = <T,>(items: T[], getValues: (item: T) => unknown[]): T[] => {
+  const seen = new Set<string>();
+
+  return items.filter((item) => {
+    const key = JSON.stringify(getValues(item).map((value) =>
+      typeof value === 'string' ? value.trim() : value ?? null
+    ));
+
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
+
 export function useProductDetail(slug: string | undefined) {
   const { products, isLoading: isCatalogLoading } = useProducts();
   const { language } = useI18n();
@@ -161,10 +175,29 @@ export function useProductDetail(slug: string | undefined) {
 
         setData({
           product: mergedProduct,
-          documents: mappedDocuments,
-          faqs: mappedFaqs,
-          troubleshooting_guides: mappedGuides,
-          training_courses: mappedCourses
+          documents: dedupeByVisibleContent(mappedDocuments, (doc) => [
+            doc.title,
+            doc.document_type,
+            doc.file_url
+          ]),
+          faqs: dedupeByVisibleContent(mappedFaqs, (faq) => [faq.question, faq.answer]),
+          troubleshooting_guides: dedupeByVisibleContent(mappedGuides, (guide) => [
+            guide.issue,
+            guide.symptoms,
+            guide.solution
+          ]),
+          training_courses: dedupeByVisibleContent(mappedCourses, (course) => [
+            course.title,
+            course.description,
+            course.difficulty,
+            course.video_url,
+            (course.training_lessons || []).map((lesson: any) => [
+              lesson.lesson_order,
+              lesson.title,
+              lesson.markdown_content,
+              lesson.video_url
+            ])
+          ])
         });
 
       } catch (err) {
