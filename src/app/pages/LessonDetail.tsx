@@ -1000,50 +1000,9 @@ export function LessonDetail() {
         </Card>
       )}
 
-      {/* Practice Tabs (Quiz & Exercise) for all lessons */}
-      <div className="mt-8">
-        <Tabs defaultValue="quiz" className="w-full">
-          <TabsList className="w-full flex mb-6">
-            <TabsTrigger value="quiz" className="flex-1 gap-2">
-              <HelpCircle className="w-4 h-4" />
-              แบบทดสอบ
-            </TabsTrigger>
-            <TabsTrigger value="exercise" className="flex-1 gap-2">
-              <PenTool className="w-4 h-4" />
-              แบบฝึกหัด
-            </TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="quiz" className="mt-0">
-            <QuizCard 
-              courseId={lesson.course_id || undefined} 
-              lessonId={lessonId}
-              questions={lessonQuizQuestions}
-              onProgressRestored={handleQuizProgressRestored}
-              onComplete={(score, total) => {
-                if (score / total >= 0.8) setIsQuizPassed(true);
-              }} 
-              onNextLesson={handleNextLesson}
-            />
-          </TabsContent>
-          
-          <TabsContent value="exercise" className="mt-0">
-            <ExerciseCard 
-              courseId={lesson.course_id || undefined} 
-              lessonId={lessonId}
-              onComplete={(passed) => setIsExercisePassed(passed)} 
-              onNextLesson={handleNextLesson}
-            />
-          </TabsContent>
-        </Tabs>
-      </div>
-
-      {/* ══════════════════════════════════════════════════════════
-          READING LESSON: Rich Article Renderer
-      ══════════════════════════════════════════════════════════ */}
+      {/* Reading lessons always present the article before comprehension checks. */}
       {isReadingLesson && readingContent && (
         <>
-          {/* Reading progress bar — fixed at top */}
           <div className="sticky top-0 z-30 -mx-1">
             <div className="h-1 bg-slate-100 rounded-full overflow-hidden">
               <div
@@ -1091,7 +1050,6 @@ export function LessonDetail() {
         </>
       )}
 
-      {/* Reading lesson with no content yet */}
       {isReadingLesson && !readingContent && (
         <Card className="border-slate-100">
           <CardHeader><CardTitle>{t.lessonDetail.articleHeader}</CardTitle></CardHeader>
@@ -1103,6 +1061,44 @@ export function LessonDetail() {
           </CardContent>
         </Card>
       )}
+
+      {/* Practice Tabs (Quiz & Exercise) for all lessons */}
+      <div className="mt-8">
+        <Tabs defaultValue="quiz" className="w-full">
+          <TabsList className="w-full flex mb-6">
+            <TabsTrigger value="quiz" className="flex-1 gap-2">
+              <HelpCircle className="w-4 h-4" />
+              แบบทดสอบ
+            </TabsTrigger>
+            <TabsTrigger value="exercise" className="flex-1 gap-2">
+              <PenTool className="w-4 h-4" />
+              แบบฝึกหัด
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="quiz" className="mt-0">
+            <QuizCard
+              courseId={lesson.course_id || undefined}
+              lessonId={lessonId}
+              questions={lessonQuizQuestions}
+              onProgressRestored={handleQuizProgressRestored}
+              onComplete={(score, total) => {
+                if (score / total >= 0.8) setIsQuizPassed(true);
+              }}
+              onNextLesson={handleNextLesson}
+            />
+          </TabsContent>
+
+          <TabsContent value="exercise" className="mt-0">
+            <ExerciseCard
+              courseId={lesson.course_id || undefined}
+              lessonId={lessonId}
+              onComplete={(passed) => setIsExercisePassed(passed)}
+              onNextLesson={handleNextLesson}
+            />
+          </TabsContent>
+        </Tabs>
+      </div>
 
       {/* ══════════════════════════════════════════════════════════
           COMPLETION / TIMER CARD
