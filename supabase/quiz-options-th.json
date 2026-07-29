@@ -213,10 +213,10 @@
     "lesson_id": "lesson-adv-001",
     "question_no": 1,
     "options_th": [
-      "Type 1 (Router LSA)",
-      "Type 2 (Network LSA)",
-      "Type 3 (Summary LSA)",
-      "Type 4 (ASBR Summary LSA)"
+      "ประเภท 1 (Router LSA)",
+      "ประเภท 2 (Network LSA)",
+      "ประเภท 3 (Summary LSA)",
+      "ประเภท 4 (ASBR Summary LSA)"
     ]
   },
   {
@@ -243,9 +243,9 @@
     "lesson_id": "lesson-adv-001",
     "question_no": 4,
     "options_th": [
-      "Standard Area",
-      "Stub Area",
-      "Totally Stubby Area",
+      "พื้นที่มาตรฐาน (Standard Area)",
+      "พื้นที่ Stub",
+      "พื้นที่ Totally Stubby",
       "NSSA"
     ]
   },
@@ -666,7 +666,7 @@
       "AS_PATH",
       "LOCAL_PREF",
       "MED",
-      "Router ID"
+      "รหัสเราเตอร์ (Router ID)"
     ]
   },
   {
@@ -745,7 +745,7 @@
     "options_th": [
       "รายการการเข้าถึง",
       "รายการคำนำหน้า",
-      "AS Path Access List",
+      "รายการควบคุม AS Path",
       "รายการแจก"
     ]
   },
@@ -784,7 +784,7 @@
     "question_no": 3,
     "options_th": [
       "โทโพโลยีเครือข่าย",
-      "IP Addressing",
+      "การกำหนดที่อยู่ IP",
       "ชุดโปรโตคอล",
       "ตารางเส้นทาง"
     ]
@@ -1003,7 +1003,7 @@
     "lesson_id": "lesson-ccna002-01",
     "question_no": 0,
     "options_th": [
-      "IP Address",
+      "ที่อยู่ IP",
       "ที่อยู่ MAC",
       "หมายเลขพอร์ต",
       "หมายเลขระบบอัตโนมัติ"
@@ -1173,7 +1173,7 @@
     "lesson_id": "lesson-ccna002-04",
     "question_no": 2,
     "options_th": [
-      "IP Address and MAC Address",
+      "ที่อยู่ IP และที่อยู่ MAC",
       "ลำดับความสำคัญของบริดจ์และที่อยู่ MAC",
       "ลำดับความสำคัญของพอร์ตและรหัสพอร์ต",
       "รหัส VLAN และที่อยู่ IP"
@@ -1203,7 +1203,7 @@
     "lesson_id": "lesson-ccna002-05",
     "question_no": 0,
     "options_th": [
-      "IP routing configurations.",
+      "การตั้งค่าเส้นทาง IP",
       "สร้าง ลบ และ Sync VLAN ระหว่าง Switch",
       "การตรวจสอบความปลอดภัยของพอร์ต",
       "การคำนวณเส้นทางแบบขยายของต้นไม้"
@@ -1455,7 +1455,7 @@
     "options_th": [
       "อัลกอริธึมคู่",
       "อัลกอริทึมของเบลล์แมน-ฟอร์ด",
-      "Dijkstra SPF",
+      "อัลกอริทึม Dijkstra SPF",
       "อัลกอริทึมการขยายต้นไม้"
     ]
   },
@@ -1645,7 +1645,7 @@
     "options_th": [
       "การตรวจจับข้อผิดพลาดเท่านั้น",
       "PAP/CHAP และ Multilink",
-      "IP addressing support.",
+      "รองรับการกำหนดที่อยู่ IP",
       "คำจำกัดความของการจำกัดความเร็ว"
     ]
   },
@@ -2143,7 +2143,7 @@
     "lesson_id": "lesson-ccna006-01",
     "question_no": 4,
     "options_th": [
-      "Authentication",
+      "การยืนยันตัวตน",
       "การอนุญาต",
       "การบัญชี",
       "การเข้ารหัส"
@@ -2186,7 +2186,7 @@
       "ความปลอดภัยของท่าเรือ",
       "การสอดแนม DHCP",
       "การตรวจสอบ ARP แบบไดนามิก (DAI)",
-      "IP Source Guard"
+      "การป้องกันต้นทาง IP"
     ]
   },
   {
@@ -2324,9 +2324,9 @@
     "question_no": 2,
     "options_th": [
       "API การรับประกัน",
-      "Intent-based API",
+      "API แบบอิงเจตนา",
       "API การรวมระบบ",
-      "Command Runner API"
+      "API สำหรับรันคำสั่ง"
     ]
   },
   {
@@ -2504,7 +2504,7 @@
     "question_no": 0,
     "options_th": [
       "ภาษาโปรแกรมสำหรับรหัสเครือข่าย",
-      "Distributed Version Control",
+      "ระบบควบคุมเวอร์ชันแบบกระจาย",
       "เซิร์ฟเวอร์ฐานข้อมูลคลาวด์",
       "ยูทิลิตี้การคอมไพล์ไปป์ไลน์ซอฟต์แวร์"
     ]
@@ -2553,9 +2553,9 @@
     "lesson_id": "lesson-git-02",
     "question_no": 0,
     "options_th": [
-      "Git is a paid service; GitHub is free open-source software.",
+      "Git เป็นบริการแบบเสียเงิน ส่วน GitHub เป็นซอฟต์แวร์โอเพนซอร์สฟรี",
       "Git คือ VCS ในเครื่อง; GitHub/GitLab คือ Remote Platform",
-      "Git operates in Layer 3; GitHub operates in Layer 7.",
+      "Git ทำงานที่ Layer 3 ส่วน GitHub ทำงานที่ Layer 7",
       "เป็นผลิตภัณฑ์ที่เหมือนกันซึ่งพัฒนาโดยบริษัทต่างๆ"
     ]
   },
@@ -2703,7 +2703,7 @@
     "lesson_id": "lesson-git-05",
     "question_no": 0,
     "options_th": [
-      "Continuous Integration / Continuous Delivery",
+      "การผสานรวมต่อเนื่อง / การส่งมอบต่อเนื่อง",
       "การตรวจสอบการกำหนดค่า / การส่งคำสั่ง",
       "การกระจายโครงสร้างพื้นฐาน / ตัวควบคุมแบบรวมศูนย์",
       "การแยกรหัส / การวินิจฉัยคำสั่ง"
@@ -2794,7 +2794,7 @@
     "question_no": 4,
     "options_th": [
       "วงเล็บปีกกา `{}`",
-      "Indentation",
+      "การเยื้องบรรทัด",
       "อัฒภาค `;`",
       "วงเล็บ `()`"
     ]
@@ -2924,7 +2924,7 @@
     "question_no": 2,
     "options_th": [
       "ไฟร์วอลล์กรองแพ็กเก็ต",
-      "Proxy Firewall / WAF",
+      "ไฟร์วอลล์พร็อกซี / WAF",
       "ไฟร์วอลล์การตรวจสอบสถานะ",
       "เกตเวย์ระดับวงจร"
     ]
@@ -3054,7 +3054,7 @@
     "question_no": 0,
     "options_th": [
       "ความเร็ว ความน่าเชื่อถือ การเชื่อมต่อ",
-      "Confidentiality, Integrity, Authentication",
+      "การรักษาความลับ ความถูกต้อง และการยืนยันตัวตน",
       "การกำหนดเส้นทาง การสลับ การแปลที่อยู่",
       "การควบคุมการเข้าถึง การตรวจสอบ การบริหาร"
     ]
@@ -3134,7 +3134,7 @@
     "question_no": 3,
     "options_th": [
       "นโยบาย ISAKMP",
-      "Crypto Map",
+      "แผนผังการเข้ารหัส",
       "อินเตอร์เฟซอุโมงค์",
       "สมาคมความมั่นคง"
     ]
@@ -3365,7 +3365,7 @@
     "options_th": [
       "ต้นทางและปลายทาง",
       "Event และ Action",
-      "Interface and Protocol",
+      "อินเทอร์เฟซและโปรโตคอล",
       "เซิร์ฟเวอร์และไคลเอนต์"
     ]
   },
@@ -3404,9 +3404,9 @@
     "question_no": 0,
     "options_th": [
       "ข้อตกลงระดับบริการอินเทอร์เน็ตโปรโตคอล",
-      "IP Security Link Association",
+      "การเชื่อมโยงความปลอดภัย IP",
       "เครื่องวิเคราะห์บันทึกระบบโปรโตคอลอัจฉริยะ",
-      "IP Speed Limit Authorization"
+      "การอนุญาตขีดจำกัดความเร็ว IP"
     ]
   },
   {
@@ -3504,7 +3504,7 @@
     "question_no": 0,
     "options_th": [
       "เครื่องสแกนไวรัสคอมพิวเตอร์",
-      "Open-source Packet Analyzer",
+      "เครื่องมือวิเคราะห์แพ็กเก็ตโอเพนซอร์ส",
       "โปรแกรมแก้ไขข้อความบรรทัดคำสั่ง",
       "เครื่องจำลองสวิตช์เสมือน"
     ]

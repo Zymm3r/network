@@ -9,6 +9,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run --config vitest.unit.config.ts",
     "test:e2e": "playwright test",
+    "validate:quizzes": "node scripts/localize-lesson-quizzes.mjs validate",
     "ci": "npm run typecheck && npm test && npm run build"
   },
   "dependencies": {

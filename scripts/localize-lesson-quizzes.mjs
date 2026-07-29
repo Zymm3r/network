@@ -6,11 +6,36 @@ const root = resolve(import.meta.dirname, '..');
 const seedPath = resolve(root, 'supabase', 'seed.sql');
 const localizationPath = resolve(root, 'supabase', 'quiz-options-th.json');
 
+const technicalLiteralNames = new Set([
+  '[10,000,000 / Bandwidth + Delay] × 256',
+  'DoS / DDoS',
+  'IANA / RIRs',
+  'OpenSSL',
+  'Syslog',
+  'WinPcap / Npcap',
+  'X-Auth-Token',
+  'vEdge',
+  'vManage',
+]);
+
+const technicalCommandPattern = /^(?:area|crypto|debug|def|delete_|discard_|distribute-list|dns$|domain-name-service$|ebgp-multihop|execute_|filter-list|get_|git|http$|interface|ip|json=|logging|monitor|neighbor|no debug|params=|payload=|port |push_|redistribute|requests\.|retrieve_|rollback\(|route-filter|router|run |send_|service|show|stop debugging|summary-address|switchport|track|undebug|write_)/i;
+
+function isTechnicalLiteral(value) {
+  const option = value.trim();
+  if (!/[A-Za-z]/.test(option)) return true;
+  if (/^[A-Z0-9_./ -]+$/.test(option)) return true;
+  if (technicalLiteralNames.has(option)) return true;
+  if (technicalCommandPattern.test(option)) return true;
+  if (/^\/|[<>=;]|->|\w+\(\)|\.cfg$|^[A-Za-z][A-Za-z0-9]*_[A-Za-z0-9_]+$/.test(option)) return true;
+  return false;
+}
+
 function localSupabaseEnvironment() {
-  const output = execSync('npx supabase@2.75.0 status -o env', {
+  const supabaseCommand = process.platform === 'win32' ? 'npx supabase@2.75.0' : 'supabase';
+  const output = execSync(`${supabaseCommand} status -o env`, {
     cwd: root,
     encoding: 'utf8',
-    shell: 'powershell.exe',
+    shell: process.platform === 'win32' ? 'powershell.exe' : '/bin/sh',
   });
   return Object.fromEntries(
     output.split(/\r?\n/).flatMap(line => {
@@ -49,6 +74,12 @@ function qualityProblems(question, optionsTh) {
   }
   if (optionsTh.some(option => /^(?:ข้อ\s*)?[ก-ฮA-D][.)]\s*/u.test(option))) {
     problems.push('contains answer labels');
+  }
+  const untranslated = optionsTh.filter(option => (
+    !/[\u0E00-\u0E7F]/u.test(option) && !isTechnicalLiteral(option)
+  ));
+  if (untranslated.length > 0) {
+    problems.push(`contains untranslated prose: ${untranslated.join(' | ')}`);
   }
   const lengths = optionsTh.map(optionLength);
   const correctLength = lengths[question.correct_index];
@@ -145,6 +176,9 @@ async function collectProblems() {
     problems: lessons.flatMap(lesson => lesson.quiz_data.questions.flatMap((question, questionNo) => {
       const optionsTh = byKey.get(`${lesson.id}:${questionNo}`);
       const issues = qualityProblems(question, optionsTh);
+      if (JSON.stringify(question.options_th) !== JSON.stringify(optionsTh)) {
+        issues.unshift('database options_th differs from canonical localization');
+      }
       return issues.length === 0 ? [] : [{
         lesson_id: lesson.id,
         lesson_title_th: lesson.title_th,
