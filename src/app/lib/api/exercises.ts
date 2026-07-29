@@ -17,12 +17,7 @@ function resolveStatus(
 }
 
 export const exerciseApi = {
-  /**
-   * Save an exercise attempt to Supabase.
-   * Uses the M4 schema (submitted_code, passed_tests, total_tests,
-   * execution_time, status). If the migration is not yet applied, it falls
-   * back to the legacy schema so writes never break the UI.
-   */
+  /** Save an idempotent exercise attempt to Supabase. */
   async recordAttempt(attemptData: Omit<ExerciseAttempt, 'id' | 'created_at' | 'updated_at'>): Promise<ExerciseAttempt> {
     const status = attemptData.status ?? resolveStatus(
       attemptData.passed,
@@ -30,10 +25,10 @@ export const exerciseApi = {
       attemptData.execution_time,
     );
 
-    try {
-      const response = await supabase
-        .from('exercise_attempts')
-        .insert({
+    const response = await supabase
+      .from('exercise_attempts')
+      .upsert({
+          client_attempt_id: attemptData.client_attempt_id,
           user_id: attemptData.user_id,
           exercise_id: attemptData.exercise_id,
           lesson_id: attemptData.lesson_id,
@@ -49,33 +44,11 @@ export const exerciseApi = {
           execution_time: attemptData.execution_time,
           status,
           execution_timestamp: attemptData.execution_timestamp,
-        })
-        .select()
-        .single();
+        }, { onConflict: 'client_attempt_id' })
+      .select()
+      .single();
 
-      return handleSupabaseResponse(response, 'save exercise attempt');
-    } catch (err: any) {
-      // Fallback for when the M4 migration has not been run yet.
-      console.warn('[Exercise API] New M4 schema columns missing, falling back to legacy schema.');
-      const legacyResponse = await supabase
-        .from('exercise_attempts')
-        .insert({
-          user_id: attemptData.user_id,
-          exercise_id: attemptData.exercise_id,
-          lesson_id: attemptData.lesson_id,
-          course_id: attemptData.course_id,
-          passed: attemptData.passed,
-          score: attemptData.score,
-          attempts_count: attemptData.attempts_count,
-          stdout: attemptData.stdout,
-          error_message: attemptData.error_message,
-          execution_timestamp: attemptData.execution_timestamp,
-        })
-        .select()
-        .single();
-
-      return handleSupabaseResponse(legacyResponse, 'save exercise attempt (legacy)');
-    }
+    return handleSupabaseResponse(response, 'save exercise attempt');
   },
 
   /**

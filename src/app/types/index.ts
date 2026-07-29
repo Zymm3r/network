@@ -35,7 +35,7 @@ export interface Lesson {
   title_en: string;
   content_th: string | null;
   content_en: string | null;
-  lesson_type: 'video' | 'quiz' | 'exercise' | 'reading';
+  lesson_type: 'video' | 'quiz' | 'exercise' | 'reading' | 'coding' | 'interactive';
   duration_minutes: number | null;
   order_index: number;
   video_url: string | null;
@@ -165,11 +165,12 @@ export interface ExerciseAttempt {
   id: string;
   user_id: string;
   exercise_id: string;
+  client_attempt_id?: string | null;
   lesson_id: string | null;
   course_id: string;
   submitted_code: string | null;
-  passed_tests: number;
-  total_tests: number;
+  passed_tests: number | null;
+  total_tests: number | null;
   passed: boolean;
   score: number | null;
   attempts_count: number;

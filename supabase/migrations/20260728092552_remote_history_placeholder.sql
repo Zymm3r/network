@@ -1,0 +1,1 @@
+-- Placeholder for the migration version already recorded on production.

@@ -38,6 +38,11 @@ export function PathDetail() {
     );
   }
 
+  const pathLevel: 'beginner' | 'intermediate' | 'advanced' =
+    path?.from_level === 'intermediate' || path?.from_level === 'advanced'
+      ? path.from_level
+      : 'beginner';
+
   if (!path) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -83,8 +88,8 @@ export function PathDetail() {
               <Route className="w-6 h-6" />
             </div>
             <div className="flex items-center gap-2">
-              <Badge className={`${levelColors[path.level || 'beginner']} border`}>
-                {t.levels[path.level || 'beginner']}
+              <Badge className={`${levelColors[pathLevel]} border`}>
+                {t.levels[pathLevel]}
               </Badge>
               <Badge variant="secondary" className="bg-white/20 text-white border-0">
                 {pathTypeLabel}

@@ -12,7 +12,7 @@ import { Skeleton } from '../components/ui/skeleton';
 import {
   ArrowLeft, Clock, ChevronRight, Play, FileText, HelpCircle,
   CheckCircle, CheckCircle2, Circle, Zap, BookOpen, Trophy, ChevronDown,
-  Code2, PlayCircle, Eye, PenTool
+  Code2, PlayCircle, Eye, PenTool, ArrowRight
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import QuizCard from '../components/QuizCard';
@@ -20,6 +20,12 @@ import ExerciseCard from '../components/ExerciseCard';
 import { KalturaPlayer } from '../components/KalturaPlayer';
 import { LessonCompleteCard } from '../components/LessonCompleteCard';
 import { getLessonQuizQuestions } from '../lib/lessonQuiz';
+import {
+  flushLessonProgressQueue,
+  queueLessonProgress,
+  saveLessonProgress,
+  type LessonProgressSave,
+} from '../lib/progressQueue';
 
 /* ─────────────────────────────────────────
    Static look-up tables
@@ -656,11 +662,10 @@ export function LessonDetail() {
     const isAll = newCompletedIndices.length === PYTHON_CHECKPOINTS.length;
     const now = new Date().toISOString();
 
-    console.log(`[Progress DB Log] Saving Python checkpoint progress. User: ${user.id}, completed: [${newCompletedIndices.join(', ')}], percentage: ${pct}%`);
-
-    const payload = {
+    const payload: LessonProgressSave = {
       user_id: user.id,
       lesson_id: lessonId,
+      course_id: lesson?.course_id || null,
       status: isAll ? 'completed' : 'in_progress',
       progress_percentage: pct,
       notes: JSON.stringify(newCompletedIndices),
@@ -668,33 +673,29 @@ export function LessonDetail() {
       last_accessed_at: now,
     };
 
-    const { data: existing } = await supabase
-      .from('user_progress')
-      .select('id')
-      .eq('user_id', user.id)
-      .eq('lesson_id', lessonId)
-      .maybeSingle();
+    await saveLessonProgress(payload);
+  }, [user?.id, lessonId, lesson?.course_id]);
 
-    let saveError = null;
-    let resultData = null;
+  useEffect(() => {
+    if (!user?.id) return;
 
-    if (existing) {
-      const { data, error } = await supabase.from('user_progress').update(payload).eq('id', existing.id).select();
-      saveError = error;
-      resultData = data;
-    } else {
-      const { data, error } = await supabase.from('user_progress').insert(payload).select();
-      saveError = error;
-      resultData = data;
-    }
+    const flush = () => {
+      void flushLessonProgressQueue(user.id).then(saved => {
+        if (saved > 0) void refetchProgress();
+      });
+    };
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') flush();
+    };
 
-    if (saveError) {
-      console.error('[Progress DB Log] Supabase save error:', saveError);
-      throw saveError;
-    }
-
-    console.log('[Progress DB Log] Python checkpoint progress saved successfully. Response:', resultData);
-  }, [user?.id, lessonId]);
+    flush();
+    window.addEventListener('online', flush);
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      window.removeEventListener('online', flush);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [user?.id, refetchProgress]);
 
   const handleCheckpointClick = (cp: PythonCheckpoint) => {
     setActiveCheckpointIdx(cp.id);
@@ -708,15 +709,12 @@ export function LessonDetail() {
 
     // Concurrent Flight Locking
     if (isSavingRef.current) {
-      console.warn('[Progress DB Log] Save request already in flight — blocking concurrent submission');
       return;
     }
 
     try {
       isSavingRef.current = true;
       setIsSubmitting(true);
-      console.log(`[Progress DB Log] Attempting to mark checkpoint ${activeCheckpointIdx} complete...`);
-
       const updated = [...new Set([...completedCheckpoints, activeCheckpointIdx])];
       
       // Attempt to save to Supabase
@@ -736,11 +734,15 @@ export function LessonDetail() {
         console.error('[Progress DB Log] Database write failed — queueing for offline retry', dbErr);
         
         // Queue progress update for offline sync
-        queueFailedSave({
-          userId: user.id,
-          lessonId,
-          isPython: true,
-          completedCheckpoints: updated,
+        queueLessonProgress({
+          user_id: user.id,
+          lesson_id: lessonId,
+          course_id: lesson?.course_id || null,
+          status: updated.length === PYTHON_CHECKPOINTS.length ? 'completed' : 'in_progress',
+          progress_percentage: Math.round((updated.length / PYTHON_CHECKPOINTS.length) * 100),
+          notes: JSON.stringify(updated),
+          completed_at: updated.length === PYTHON_CHECKPOINTS.length ? new Date().toISOString() : null,
+          last_accessed_at: new Date().toISOString(),
         });
 
         toast.warning(t.lessonDetail.checkpointOfflineWarning);
@@ -771,50 +773,28 @@ export function LessonDetail() {
 
     // Concurrent Flight Locking
     if (isSavingRef.current) {
-      console.warn('[Progress DB Log] Save request already in flight — blocking concurrent submission');
       return;
     }
 
     try {
       isSavingRef.current = true;
       setIsSubmitting(true);
-      console.log(`[Progress DB Log] Attempting to mark standard lesson ${lessonId} complete...`);
-
       const now = new Date().toISOString();
       
       try {
-        const payload = {
+        const payload: LessonProgressSave = {
           user_id: user.id,
           lesson_id: lessonId,
+          course_id: lesson?.course_id || null,
           status: 'completed',
           progress_percentage: 100,
           completed_at: now,
           last_accessed_at: now,
         };
 
-        const { data: existing } = await supabase
-          .from('user_progress')
-          .select('id')
-          .eq('user_id', user.id)
-          .eq('lesson_id', lessonId)
-          .maybeSingle();
-
-        let saveError = null;
-        if (existing) {
-          const { error } = await supabase.from('user_progress').update(payload).eq('id', existing.id);
-          saveError = error;
-        } else {
-          const { error } = await supabase.from('user_progress').insert(payload);
-          saveError = error;
-        }
-
-        if (saveError) throw saveError;
+        await saveLessonProgress(payload);
 
         toast.success(t.lessonDetail.standardLessonCompleteSuccess);
-
-        if (lesson?.course_id) {
-
-        }
 
         // Clear stay-timer from localStorage upon completion
         if (timerStorageKey) {
@@ -824,11 +804,14 @@ export function LessonDetail() {
         console.error('[Progress DB Log] Standard lesson database write failed — queueing for offline retry', dbErr);
 
         // Queue progress update for offline sync
-        queueFailedSave({
-          userId: user.id,
-          lessonId,
-          isPython: false,
-          completedCheckpoints: [],
+        queueLessonProgress({
+          user_id: user.id,
+          lesson_id: lessonId,
+          course_id: lesson?.course_id || null,
+          status: 'completed',
+          progress_percentage: 100,
+          completed_at: now,
+          last_accessed_at: now,
         });
 
         toast.warning(t.lessonDetail.offlineQueueWarning);

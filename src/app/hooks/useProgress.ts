@@ -73,7 +73,6 @@ export function useProgress(userId: string, courseId: string) {
 
     try {
       setLoading(true);
-      console.log(`[Progress DB Log] Fetching course progress (enrollment) for user: ${userId}, course: ${courseId}`);
       const { data, error: fetchError } = await supabase
         .from('enrollments')
         .select('*')
@@ -85,7 +84,6 @@ export function useProgress(userId: string, courseId: string) {
         throw fetchError;
       }
 
-      console.log(`[Progress DB Log] Fetched course progress:`, data);
       setProgress(data || null);
     } catch (err) {
       console.error('[Progress DB Log] Failed to fetch course progress:', err);
@@ -103,7 +101,6 @@ export function useProgress(userId: string, courseId: string) {
     if (!userId || !courseId) return;
 
     try {
-      console.log(`[Progress DB Log] Marking course ${courseId} complete for user ${userId}`);
       const { error: upsertError } = await supabase
         .from('enrollments')
         .upsert({
@@ -119,7 +116,6 @@ export function useProgress(userId: string, courseId: string) {
 
       if (upsertError) throw upsertError;
 
-      console.log(`[Progress DB Log] Successfully marked course ${courseId} complete`);
       
       // Award 100 XP for completing a course
       analyticsApi.recordLearningActivity(userId, 100, 0).catch(err => {
@@ -138,7 +134,6 @@ export function useProgress(userId: string, courseId: string) {
     if (!userId || !courseId) return;
 
     try {
-      console.log(`[Progress DB Log] Updating course ${courseId} progress to ${percentage}% for user ${userId}`);
       const { error: upsertError } = await supabase
         .from('enrollments')
         .upsert({
@@ -152,7 +147,6 @@ export function useProgress(userId: string, courseId: string) {
         });
 
       if (upsertError) throw upsertError;
-      console.log(`[Progress DB Log] Successfully updated course ${courseId} progress`);
     } catch (err) {
       console.error('[Progress DB Log] Failed to update course progress:', err);
     }
@@ -176,7 +170,6 @@ export function useCourseProgress(userId: string, courseId: string) {
 
       try {
         setLoading(true);
-        console.log(`[Progress DB Log] Fetching course progress percentage for user: ${userId}, course: ${courseId}`);
  
         // Get user's enrollment progress for this course
         const { data, error: fetchError } = await supabase
@@ -191,7 +184,6 @@ export function useCourseProgress(userId: string, courseId: string) {
         }
 
         if (data) {
-          console.log(`[Progress DB Log] Fetched course progress percentage: ${data.progress_percentage}%`);
           setProgressPercentage(data.progress_percentage || 0);
         } else {
           setProgressPercentage(0);
@@ -236,7 +228,6 @@ export function useLessonProgress(userId: string, lessonId: string) {
       // Only set loading = true if we don't have progress loaded yet (silent refetch)
       setLoading(prevLoading => progress === null ? true : prevLoading);
       setError(null);
-      console.log(`[Progress DB Log] Fetching lesson progress for user: ${userId}, lesson: ${lessonId}`);
 
       const { data, error: fetchError } = await supabase
         .from('user_progress')
@@ -249,7 +240,6 @@ export function useLessonProgress(userId: string, lessonId: string) {
         throw fetchError;
       }
 
-      console.log(`[Progress DB Log] Fetched lesson progress result:`, data);
       setProgress(data || null);
     } catch (err) {
       console.error('[Progress DB Log] Failed to fetch lesson progress:', err);
@@ -267,7 +257,6 @@ export function useLessonProgress(userId: string, lessonId: string) {
     if (!userId || !lessonId) return;
 
     try {
-      console.log(`[Progress DB Log] Marking lesson ${lessonId} complete for user ${userId}`);
       const { error: upsertError } = await supabase
         .from('user_progress')
         .upsert({
@@ -283,7 +272,6 @@ export function useLessonProgress(userId: string, lessonId: string) {
 
       if (upsertError) throw upsertError;
 
-      console.log(`[Progress DB Log] Successfully marked lesson ${lessonId} complete`);
       
       // Award 20 XP for completing a lesson
       analyticsApi.recordLearningActivity(userId, 20, 0).catch(err => {
@@ -320,7 +308,6 @@ export function useLessonsProgress(userId: string, lessonIds: string[]) {
       try {
         setLoading(true);
         setError(null);
-        console.log(`[Progress DB Log] Fetching lessons progress list for user: ${userId}, count: ${lessonIds.length}`);
 
         const { data, error: fetchError } = await supabase
           .from('user_progress')
@@ -334,7 +321,6 @@ export function useLessonsProgress(userId: string, lessonIds: string[]) {
         }
 
         const completedSet = new Set((data || []).map((row: any) => row.lesson_id));
-        console.log(`[Progress DB Log] Completed lessons counts: ${completedSet.size}`);
         setCompletedLessonIds(completedSet);
       } catch (err) {
         console.error('[Progress DB Log] Failed to fetch lessons progress:', err);
