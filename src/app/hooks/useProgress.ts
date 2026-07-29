@@ -234,9 +234,9 @@ export function useLessonProgress(userId: string, lessonId: string) {
         .select('*')
         .eq('user_id', userId)
         .eq('lesson_id', lessonId)
-        .single();
+        .maybeSingle();
 
-      if (fetchError && fetchError.code !== 'PGRST116') {
+      if (fetchError) {
         throw fetchError;
       }
 

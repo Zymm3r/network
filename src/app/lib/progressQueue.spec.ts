@@ -12,7 +12,7 @@ const { insert, maybeSingle, from } = vi.hoisted(() => {
 
 vi.mock('./supabase', () => ({ supabase: { from } }));
 
-import { flushLessonProgressQueue, queueLessonProgress } from './progressQueue';
+import { flushLessonProgressQueue, isRetryableProgressError, queueLessonProgress } from './progressQueue';
 
 const storage = new Map<string, string>();
 
@@ -28,6 +28,12 @@ beforeEach(() => {
 });
 
 describe('lesson progress offline queue', () => {
+  it('queues transient failures but not permission errors', () => {
+    expect(isRetryableProgressError(new TypeError('Failed to fetch'))).toBe(true);
+    expect(isRetryableProgressError({ status: 503 })).toBe(true);
+    expect(isRetryableProgressError({ code: '42501' })).toBe(false);
+  });
+
   it('keeps only the latest payload per lesson and flushes it once', async () => {
     const base = {
       user_id: 'user-1',
