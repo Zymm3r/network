@@ -9,7 +9,7 @@ export default function App() {
     <ErrorBoundary>
       <AuthProvider>
         <I18nProvider>
-          <RouterProvider router={router} useTransitions={false} />
+          <RouterProvider router={router} />
         </I18nProvider>
       </AuthProvider>
     </ErrorBoundary>

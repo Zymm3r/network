@@ -16,3 +16,12 @@ test('refreshes a lesson detail route', async ({ page }) => {
   await page.reload();
   await expect(page.locator('body')).not.toContainText('NOT_FOUND');
 });
+
+test('renders lessons without unsupported React hooks', async ({ page }) => {
+  const pageErrors: Error[] = [];
+  page.on('pageerror', (error) => pageErrors.push(error));
+
+  await page.goto('/lessons');
+  await expect(page.locator('body')).not.toContainText('เกิดข้อผิดพลาด');
+  expect(pageErrors.map((error) => error.message).join('\n')).not.toContain('useOptimistic');
+});
