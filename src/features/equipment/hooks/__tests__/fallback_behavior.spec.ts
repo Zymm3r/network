@@ -346,6 +346,32 @@ describe('useProductDetail Fallback Behavior', () => {
     expect(result.training_courses[0].training_lessons[0].markdown_content).toBe('Lesson Content EN');
   });
 
+  it('should remove duplicate visible content while keeping one container per category', async () => {
+    mockLanguage = 'en';
+    mockDbDocuments.push({ ...mockDbDocuments[0], id: 'doc-duplicate' });
+    mockDbFaqs.push({ ...mockDbFaqs[0], id: 'faq-duplicate' });
+    mockDbTroubleshooting.push({ ...mockDbTroubleshooting[0], id: 'guide-duplicate' });
+    mockDbTrainingCourses.push({
+      ...mockDbTrainingCourses[0],
+      id: 'course-duplicate',
+      training_lessons: mockDbTrainingCourses[0].training_lessons.map((lesson: any) => ({
+        ...lesson,
+        id: `${lesson.id}-duplicate`,
+        course_id: 'course-duplicate'
+      }))
+    });
+
+    useProductDetail('local-camera');
+    effectCallback();
+    await flushPromises();
+
+    const result = setDataMock.mock.calls[0][0];
+    expect(result.documents).toHaveLength(1);
+    expect(result.faqs).toHaveLength(1);
+    expect(result.troubleshooting_guides).toHaveLength(1);
+    expect(result.training_courses).toHaveLength(1);
+  });
+
   it('should fallback to default columns when bilingual columns are empty/null', async () => {
     mockLanguage = 'th';
     // Clear out _th columns
