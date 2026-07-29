@@ -60,11 +60,7 @@ export const progressApi = {
       .select('*')
       .eq('user_id', userId)
       .eq('lesson_id', lessonId)
-      .single();
-
-    if (response.error?.code === 'PGRST116') {
-      return null;
-    }
+      .maybeSingle();
 
     return handleSupabaseResponse(response, 'get user progress');
   },

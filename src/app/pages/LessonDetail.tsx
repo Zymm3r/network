@@ -22,6 +22,7 @@ import { LessonCompleteCard } from '../components/LessonCompleteCard';
 import { getLessonQuizQuestions } from '../lib/lessonQuiz';
 import {
   flushLessonProgressQueue,
+  isRetryableProgressError,
   queueLessonProgress,
   saveLessonProgress,
   type LessonProgressSave,
@@ -801,7 +802,9 @@ export function LessonDetail() {
           localStorage.removeItem(timerStorageKey);
         }
       } catch (dbErr) {
-        console.error('[Progress DB Log] Standard lesson database write failed — queueing for offline retry', dbErr);
+        if (!isRetryableProgressError(dbErr)) throw dbErr;
+
+        console.error('[Progress DB Log] Network save failed — queueing for offline retry', dbErr);
 
         // Queue progress update for offline sync
         queueLessonProgress({

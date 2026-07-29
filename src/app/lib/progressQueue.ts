@@ -38,6 +38,18 @@ export function queueLessonProgress(payload: LessonProgressSave): void {
   localStorage.setItem(queueKey(payload.user_id), JSON.stringify(queue));
 }
 
+export function isRetryableProgressError(error: unknown): boolean {
+  if (error instanceof TypeError) return true;
+  if (!error || typeof error !== 'object') return false;
+
+  const code = 'code' in error && typeof error.code === 'string' ? error.code : '';
+  const status = 'status' in error && typeof error.status === 'number' ? error.status : 0;
+
+  return status >= 500
+    || code.startsWith('08')
+    || ['40001', '40P01', '53P01', '53P02', '53P03', '55P03', '57014', '57P01'].includes(code);
+}
+
 export async function saveLessonProgress(payload: LessonProgressSave): Promise<void> {
   const { data: existing, error: lookupError } = await supabase
     .from('user_progress')

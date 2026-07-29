@@ -1,5 +1,5 @@
 BEGIN;
-SELECT plan(17);
+SELECT plan(20);
 
 SELECT ok(has_table_privilege('anon', 'public.lessons', 'SELECT'), 'anon can read lessons');
 SELECT ok(NOT has_table_privilege('anon', 'public.lessons', 'UPDATE'), 'anon cannot update lessons');
@@ -7,6 +7,8 @@ SELECT ok(NOT has_table_privilege('anon', 'public.products', 'UPDATE'), 'anon ca
 SELECT ok(has_table_privilege('authenticated', 'public.exercise_attempts', 'INSERT'), 'authenticated can insert attempts');
 SELECT ok(NOT has_function_privilege('anon', 'public.get_student_metrics(uuid)', 'EXECUTE'), 'anon cannot execute student metrics');
 SELECT ok(has_function_privilege('authenticated', 'public.get_student_metrics(uuid)', 'EXECUTE'), 'authenticated can execute student metrics');
+SELECT ok(has_function_privilege('authenticated', 'public.course_completion_percentage(uuid,text)', 'EXECUTE'), 'authenticated can calculate course completion');
+SELECT ok(NOT has_function_privilege('anon', 'public.course_completion_percentage(uuid,text)', 'EXECUTE'), 'anon cannot calculate course completion');
 SELECT ok(NOT has_function_privilege('anon', 'public.increment_study_time(integer)', 'EXECUTE'), 'anon cannot increment study time');
 SELECT is(to_regclass('public.quiz_attempts'), NULL::regclass, 'legacy quiz_attempts table is removed');
 SELECT ok(
@@ -43,6 +45,15 @@ SELECT set_config(
   true
 );
 
+SELECT lives_ok(
+  $$INSERT INTO public.user_progress (
+      user_id, lesson_id, course_id, status, progress_percentage, completed_at, last_accessed_at
+    ) VALUES (
+      '11111111-1111-4111-8111-111111111111', 'lesson-ccna001-01',
+      'ccna-001', 'completed', 100, now(), now()
+    )$$,
+  'owner can save lesson progress through the enrollment sync trigger'
+);
 SELECT lives_ok(
   $$INSERT INTO public.exercise_attempts (
       user_id, exercise_id, lesson_id, course_id, passed, score, execution_timestamp
