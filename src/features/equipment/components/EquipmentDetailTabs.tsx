@@ -166,11 +166,11 @@ export function EquipmentDetailTabs({ data, isLoading = false, error = null }: E
                   <div className="text-sm font-semibold text-indigo-500 mb-2 uppercase tracking-wide">{t.equipmentCatalog.sourceLabel}</div>
                   {data.product?.source_url ? (
                     <a href={data.product.source_url} target="_blank" rel="noopener noreferrer" className="font-bold text-indigo-700 hover:underline break-all inline-flex items-center gap-1">
-                      {(t.equipmentCatalog as any).sourceMap?.[data.product?.source || ''] || data.product?.source || t.equipmentCatalog.dealerLink}
+                      {t.equipmentCatalog.dealerLink}
                     </a>
                   ) : (
                     <span className="text-slate-500">
-                      {(t.equipmentCatalog as any).sourceMap?.[data.product?.source || ''] || data.product?.source || "-"}
+                      {"-"}
                     </span>
                   )}
                </div>

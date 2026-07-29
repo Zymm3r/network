@@ -48,16 +48,12 @@ export function useProductDetail(slug: string | undefined) {
         // Use the canonical slug from the matched product for DB lookup
         const canonicalSlug = localProduct.slug;
 
-        console.log('[DEBUG useProductDetail] canonicalSlug:', canonicalSlug);
-
         // 2. Attempt to load related content from Supabase
         const { data: dbProduct, error: dbProductError } = await supabase
           .from('products')
           .select('*')
           .eq('slug', canonicalSlug)
           .maybeSingle();
-
-        console.log('[DEBUG useProductDetail] dbProduct query result:', { found: !!dbProduct, error: dbProductError?.message });
 
         // If product doesn't exist in DB, we just gracefully return empty arrays for related content
         if (!dbProduct || dbProductError) {
@@ -75,8 +71,6 @@ export function useProductDetail(slug: string | undefined) {
         // 3. If product exists in DB, fetch related data in parallel
         const productId = dbProduct.id;
         
-        console.log('[DEBUG useProductDetail] Found dbProduct id:', productId);
-
         const [
           { data: documents },
           { data: faqs },
@@ -88,13 +82,6 @@ export function useProductDetail(slug: string | undefined) {
           supabase.from('troubleshooting_guides').select('*').eq('product_id', productId),
           supabase.from('training_courses').select('*, training_lessons(*)').eq('product_id', productId)
         ]);
-
-        console.log('[DEBUG useProductDetail] Loaded related data:', { 
-          docs: documents?.length, 
-          faqs: faqs?.length, 
-          guides: troubleshooting_guides?.length, 
-          courses: training_courses?.length 
-        });
 
         // 4. Translation Mapping Logic with Fallback
         const nameFallback = dbProduct.name || localProduct.title || localProduct.name;

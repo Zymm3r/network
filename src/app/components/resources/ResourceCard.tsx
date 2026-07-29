@@ -42,11 +42,8 @@ export function ResourceCard({ resource }: ResourceCardProps) {
 
   const name = resource[`name_${language}` as 'name_th' | 'name_en'];
   const description = resource[`description_${language}` as 'description_th' | 'description_en'];
-  const address = resource[`address_${language}` as 'address_th' | 'address_en'];
-
-  const typeKey = resource.resource_type === 'library' || resource.resource_type === 'cafe'
-    ? resource.resource_type
-    : resource.resource_type;
+  const address = resource.location;
+  const typeKey = resource.resource_type;
   const Icon = resourceTypeIcons[resource.resource_type as keyof typeof resourceTypeIcons] || Wrench;
 
   return (

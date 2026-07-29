@@ -30,26 +30,22 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 // ─── Helpers ─────────────────────────────────────────────────────────
 
 /** Build a User object from Supabase session data (no DB call). */
-function buildUser(su: { id: string; email?: string; user_metadata?: Record<string, unknown> }): User {
+function buildUser(su: {
+  id: string;
+  email?: string;
+  user_metadata?: Record<string, unknown>;
+  app_metadata?: Record<string, unknown>;
+  created_at?: string;
+}): User {
   return {
     id: su.id,
     email: su.email || '',
     full_name_th: (su.user_metadata?.full_name_th as string) || null,
     full_name_en: (su.user_metadata?.full_name_en as string) || null,
     avatar_url: (su.user_metadata?.avatar_url as string) || null,
-    role: (su.user_metadata?.role as 'student' | 'instructor' | 'admin') || 'student',
-    created_at: new Date().toISOString(),
+    role: (su.app_metadata?.role as 'student' | 'instructor' | 'admin') || 'student',
+    created_at: su.created_at || new Date().toISOString(),
   };
-}
-
-/** Try to resolve a richer profile from the `users` table, fall back to session data. */
-async function resolveUser(su: { id: string; email?: string; user_metadata?: Record<string, unknown> }): Promise<User> {
-  try {
-    const { data } = await supabase.from('users').select('*').eq('id', su.id).single();
-    return data || buildUser(su);
-  } catch {
-    return buildUser(su);
-  }
 }
 
 // ─── Provider ────────────────────────────────────────────────────────
@@ -116,12 +112,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Immediately set a basic user to prevent flashing to login
         const quickUser = buildUser(currentSession.user);
         if (!disposed) setUser(quickUser);
-        // Then resolve full profile in background (truly non-blocking)
-        resolveUser(currentSession.user).then((resolved) => {
-          if (!disposed) setUser(resolved);
-        }).catch(() => {
-          // quickUser is already set, safe to continue
-        });
       } else {
         authLog(label, 'No session');
         if (!disposed) setUser(null);

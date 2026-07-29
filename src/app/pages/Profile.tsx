@@ -42,8 +42,7 @@ export function Profile() {
         const [
           { data: coursesData },
           { data: lessonsData },
-          { data: progressData },
-          { data: certData }
+          { data: progressData }
         ] = await Promise.all([
           supabase.from('courses').select('*'),
           supabase.from('lessons').select('*'),
@@ -531,25 +530,11 @@ export function Profile() {
                   onClick={async () => {
                     if (window.confirm('Are you sure you want to completely reset your learning progress? This cannot be undone.')) {
                       try {
-                        const { error: progressError } = await supabase
-                          .from('user_progress')
-                          .delete()
-                          .eq('user_id', user.id);
-                        if (progressError) throw progressError;
+                        const { error } = await supabase.rpc('reset_my_learning_progress');
+                        if (error) throw error;
 
-                        const { error: statsError } = await supabase
-                          .from('user_stats')
-                          .delete()
-                          .eq('user_id', user.id);
-                        if (statsError) throw statsError;
-
-                        const { error: enrollmentsError } = await supabase
-                          .from('enrollments')
-                          .delete()
-                          .eq('user_id', user.id);
-                        if (enrollmentsError) throw enrollmentsError;
-
-                        localStorage.removeItem('pending-progress-saves');
+                        localStorage.removeItem(`pending-progress-saves-${user.id}`);
+                        localStorage.removeItem(`pending-exercise-attempts-${user.id}`);
                         alert('Progress has been successfully reset. The page will now reload.');
                         window.location.reload();
                       } catch (e) {

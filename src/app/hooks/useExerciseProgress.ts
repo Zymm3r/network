@@ -95,8 +95,13 @@ export function useExerciseProgress(
         return null;
       }
 
+      const idempotentData: AttemptData = {
+        ...data,
+        client_attempt_id: data.client_attempt_id || crypto.randomUUID(),
+      };
+
       try {
-        const result = await exerciseApi.recordAttempt(data);
+        const result = await exerciseApi.recordAttempt(idempotentData);
         setLatestAttempt(result);
         // Clear any queued attempts for this exercise on success
         const queue = JSON.parse(localStorage.getItem(queueKey) || '[]');
@@ -118,7 +123,7 @@ export function useExerciseProgress(
         const filtered = queue.filter(
           (item: QueuedAttempt) => item.exerciseId !== exerciseId
         );
-        filtered.push({ exerciseId, data });
+        filtered.push({ exerciseId, data: idempotentData });
         localStorage.setItem(queueKey, JSON.stringify(filtered));
         setIsQueuedAttempts(true);
         return null;

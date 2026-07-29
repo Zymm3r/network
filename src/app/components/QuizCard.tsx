@@ -64,7 +64,7 @@ export default function QuizCard({
   const quizAttemptId = lessonId
     ? `quiz:lesson:${lessonId}`
     : `quiz:${courseId || 'default'}`;
-  const { recordAttempt, latestAttempt } = useExerciseProgress(
+  const { recordAttempt, latestAttempt, isQueuedAttempts } = useExerciseProgress(
     quizAttemptId,
     lessonId || '',
     courseId || ''
@@ -324,6 +324,11 @@ export default function QuizCard({
                   <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 12 18 8l-4 4M18 8v8" /><path d="M2 20h20" /></svg>
                   คุณกำลังพัฒนาขึ้นเรื่อยๆ!
                 </div>
+              )}
+              {isQueuedAttempts && (
+                <p className="text-sm font-medium text-amber-600">
+                  บันทึกไว้ในเครื่องแล้ว ระบบจะซิงก์เมื่อกลับมาออนไลน์
+                </p>
               )}
               {/* Learning time */}
               {totalSeconds > 0 && (

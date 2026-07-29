@@ -40,7 +40,7 @@ interface CourseEntry {
 
 const DIFFICULTY_ORDER = { beginner: 0, intermediate: 1, advanced: 2 };
 
-const COURSES = ([
+const COURSES: CourseEntry[] = ([
   // CCNA Track — Beginner
   { id: 'ccna-001', name: 'เครือข่ายพื้นฐาน (OSI / TCP/IP)', track: 'CCNA', trackIcon: Network, trackColor: 'indigo', difficulty: 'beginner', difficultyLabel: 'เบื้องต้น', xp: 25 },
   { id: 'ccna-002', name: 'Switching & VLANs', track: 'CCNA', trackIcon: Network, trackColor: 'indigo', difficulty: 'beginner', difficultyLabel: 'เบื้องต้น', xp: 25 },
@@ -125,9 +125,9 @@ export function Lessons() {
     const courseOrder = new Map(COURSES.map((course, index) => [course.id, index]));
 
     return lessons
-      .map(lesson => {
+      .reduce<CourseEntry[]>((entries, lesson) => {
         const questions = getLessonQuizQuestions(lesson.quiz_data, language);
-        if (questions.length !== 5) return null;
+        if (questions.length !== 5) return entries;
 
         const course = COURSES.find(entry => entry.id === lesson.course_id);
         const prefix = lesson.course_id.split('-')[0];
@@ -146,7 +146,7 @@ export function Lessons() {
           ? 'intermediate'
           : 'beginner';
 
-        return {
+        entries.push({
           id: lesson.id,
           courseId: lesson.course_id,
           lessonId: lesson.id,
@@ -164,9 +164,9 @@ export function Lessons() {
             : 'เบื้องต้น',
           xp: 25,
           questions,
-        } satisfies CourseEntry;
-      })
-      .filter((entry): entry is CourseEntry => entry !== null)
+        } satisfies CourseEntry);
+        return entries;
+      }, [])
       .sort((a, b) => {
         const courseDifference = (courseOrder.get(a.courseId || '') ?? 999)
           - (courseOrder.get(b.courseId || '') ?? 999);
