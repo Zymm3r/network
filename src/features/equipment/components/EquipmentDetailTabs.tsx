@@ -6,7 +6,11 @@ import { KalturaPlayer } from '../../../app/components/KalturaPlayer';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useI18n } from '../../../app/i18n';
-import { toast } from 'sonner';
+import {
+  filterDocuments,
+  filterTrainingCourses,
+  filterTroubleshootingGuides,
+} from '../utils/productResources';
 
 interface EquipmentDetailTabsProps {
   data: ProductDetailData;
@@ -32,10 +36,10 @@ export function EquipmentDetailTabs({ data, isLoading = false, error = null }: E
   // Defensive: never let a single malformed record crash the whole tab.
   const safeArray = <T,>(arr: T[] | null | undefined): T[] => Array.isArray(arr) ? arr : [];
 
-  const documents             = safeArray(data.documents);
+  const documents             = filterDocuments(safeArray(data.documents));
   const faqs                  = safeArray(data.faqs);
-  const troubleshootingGuides = safeArray(data.troubleshooting_guides);
-  const trainingCourses       = safeArray(data.training_courses);
+  const troubleshootingGuides = filterTroubleshootingGuides(safeArray(data.troubleshooting_guides));
+  const trainingCourses       = filterTrainingCourses(safeArray(data.training_courses));
 
   const tabs = useMemo(() => ([
     { id: 'overview',       label: t.equipmentCatalog.overviewTab,         icon: Info },
@@ -44,7 +48,11 @@ export function EquipmentDetailTabs({ data, isLoading = false, error = null }: E
     { id: 'faq',            label: t.equipmentCatalog.faqTab,              icon: HelpCircle,  count: faqs.length },
     { id: 'troubleshooting',label: t.equipmentCatalog.troubleTab,  icon: Wrench,      count: troubleshootingGuides.length },
     { id: 'training',       label: t.equipmentCatalog.trainingTab,         icon: GraduationCap, count: trainingCourses.length },
-  ]), [documents.length, faqs.length, troubleshootingGuides.length, trainingCourses.length, t]);
+  ].filter((tab) => tab.count === undefined || tab.count > 0)), [documents.length, faqs.length, troubleshootingGuides.length, trainingCourses.length, t]);
+
+  useEffect(() => {
+    if (!tabs.some((tab) => tab.id === activeTab)) setActiveTab('overview');
+  }, [activeTab, tabs]);
 
 
   return (
@@ -189,9 +197,9 @@ export function EquipmentDetailTabs({ data, isLoading = false, error = null }: E
 
         {activeTab === 'documents' && (
           <div id="tab-panel-documents" role="tabpanel">
-            {data.documents?.length > 0 ? (
+            {documents.length > 0 ? (
               <ul className="grid gap-4 sm:grid-cols-2">
-                {data.documents.map(doc => (
+                {documents.map(doc => (
                   <li key={doc.id} className="flex flex-col justify-between gap-4 p-5 bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-indigo-200 transition-all group">
                     <div className="flex items-start gap-4">
                       <div className="w-12 h-12 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 flex-shrink-0 group-hover:scale-110 transition-transform">
@@ -203,15 +211,9 @@ export function EquipmentDetailTabs({ data, isLoading = false, error = null }: E
                       </div>
                     </div>
                     <div className="mt-2">
-                      {doc.file_url ? (
-                        <a href={doc.file_url} target="_blank" rel="noopener noreferrer" className="w-full inline-block px-4 py-2.5 text-sm font-bold text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-600 hover:text-white text-center transition-colors">
-                          {t.equipmentCatalog.downloadDoc}
-                        </a>
-                      ) : (
-                        <span className="w-full inline-block px-4 py-2.5 text-sm font-bold text-slate-400 bg-slate-100 rounded-lg text-center cursor-not-allowed">
-                          {t.equipmentCatalog.noFileAvailable}
-                        </span>
-                      )}
+                      <a href={doc.file_url} target="_blank" rel="noopener noreferrer" className="w-full inline-block px-4 py-2.5 text-sm font-bold text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-600 hover:text-white text-center transition-colors">
+                        {t.equipmentCatalog.downloadDoc}
+                      </a>
                     </div>
                   </li>
                 ))}
@@ -260,9 +262,9 @@ export function EquipmentDetailTabs({ data, isLoading = false, error = null }: E
 
         {activeTab === 'troubleshooting' && (
           <div id="tab-panel-troubleshooting" role="tabpanel">
-            {data.troubleshooting_guides?.length > 0 ? (
+            {troubleshootingGuides.length > 0 ? (
               <div className="space-y-6">
-                {data.troubleshooting_guides.map(guide => (
+                {troubleshootingGuides.map(guide => (
                   <div key={guide.id} className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                     <div className="bg-rose-50 px-6 py-4 border-b border-rose-100 flex items-center gap-3">
                       <div className="bg-rose-200 p-2 rounded-lg"><Wrench className="text-rose-700" size={20} /></div>
@@ -295,9 +297,9 @@ export function EquipmentDetailTabs({ data, isLoading = false, error = null }: E
 
         {activeTab === 'training' && (
           <div id="tab-panel-training" role="tabpanel" data-testid="training-lessons-list">
-            {data.training_courses?.length > 0 ? (
+            {trainingCourses.length > 0 ? (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {data.training_courses.map(course => (
+                {trainingCourses.map(course => (
                   <div key={course.id} className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all group flex flex-col">
                     <div className="flex justify-between items-start mb-5">
                       <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm">
@@ -316,13 +318,7 @@ export function EquipmentDetailTabs({ data, isLoading = false, error = null }: E
                           <button
                             key={lesson.id}
                             data-testid="lesson-card"
-                            onClick={() => {
-                              if (lesson.video_url) {
-                                setSelectedVideo(lesson.video_url);
-                              } else {
-                                toast.error(t.equipmentCatalog.noVideoAlert);
-                              }
-                            }}
+                            onClick={() => setSelectedVideo(lesson.video_url!)}
                             className="w-full py-2.5 px-4 bg-indigo-50 text-indigo-700 font-semibold text-sm rounded-lg hover:bg-indigo-600 hover:text-white hover:shadow-md transition-all active:scale-95 flex items-center justify-between group"
                           >
                             <span className="truncate pr-2">{lesson.lesson_order}. {lesson.title}</span>
@@ -331,24 +327,13 @@ export function EquipmentDetailTabs({ data, isLoading = false, error = null }: E
                         ))}
                       </div>
                     ) : (
-                      <>
-                        {course.video_url ? (
-                          <button
-                            data-testid="lesson-card"
-                            onClick={() => setSelectedVideo(course.video_url!)}
-                            className="w-full py-3 bg-indigo-600 text-white font-bold text-sm rounded-xl hover:bg-indigo-700 hover:shadow-md transition-all active:scale-95 flex items-center justify-center gap-2"
-                          >
-                            {t.equipmentCatalog.watchLessonBtn}
-                          </button>
-                        ) : (
-                          <button
-                            disabled
-                            className="w-full py-3 bg-slate-100 text-slate-400 font-bold text-sm rounded-xl cursor-not-allowed flex items-center justify-center gap-2"
-                          >
-                            {t.equipmentCatalog.noVideoAvailable}
-                          </button>
-                        )}
-                      </>
+                      <button
+                        data-testid="lesson-card"
+                        onClick={() => setSelectedVideo(course.video_url!)}
+                        className="w-full py-3 bg-indigo-600 text-white font-bold text-sm rounded-xl hover:bg-indigo-700 hover:shadow-md transition-all active:scale-95 flex items-center justify-center gap-2"
+                      >
+                        {t.equipmentCatalog.watchLessonBtn}
+                      </button>
                     )}
                   </div>
                 ))}

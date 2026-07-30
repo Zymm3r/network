@@ -3,6 +3,11 @@ import { supabase } from '../../../app/lib/supabase';
 import { useProducts } from './useProducts';
 import { ProductDetailData } from '../types/product';
 import { useI18n } from '../../../app/i18n';
+import {
+  filterDocuments,
+  filterTrainingCourses,
+  filterTroubleshootingGuides,
+} from '../utils/productResources';
 
 const dedupeByVisibleContent = <T,>(items: T[], getValues: (item: T) => unknown[]): T[] => {
   const seen = new Set<string>();
@@ -175,18 +180,18 @@ export function useProductDetail(slug: string | undefined) {
 
         setData({
           product: mergedProduct,
-          documents: dedupeByVisibleContent(mappedDocuments, (doc) => [
+          documents: dedupeByVisibleContent(filterDocuments(mappedDocuments), (doc) => [
             doc.title,
             doc.document_type,
             doc.file_url
           ]),
           faqs: dedupeByVisibleContent(mappedFaqs, (faq) => [faq.question, faq.answer]),
-          troubleshooting_guides: dedupeByVisibleContent(mappedGuides, (guide) => [
+          troubleshooting_guides: dedupeByVisibleContent(filterTroubleshootingGuides(mappedGuides), (guide) => [
             guide.issue,
             guide.symptoms,
             guide.solution
           ]),
-          training_courses: dedupeByVisibleContent(mappedCourses, (course) => [
+          training_courses: dedupeByVisibleContent(filterTrainingCourses(mappedCourses), (course) => [
             course.title,
             course.description,
             course.difficulty,
