@@ -163,7 +163,7 @@
     "lesson_id": "devnet-004-lesson-4",
     "question_no": 1,
     "options_th": [
-      "Authorization (ส่วนหัวการอนุญาต)",
+      "Authorization (ส่วนหัว HTTP)",
       "X-Auth-Token (โทเค็นยืนยันตัวตน)",
       "Bearer-Token (โทเค็นแบบ Bearer)",
       "Token (โทเค็น)"
@@ -193,7 +193,7 @@
     "lesson_id": "devnet-004-lesson-4",
     "question_no": 4,
     "options_th": [
-      "API แบบ Intent-based",
+      "Intent-based API",
       "API แบบ CLI รุ่นเก่า",
       "API แบบ SNMP โดยตรง",
       "API แบบ Netconf"
@@ -253,7 +253,7 @@
     "lesson_id": "lesson-adv-002",
     "question_no": 0,
     "options_th": [
-      "summary-address (ย่อเส้นทางภายนอกบน ASBR)",
+      "summary-address",
       "area range",
       "ip summary-address ospf",
       "ip route summary"
@@ -303,10 +303,10 @@
     "lesson_id": "lesson-adv002-01",
     "question_no": 0,
     "options_th": [
-      "ไดจ์คสตรา เอสพีเอฟ",
-      "เบลล์แมน-ฟอร์ด",
+      "Dijkstra SPF",
+      "Bellman-Ford",
       "DUAL",
-      "เวกเตอร์เส้นทาง"
+      "Path Vector"
     ]
   },
   {
@@ -323,7 +323,7 @@
     "lesson_id": "lesson-adv002-01",
     "question_no": 2,
     "options_th": [
-      "ระยะทางที่เป็นไปได้จะต้องน้อยกว่าระยะทางที่รายงานของผู้สืบทอด",
+      "Feasible Distance ต้องน้อยกว่า Reported Distance ของ Successor",
       "RD ต้องน้อยกว่า FD ของ Successor ปัจจุบัน",
       "เมตริกจะต้องเท่ากับเมตริกเส้นทางหลัก",
       "จำนวนฮ็อปต้องน้อยกว่า 15"
@@ -343,17 +343,17 @@
     "lesson_id": "lesson-adv002-01",
     "question_no": 4,
     "options_th": [
-      "โหมดคลาสสิก",
-      "ชื่อโหมด EIGRP",
-      "โหมดระบบอัตโนมัติ",
-      "โหมดการกำหนดค่าส่วนกลาง"
+      "Classic Mode",
+      "Named EIGRP Mode",
+      "Autonomous System Mode",
+      "Global Configuration Mode"
     ]
   },
   {
     "lesson_id": "lesson-adv002-02",
     "question_no": 0,
     "options_th": [
-      "เค1 และเค2",
+      "K1 และ K2",
       "K1 และ K3",
       "K2 และ K4",
       "K3 และ K5"
@@ -385,8 +385,8 @@
     "options_th": [
       "เพื่อให้เกิดความสมดุลในการโหลดเส้นทางต้นทุนไม่เท่ากัน",
       "รองรับพอร์ตเกิน 10 Gbps ที่ Metric เดิมลดเหลือ 1",
-      "เพื่อเปิดใช้งานการรับรองความถูกต้องโดยอัตโนมัติ",
-      "เพื่อลดค่าใช้จ่ายในการประมวลผล CPU"
+      "เพื่อเปิดใช้การยืนยันตัวตนโดยอัตโนมัติ",
+      "เพื่อลดโอเวอร์เฮดการประมวลผลของ CPU"
     ]
   },
   {
@@ -403,10 +403,10 @@
     "lesson_id": "lesson-adv002-03",
     "question_no": 0,
     "options_th": [
-      "ความแปรปรวน <ตัวคูณ>",
-      "เส้นทางสูงสุด <จำนวน>",
-      "สมดุลโหลดไม่เท่ากัน",
-      "น้ำหนักเมตริก"
+      "variance <multiplier>",
+      "maximum-paths <number>",
+      "load-balance unequal",
+      "metric weights"
     ]
   },
   {
@@ -464,19 +464,19 @@
     "question_no": 1,
     "options_th": [
       "ip summary-address eigrp <as-number> <summary-address> <mask>",
-      "summary-address <summary-address> <subnet-mask>",
-      "area <area-id> range <summary-address> <subnet-mask>",
-      "ip route-summary eigrp <as-number> <summary-address> <mask>"
+      "summary-address <summary-address> <mask>",
+      "area range <summary-address> <mask>",
+      "ip route-summary eigrp <as-number>"
     ]
   },
   {
     "lesson_id": "lesson-adv002-04",
     "question_no": 2,
     "options_th": [
-      "แผนที่เส้นทาง",
-      "แจกจ่ายรายการ",
-      "รายการคำนำหน้า",
-      "จากทั้งหมดที่กล่าวมา"
+      "Route Map",
+      "Distribute List",
+      "Prefix List",
+      "ถูกทุกข้อ"
     ]
   },
   {
@@ -485,8 +485,8 @@
     "options_th": [
       "distribute-list <list-name/id> [in | out] [interface]",
       "ip distribute-list <list-name> [in | out] [interface]",
-      "filter-list <list-name> [in | out] [interface]",
-      "route-filter <list-name> [in | out] [interface]"
+      "filter-list <list-name>",
+      "route-filter <list-name>"
     ]
   },
   {
@@ -503,10 +503,10 @@
     "lesson_id": "lesson-adv003-01",
     "question_no": 0,
     "options_th": [
-      "สถานะลิงก์",
-      "เวกเตอร์ระยะทาง",
-      "เวกเตอร์เส้นทาง",
-      "ไฮบริด"
+      "Link State",
+      "Distance Vector",
+      "Path Vector",
+      "Hybrid"
     ]
   },
   {
@@ -555,7 +555,7 @@
     "options_th": [
       "กำหนดค่า ebgp-multihop",
       "ทำให้ Peer IP ติดต่อกันได้",
-      "เปิดใช้งานผลต่าง",
+      "เปิดใช้คำสั่ง variance",
       "ใช้โหมด BGP ที่มีชื่อเท่านั้น"
     ]
   },
@@ -573,10 +573,10 @@
     "lesson_id": "lesson-adv003-02",
     "question_no": 2,
     "options_th": [
-      "neighbor <ip> update-source loopback <n>",
+      "neighbor <ip-address> update-source loopback <number>",
       "neighbor <ip-address> next-hop-self",
       "neighbor <ip-address> ebgp-multihop 2",
-      "อัปเดตซอร์สลูปแบ็ค <หมายเลข>"
+      "update-source loopback <number>"
     ]
   },
   {
@@ -604,28 +604,28 @@
     "question_no": 0,
     "options_th": [
       "AS_PATH",
-      "การตั้งค่าท้องถิ่น",
-      "น้ำหนัก",
-      "แพทย์"
+      "Local Preference",
+      "Weight",
+      "MED"
     ]
   },
   {
     "lesson_id": "lesson-adv003-03",
     "question_no": 1,
     "options_th": [
-      "น้ำหนัก",
-      "การตั้งค่าท้องถิ่น",
-      "MED (ผู้เลือกปฏิบัติหลายทางออก)",
-      "ต้นทาง"
+      "Weight",
+      "Local Preference",
+      "MED (Multi-Exit Discriminator)",
+      "Origin"
     ]
   },
   {
     "lesson_id": "lesson-adv003-03",
     "question_no": 2,
     "options_th": [
-      "น้ำหนัก",
-      "การตั้งค่าท้องถิ่น",
-      "MED (ค่าชี้ทางออกหลายจุด)",
+      "Weight",
+      "Local Preference",
+      "MED (Multi-Exit Discriminator)",
       "AS_PATH"
     ]
   },
@@ -643,19 +643,19 @@
     "lesson_id": "lesson-adv003-03",
     "question_no": 4,
     "options_th": [
-      "แพทย์",
-      "น้ำหนัก",
+      "MED",
+      "Weight",
       "AS_PATH",
-      "การตั้งค่าท้องถิ่น"
+      "Local Preference"
     ]
   },
   {
     "lesson_id": "lesson-adv003-04",
     "question_no": 0,
     "options_th": [
-      "การตั้งค่าท้องถิ่นสูงสุด",
-      "น้ำหนักสูงสุด (Cisco)",
-      "สั้นที่สุด AS_PATH",
+      "Local Preference สูงสุด",
+      "Weight สูงสุด (Cisco)",
+      "AS_PATH สั้นที่สุด",
       "MED ต่ำสุด"
     ]
   },
@@ -664,9 +664,9 @@
     "question_no": 1,
     "options_th": [
       "AS_PATH",
-      "LOCAL_PREF",
+      "Local Preference",
       "MED",
-      "รหัสเราเตอร์ (Router ID)"
+      "Router ID"
     ]
   },
   {
@@ -725,7 +725,7 @@
     "options_th": [
       "มันเลือกที่อยู่ IP ที่จะกรอง",
       "แก้ Attribute ของ Route ที่ match",
-      "มันยุติการดำเนินการแผนที่เส้นทาง",
+      "หยุดการทำงานของ Route Map",
       "มันกำหนดค่าพารามิเตอร์อินเทอร์เฟซ"
     ]
   },
@@ -734,19 +734,19 @@
     "question_no": 3,
     "options_th": [
       "ได้รับอนุญาตโดยอัตโนมัติด้วยแอตทริบิวต์เริ่มต้น",
-      "มันถูกปฏิเสธโดยปริยาย (ลดลง)",
+      "ถูกปฏิเสธโดยปริยายและทิ้งเส้นทาง",
       "มันถูกส่งไปยังพื้นที่ 0",
-      "แผนที่เส้นทางทำให้เกิดข้อผิดพลาดในการเตือน"
+      "Route Map แสดงคำเตือน"
     ]
   },
   {
     "lesson_id": "lesson-adv003-05",
     "question_no": 4,
     "options_th": [
-      "รายการการเข้าถึง",
-      "รายการคำนำหน้า",
-      "รายการควบคุม AS Path",
-      "รายการแจก"
+      "Access List",
+      "Prefix List",
+      "AS Path Access List",
+      "Distribute List"
     ]
   },
   {
@@ -824,9 +824,9 @@
     "question_no": 2,
     "options_th": [
       "เซ็กเมนต์",
-      "แพ็คเก็ต",
-      "กรอบ",
-      "นิดหน่อย"
+      "แพ็กเก็ต",
+      "Frame",
+      "Bit"
     ]
   },
   {
@@ -893,10 +893,10 @@
     "lesson_id": "lesson-ccna001-03",
     "question_no": 4,
     "options_th": [
-      "ไอพี",
+      "IP",
       "HTTP",
-      "ยูดีพี",
-      "เออาร์พี"
+      "UDP",
+      "ARP"
     ]
   },
   {
@@ -996,7 +996,7 @@
       "10.0.0.0 - 10.255.255.255",
       "172.16.0.0 - 172.31.255.255",
       "192.168.0.0 - 192.168.255.255",
-      "จากทั้งหมดที่กล่าวมา"
+      "ถูกทุกข้อ"
     ]
   },
   {
@@ -1045,7 +1045,7 @@
     "options_th": [
       "ฮาล์ฟดูเพล็กซ์",
       "ฟูลดูเพล็กซ์",
-      "เริม",
+      "Simplex",
       "การตรวจจับอัตโนมัติเท่านั้น"
     ]
   },
@@ -1056,7 +1056,7 @@
       "เพื่อเพิ่มความเร็วในการเชื่อมต่อทางกายภาพ",
       "แบ่ง Switch เป็นหลาย Logical Network และแยก Broadcast Domain",
       "เพื่อกำหนดที่อยู่ IP โดยอัตโนมัติ",
-      "เพื่อกำหนดเส้นทางการจราจรระหว่างอาคารทางกายภาพต่างๆ"
+      "เพื่อกำหนดเส้นทางทราฟฟิกระหว่างอาคารที่อยู่คนละสถานที่"
     ]
   },
   {
@@ -1103,10 +1103,10 @@
     "lesson_id": "lesson-ccna002-03",
     "question_no": 0,
     "options_th": [
-      "ไอเอสแอล",
+      "ISL",
       "802.1คิว",
       "802.3",
-      "วีทีพี"
+      "VTP"
     ]
   },
   {
@@ -1203,19 +1203,19 @@
     "lesson_id": "lesson-ccna002-05",
     "question_no": 0,
     "options_th": [
-      "การตั้งค่าเส้นทาง IP",
+      "การกำหนดค่า IP Routing",
       "สร้าง ลบ และ Sync VLAN ระหว่าง Switch",
-      "การตรวจสอบความปลอดภัยของพอร์ต",
-      "การคำนวณเส้นทางแบบขยายของต้นไม้"
+      "การตรวจสอบ Port Security",
+      "การคำนวณเส้นทาง Spanning Tree"
     ]
   },
   {
     "lesson_id": "lesson-ccna002-05",
     "question_no": 1,
     "options_th": [
-      "เซิร์ฟเวอร์วีทีพี",
-      "ไคลเอนต์ VTP",
-      "VTP โปร่งใส",
+      "VTP Server",
+      "VTP Client",
+      "VTP Transparent",
       "ปิด VTP"
     ]
   },
@@ -1243,7 +1243,7 @@
     "lesson_id": "lesson-ccna002-05",
     "question_no": 4,
     "options_th": [
-      "มันจะละทิ้งโฆษณา VTP โดยไม่ส่งต่อ",
+      "ทิ้งประกาศ VTP โดยไม่ส่งต่อ",
       "ส่งต่อ VTP แต่ไม่ใช้การเปลี่ยนแปลง จึงแก้ VLAN เองได้",
       "มันทำงานเหมือนกับไคลเอนต์ VTP ทุกประการ",
       "มันจะกลายเป็นเซิร์ฟเวอร์ Root VTP โดยอัตโนมัติ"
@@ -1275,7 +1275,7 @@
     "options_th": [
       "interface gigabitethernet 0/0 vlan 10",
       "interface gigabitethernet 0/0.10",
-      "อินเทอร์เฟซย่อยกิกะบิตอีเทอร์เน็ต 0/0 10",
+      "subinterface gigabitethernet 0/0 10",
       "interface g0/0 sub 10"
     ]
   },
@@ -1283,7 +1283,7 @@
     "lesson_id": "lesson-ccna002-07",
     "question_no": 3,
     "options_th": [
-      "การห่อหุ้ม dot1q 10",
+      "encapsulation dot1q 10",
       "switchport mode trunk 10",
       "การห่อหุ้ม vlan 10",
       "ip encapsulation 802.1q vlan 10"
@@ -1293,10 +1293,10 @@
     "lesson_id": "lesson-ccna002-07",
     "question_no": 4,
     "options_th": [
-      "อินเทอร์เฟซแบบวนกลับ",
-      "สลับอินเทอร์เฟซเสมือน (SVI)",
-      "อินเทอร์เฟซย่อย",
-      "อินเตอร์เฟซอุโมงค์"
+      "Loopback Interface",
+      "Switch Virtual Interface (SVI)",
+      "Subinterface",
+      "Tunnel Interface"
     ]
   },
   {
@@ -1316,7 +1316,7 @@
       "เมตริก",
       "ระยะบริหาร (AD)",
       "ฮอปนับ",
-      "ค่าใช้จ่าย"
+      "Cost"
     ]
   },
   {
@@ -1325,7 +1325,7 @@
     "options_th": [
       "เชื่อมต่อโดยตรง",
       "เส้นทางแบบคงที่",
-      "สสส",
+      "OSPF",
       "EIGRP"
     ]
   },
@@ -1354,7 +1354,7 @@
     "question_no": 0,
     "options_th": [
       "โดยจะปรับให้เข้ากับการเปลี่ยนแปลงโทโพโลยีเครือข่ายโดยอัตโนมัติ",
-      "ไม่ใช้การประมวลผล CPU ของเราเตอร์และแบนด์วิธลิงก์สำหรับการโฆษณา",
+      "ไม่ใช้ CPU และแบนด์วิธของลิงก์เพื่อส่งประกาศเส้นทาง",
       "กำหนดค่าได้ง่ายกว่าในเครือข่ายขนาดใหญ่มาก",
       "โดยจะคำนวณเมตริกเส้นทางที่ดีที่สุดโดยอัตโนมัติ"
     ]
@@ -1364,7 +1364,7 @@
     "question_no": 1,
     "options_th": [
       "ip route 10.0.0.0 255.255.255.0 192.168.1.1",
-      "เส้นทางเพิ่ม 10.0.0.0 หน้ากาก 255.255.255.0 192.168.1.1",
+      "route add 10.0.0.0 mask 255.255.255.0 192.168.1.1",
       "ip route 192.168.1.1 10.0.0.0 255.255.255.0",
       "router static 10.0.0.0/24 192.168.1.1"
     ]
@@ -1403,9 +1403,9 @@
     "lesson_id": "lesson-ccna003-03",
     "question_no": 0,
     "options_th": [
-      "สถานะลิงก์",
-      "เวกเตอร์ระยะทาง",
-      "เวกเตอร์เส้นทาง",
+      "Link State",
+      "Distance Vector",
+      "Path Vector",
       "ลิงค์เวกเตอร์"
     ]
   },
@@ -1466,7 +1466,7 @@
       "ฮอปนับ",
       "แบนด์วิธและความล่าช้า",
       "Cost = 100 Mbps / Link Bandwidth",
-      "น้ำหนักเมตริกขึ้นอยู่กับความน่าเชื่อถือ"
+      "ค่า Metric Weight ตาม Reliability"
     ]
   },
   {
@@ -1523,10 +1523,10 @@
     "lesson_id": "lesson-ccna003-05",
     "question_no": 2,
     "options_th": [
-      "ผู้สืบทอดที่เป็นไปได้",
-      "ผู้สืบทอด",
-      "ระยะทางที่รายงาน",
-      "ระยะทางที่เป็นไปได้"
+      "Feasible Successor",
+      "Successor",
+      "Reported Distance (RD)",
+      "Feasible Distance (FD)"
     ]
   },
   {
@@ -1564,7 +1564,7 @@
     "question_no": 1,
     "options_th": [
       "เฟรมรีเลย์",
-      "ไอเอสดีเอ็น",
+      "ISDN",
       "MPLS",
       "ATM"
     ]
@@ -1603,7 +1603,7 @@
     "lesson_id": "lesson-ccna004-02",
     "question_no": 0,
     "options_th": [
-      "เอชดีแอลซี",
+      "HDLC",
       "PPP",
       "เฟรมรีเลย์",
       "อีเทอร์เน็ต"
@@ -1625,7 +1625,7 @@
     "options_th": [
       "LCP (โปรโตคอลควบคุมลิงก์)",
       "NCP (โปรโตคอลควบคุมเครือข่าย)",
-      "พีเอพี",
+      "PAP",
       "การห่อหุ้ม HDLC"
     ]
   },
@@ -1633,9 +1633,9 @@
     "lesson_id": "lesson-ccna004-02",
     "question_no": 3,
     "options_th": [
-      "เอ็นซีพี",
+      "NCP",
       "LCP",
-      "บท",
+      "CHAP",
       "SDLC"
     ]
   },
@@ -1674,9 +1674,9 @@
     "question_no": 2,
     "options_th": [
       "LDP",
-      "บีจีพี",
-      "สสส",
-      "ฉีก"
+      "BGP",
+      "OSPF",
+      "RIP"
     ]
   },
   {
@@ -1703,7 +1703,7 @@
     "lesson_id": "lesson-ccna004-04",
     "question_no": 0,
     "options_th": [
-      "เพื่อลดค่าใช้จ่ายบิลรายเดือน",
+      "เพื่อลดค่าบริการรายเดือน",
       "คงบริการต่อเนื่องด้วยหลาย Link",
       "เพื่อเข้ารหัสการรับส่งข้อมูลฐานข้อมูล",
       "เพื่อจำกัดการเข้าถึงของพนักงานไปยังเว็บไซต์ภายนอก"
@@ -1793,9 +1793,9 @@
     "lesson_id": "lesson-ccna004-07",
     "question_no": 4,
     "options_th": [
-      "พรรคพลังประชาชน",
+      "PPP",
       "เฟรมรีเลย์",
-      "เอชดีแอลซี",
+      "HDLC",
       "อีเทอร์เน็ต"
     ]
   },
@@ -1803,10 +1803,10 @@
     "lesson_id": "lesson-ccna005-01",
     "question_no": 0,
     "options_th": [
-      "เออาร์พี",
-      "ดอร่า",
+      "ARP",
+      "DORA",
       "DNS",
-      "ไอซีเอ็มพี"
+      "ICMP"
     ]
   },
   {
@@ -1823,10 +1823,10 @@
     "lesson_id": "lesson-ccna005-01",
     "question_no": 2,
     "options_th": [
-      "ลูกค้า: UDP 67; เซิร์ฟเวอร์: UDP 68",
-      "ลูกค้า: UDP 68; เซิร์ฟเวอร์: UDP 67",
-      "ลูกค้า: UDP 53; เซิร์ฟเวอร์: UDP 53",
-      "ลูกค้า: UDP 161; เซิร์ฟเวอร์: UDP 162"
+      "ไคลเอนต์: UDP 67; เซิร์ฟเวอร์: UDP 68",
+      "ไคลเอนต์: UDP 68; เซิร์ฟเวอร์: UDP 67",
+      "ไคลเอนต์: UDP 53; เซิร์ฟเวอร์: UDP 53",
+      "ไคลเอนต์: UDP 161; เซิร์ฟเวอร์: UDP 162"
     ]
   },
   {
@@ -1853,7 +1853,7 @@
     "lesson_id": "lesson-ccna005-02",
     "question_no": 0,
     "options_th": [
-      "เพื่อกำหนดที่อยู่ IP ให้กับลูกค้าใหม่แบบไดนามิก",
+      "กำหนดที่อยู่ IP ให้ไคลเอนต์ใหม่แบบไดนามิก",
       "แปลงชื่อ Domain เป็น IP Address",
       "เพื่อตรวจสอบการใช้แบนด์วิธเครือข่าย",
       "เพื่อเข้ารหัสการรับส่งข้อมูลเว็บเบราว์เซอร์"
@@ -1943,10 +1943,10 @@
     "lesson_id": "lesson-ccna005-03",
     "question_no": 4,
     "options_th": [
-      "เปิดใช้งาน",
-      "โอเวอร์โหลด",
-      "ตบเบา ๆ",
-      "พลวัต"
+      "enable",
+      "overload",
+      "PAT",
+      "dynamic"
     ]
   },
   {
@@ -1993,8 +1993,8 @@
     "lesson_id": "lesson-ccna005-04",
     "question_no": 4,
     "options_th": [
-      "ให้ใกล้กับจุดหมายปลายทางของการจราจรมากที่สุด",
-      "ใกล้กับแหล่งที่มาของการเข้าชมมากที่สุด",
+      "ใกล้ปลายทางของทราฟฟิกมากที่สุด",
+      "ใกล้ต้นทางของทราฟฟิกมากที่สุด",
       "บนเราเตอร์อินเทอร์เน็ตเกตเวย์เท่านั้น",
       "บนสวิตช์หลักเท่านั้น"
     ]
@@ -2014,7 +2014,7 @@
     "question_no": 1,
     "options_th": [
       "ลำดับความสำคัญ",
-      "ชั้น",
+      "Stratum",
       "เมตริก",
       "ฮอปนับ"
     ]
@@ -2025,8 +2025,8 @@
     "options_th": [
       "เพื่อกำหนดที่อยู่ IP ให้กับสวิตช์",
       "รวม Log และ Error จากอุปกรณ์ไว้ส่วนกลาง",
-      "เพื่อกำหนดเส้นทางการจราจรระหว่างอาคารทางกายภาพต่างๆ",
-      "เพื่อแก้ไขโดเมนเป็นที่อยู่ IP"
+      "กำหนดเส้นทางทราฟฟิกระหว่างอาคารต่างๆ",
+      "แปลงชื่อโดเมนเป็นที่อยู่ IP"
     ]
   },
   {
@@ -2105,7 +2105,7 @@
     "options_th": [
       "การกำหนดค่า การติดตั้ง การดูแลระบบ",
       "การรักษาความลับ ความสมบูรณ์ ความพร้อมใช้งาน",
-      "การเชื่อมต่อ การแยก การรับรองความถูกต้อง",
+      "การเชื่อมต่อ การแยกส่วน การยืนยันตัวตน",
       "การควบคุม การตรวจสอบ การตรวจสอบ"
     ]
   },
@@ -2123,10 +2123,10 @@
     "lesson_id": "lesson-ccna006-01",
     "question_no": 2,
     "options_th": [
-      "คนกลาง (MitM)",
+      "Man-in-the-Middle (MitM)",
       "ฟิชชิ่ง",
       "DoS / DDoS",
-      "การฉีด SQL"
+      "SQL Injection"
     ]
   },
   {
@@ -2144,8 +2144,8 @@
     "question_no": 4,
     "options_th": [
       "การยืนยันตัวตน",
-      "การอนุญาต",
-      "การบัญชี",
+      "การกำหนดสิทธิ์",
+      "การบันทึกการใช้งาน",
       "การเข้ารหัส"
     ]
   },
@@ -2153,10 +2153,10 @@
     "lesson_id": "lesson-ccna006-02",
     "question_no": 0,
     "options_th": [
-      "การตัดแต่งกิ่ง VTP",
-      "ความปลอดภัยของท่าเรือ",
-      "การสอดแนม DHCP",
-      "การตรวจสอบ ARP แบบไดนามิก"
+      "VTP Pruning",
+      "Port Security",
+      "DHCP Snooping",
+      "Dynamic ARP Inspection (DAI)"
     ]
   },
   {
@@ -2183,10 +2183,10 @@
     "lesson_id": "lesson-ccna006-02",
     "question_no": 3,
     "options_th": [
-      "ความปลอดภัยของท่าเรือ",
-      "การสอดแนม DHCP",
+      "Port Security",
+      "DHCP Snooping",
       "การตรวจสอบ ARP แบบไดนามิก (DAI)",
-      "การป้องกันต้นทาง IP"
+      "IP Source Guard"
     ]
   },
   {
@@ -2224,9 +2224,9 @@
     "question_no": 2,
     "options_th": [
       "ip access-group <number> in",
-      "เข้าถึงคลาส <number> ใน",
-      "ตัวกรองการรับส่งข้อมูล <number> vty",
-      "รายการเข้าถึงบรรทัด <หมายเลข>"
+      "access-class <number> in",
+      "traffic-filter <number> vty",
+      "line access-list <number>"
     ]
   },
   {
@@ -2254,7 +2254,7 @@
     "question_no": 0,
     "options_th": [
       "สมาคม การจัดสรร การบริหาร",
-      "การรับรองความถูกต้อง การอนุญาต การบัญชี",
+      "การยืนยันตัวตน การกำหนดสิทธิ์ การบันทึกการใช้งาน",
       "การควบคุมการเข้าถึง การแจ้งเตือน การตรวจสอบ",
       "อำนาจ การจัดสรร การดำเนินการ"
     ]
@@ -2263,9 +2263,9 @@
     "lesson_id": "lesson-ccna006-04",
     "question_no": 1,
     "options_th": [
-      "การรับรองความถูกต้อง",
-      "การอนุญาต",
-      "การบัญชี",
+      "การยืนยันตัวตน",
+      "การกำหนดสิทธิ์",
+      "การบันทึกการใช้งาน",
       "การควบคุมการเข้าถึง"
     ]
   },
@@ -2275,8 +2275,8 @@
     "options_th": [
       "ทาคาส+",
       "RADIUS",
-      "สสส",
-      "แอลดีเอพี"
+      "SSH",
+      "LDAP"
     ]
   },
   {
@@ -2293,9 +2293,9 @@
     "lesson_id": "lesson-ccna006-04",
     "question_no": 4,
     "options_th": [
-      "aaa รุ่นใหม่",
-      "อ่า เปิดใช้งาน",
-      "บริการอ่าาา",
+      "aaa new-model",
+      "aaa enable",
+      "service aaa",
       "ip aaa-server"
     ]
   },
@@ -2323,10 +2323,10 @@
     "lesson_id": "lesson-dev002-01",
     "question_no": 2,
     "options_th": [
-      "API การรับประกัน",
-      "API แบบอิงเจตนา",
-      "API การรวมระบบ",
-      "API สำหรับรันคำสั่ง"
+      "Assurance APIs",
+      "Intent-based APIs (Provisioning / Policy)",
+      "System Integration APIs",
+      "Command Runner APIs"
     ]
   },
   {
@@ -2363,9 +2363,9 @@
     "lesson_id": "lesson-dev002-02",
     "question_no": 1,
     "options_th": [
-      "วีสมาร์ท",
+      "vSmart",
       "vManage",
-      "vบอนด์",
+      "vBond",
       "vEdge"
     ]
   },
@@ -2373,9 +2373,9 @@
     "lesson_id": "lesson-dev002-02",
     "question_no": 2,
     "options_th": [
-      "vจัดการ",
-      "วีสมาร์ท",
-      "vบอนด์",
+      "vManage",
+      "vSmart",
+      "vBond",
       "vEdge"
     ]
   },
@@ -2393,8 +2393,8 @@
     "lesson_id": "lesson-dev002-02",
     "question_no": 4,
     "options_th": [
-      "บีจีพี",
-      "สสส",
+      "BGP",
+      "OSPF",
       "OMP",
       "EIGRP"
     ]
@@ -2433,10 +2433,10 @@
     "lesson_id": "lesson-dev002-03",
     "question_no": 3,
     "options_th": [
-      "การอนุญาต: ผู้ถือ <โทเค็น>",
-      "X-Cisco-Meraki-API-คีย์: <คีย์>",
+      "Authorization: Bearer <token>",
+      "X-Cisco-Meraki-API-Key: <key>",
       "X-Auth-Token",
-      "API-คีย์"
+      "API-Key"
     ]
   },
   {
@@ -2444,7 +2444,7 @@
     "question_no": 4,
     "options_th": [
       "XML",
-      "เจสัน",
+      "JSON",
       "YAML",
       "HTML"
     ]
@@ -2463,7 +2463,7 @@
     "lesson_id": "lesson-dev002-04",
     "question_no": 1,
     "options_th": [
-      "เจสัน",
+      "JSON",
       "XML",
       "YAML",
       "สคริปต์หลาม"
@@ -2494,9 +2494,9 @@
     "question_no": 4,
     "options_th": [
       "เพลย์บุ๊ก",
-      "เล่น",
+      "Play",
       "งาน / โมดูล",
-      "รายการสิ่งของ"
+      "Inventory"
     ]
   },
   {
@@ -2533,20 +2533,20 @@
     "lesson_id": "lesson-git-01",
     "question_no": 3,
     "options_th": [
-      "git save -m \"message\"",
+      "git save",
       "git commit -m \"message\"",
-      "git push -m \"message\"",
-      "git record -m \"message\""
+      "git push",
+      "git record"
     ]
   },
   {
     "lesson_id": "lesson-git-01",
     "question_no": 4,
     "options_th": [
-      "พื้นที่การแสดงละคร",
-      "สารบบการทำงาน (แผนผังการทำงาน)",
-      "พื้นที่เก็บข้อมูลท้องถิ่น",
-      "พื้นที่เก็บข้อมูลระยะไกล"
+      "Staging Area",
+      "Working Directory (Working Tree)",
+      "Local Repository",
+      "Remote Repository"
     ]
   },
   {
@@ -2563,10 +2563,10 @@
     "lesson_id": "lesson-git-02",
     "question_no": 1,
     "options_th": [
-      "git download <repository-url>",
+      "git download",
       "git clone <repository-url>",
-      "git import <repository-url>",
-      "git pull <repository-url>"
+      "git import",
+      "git pull"
     ]
   },
   {
@@ -2633,7 +2633,7 @@
     "lesson_id": "lesson-git-03",
     "question_no": 3,
     "options_th": [
-      "git switch feature-testing",
+      "git switch feature-testing (or git checkout feature-testing)",
       "git move feature-testing",
       "git merge feature-testing",
       "git branch feature-testing"
@@ -2653,7 +2653,7 @@
     "lesson_id": "lesson-git-04",
     "question_no": 0,
     "options_th": [
-      "เกิดข้อผิดพลาดในการรับรองความถูกต้องเมื่อพุชไปที่ GitHub",
+      "เกิดข้อผิดพลาดในการยืนยันตัวตนเมื่อ push ไปยัง GitHub",
       "Git รวมการแก้บรรทัดเดียวกันอัตโนมัติไม่ได้",
       "ลูปการกำหนดเส้นทางบนสวิตช์เครือข่าย",
       "ความล้มเหลวของฮาร์ดแวร์ในฮาร์ดไดรฟ์ของคอมพิวเตอร์"
@@ -2735,7 +2735,7 @@
     "options_th": [
       "สินค้าคงคลังที่สามารถวิเคราะห์ได้",
       "การดำเนินการ GitHub / GitLab CI/CD",
-      "ไวร์ชาร์ก",
+      "Wireshark",
       "ตัวสร้างคำขอบุรุษไปรษณีย์"
     ]
   },
@@ -2763,20 +2763,20 @@
     "lesson_id": "lesson-python-01",
     "question_no": 1,
     "options_th": [
-      "ทูเพิล",
-      "รายการ",
-      "พจนานุกรม",
-      "สตริง"
+      "Tuple (ทูเพิล)",
+      "List (ลิสต์)",
+      "Dictionary (ดิกชันนารี)",
+      "String (สตริง)"
     ]
   },
   {
     "lesson_id": "lesson-python-01",
     "question_no": 2,
     "options_th": [
-      "รายการ",
-      "พจนานุกรม",
-      "ชุด",
-      "ทูเพิล"
+      "List (ลิสต์)",
+      "Dictionary (ดิกชันนารี)",
+      "Set (เซต)",
+      "Tuple (ทูเพิล)"
     ]
   },
   {
@@ -2834,8 +2834,8 @@
     "question_no": 3,
     "options_th": [
       "os_name",
-      "อุปกรณ์_ประเภท",
-      "แพลตฟอร์ม",
+      "device_type",
+      "platform",
       "system_type"
     ]
   },
@@ -2973,8 +2973,8 @@
     "lesson_id": "lesson-sec-02",
     "question_no": 2,
     "options_th": [
-      "ซินเท่านั้น",
-      "SYN-ACK ตามด้วย ACK",
+      "เฉพาะ SYN",
+      "SYN-ACK แล้วตามด้วย ACK",
       "RST-FIN",
       "PSH-URG"
     ]
@@ -3013,7 +3013,7 @@
     "lesson_id": "lesson-sec002-01",
     "question_no": 1,
     "options_th": [
-      "VPN การเข้าถึงระยะไกล",
+      "Remote Access VPN",
       "VPN แบบไซต์ต่อไซต์",
       "SSL VPN แบบไร้ไคลเอ็นต์",
       "VPN แบบเชื่อมต่อผ่านสายโทรศัพท์"
@@ -3024,7 +3024,7 @@
     "question_no": 2,
     "options_th": [
       "VPN แบบไซต์ต่อไซต์",
-      "VPN การเข้าถึงระยะไกล",
+      "Remote Access VPN",
       "เฟรมรีเลย์ VPN",
       "ลิงค์อนุกรมแบบจุดต่อจุด"
     ]
@@ -3034,9 +3034,9 @@
     "question_no": 3,
     "options_th": [
       "SSL/TLS",
-      "IPsec (ความปลอดภัยไอพี)",
+      "IPsec",
       "GRE",
-      "พรรคพลังประชาชน"
+      "PPP"
     ]
   },
   {
@@ -3063,9 +3063,9 @@
     "lesson_id": "lesson-sec002-02",
     "question_no": 1,
     "options_th": [
-      "AH (ส่วนหัวการรับรองความถูกต้อง)",
-      "ESP (การห่อหุ้มเพย์โหลดความปลอดภัย)",
-      "IKE (การแลกเปลี่ยนคีย์อินเทอร์เน็ต)",
+      "AH (Authentication Header)",
+      "ESP (Encapsulating Security Payload)",
+      "IKE (Internet Key Exchange)",
       "GRE"
     ]
   },
@@ -3073,8 +3073,8 @@
     "lesson_id": "lesson-sec002-02",
     "question_no": 2,
     "options_th": [
-      "โหมดการขนส่ง",
-      "โหมดอุโมงค์",
+      "Transport Mode",
+      "Tunnel Mode",
       "โหมดโอเวอร์โหลด GRE",
       "โหมดปลอดภัย"
     ]
@@ -3094,8 +3094,8 @@
     "question_no": 4,
     "options_th": [
       "DH",
-      "เอ็มดี5",
-      "เออีเอส",
+      "MD5",
+      "AES",
       "SHA-256"
     ]
   },
@@ -3116,7 +3116,7 @@
       "crypto isakmp policy <priority>",
       "crypto ipsec transform-set <name>",
       "crypto map <name> <sequence>",
-      "นโยบายระยะที่ 1 ของ ike <ลำดับความสำคัญ>"
+      "ike phase1 policy <priority>"
     ]
   },
   {
@@ -3134,9 +3134,9 @@
     "question_no": 3,
     "options_th": [
       "นโยบาย ISAKMP",
-      "แผนผังการเข้ารหัส",
-      "อินเตอร์เฟซอุโมงค์",
-      "สมาคมความมั่นคง"
+      "Crypto Map",
+      "Tunnel Interface",
+      "Security Association (SA)"
     ]
   },
   {
@@ -3173,10 +3173,10 @@
     "lesson_id": "lesson-sec002-04",
     "question_no": 2,
     "options_th": [
-      "Clientless ต้องติดตั้ง Cisco AnyConnect; ขึ้นอยู่กับลูกค้าไม่ได้",
-      "Clientless ใช้ Web Portal; Client-based เข้าถึงทั้ง Network",
-      "Clientless มีความปลอดภัยมากขึ้น",
-      "ไคลเอนต์รองรับเฉพาะ IPv6 เท่านั้น"
+      "Clientless ต้องติดตั้ง Cisco AnyConnect แต่ Client-based ไม่ต้องติดตั้ง",
+      "Clientless ใช้ Web Portal ส่วน Client-based เข้าถึงได้ทั้งเครือข่าย",
+      "Clientless ปลอดภัยกว่าเสมอ",
+      "Client-based รองรับเฉพาะ IPv6"
     ]
   },
   {
@@ -3193,10 +3193,10 @@
     "lesson_id": "lesson-sec002-04",
     "question_no": 4,
     "options_th": [
-      "การแยกฟิสิคัลลิงก์เดียวออกเป็นสวิตช์เสมือนสองตัว",
-      "ส่ง Traffic องค์กรผ่าน VPN ส่วน Internet ออก Local Gateway",
-      "บังคับใช้การรับส่งข้อมูลคอมพิวเตอร์ทั้งหมดเพื่อสำรวจอุโมงค์ VPN",
-      "การใช้ผู้ให้บริการอินเทอร์เน็ตสองรายพร้อมกัน"
+      "แบ่งลิงก์จริงหนึ่งเส้นเป็นสวิตช์เสมือนสองตัว",
+      "ส่งทราฟฟิกองค์กรผ่าน VPN ส่วนอินเทอร์เน็ตทั่วไปออก Local Gateway",
+      "บังคับให้ทราฟฟิกทั้งหมดผ่าน VPN Tunnel",
+      "ใช้ผู้ให้บริการอินเทอร์เน็ตสองรายพร้อมกัน"
     ]
   },
   {
@@ -3225,8 +3225,8 @@
     "options_th": [
       "แนวทางจากบนลงล่าง",
       "แนวทางจากล่างขึ้นบน",
-      "แบ่งแยกและพิชิต",
-      "ปฏิบัติตามเส้นทาง"
+      "Divide-and-Conquer (แบ่งปัญหาแล้วพิชิต)",
+      "Follow-the-Path (ไล่ตรวจตามเส้นทาง)"
     ]
   },
   {
@@ -3263,10 +3263,10 @@
     "lesson_id": "lesson-ts002-02",
     "question_no": 1,
     "options_th": [
-      "undebug all / no debug all",
-      "debug off all",
-      "stop debugging all",
-      "no debug all"
+      "undebug all (or no debug all)",
+      "debug off",
+      "stop debugging",
+      "no debug"
     ]
   },
   {
@@ -3284,7 +3284,7 @@
     "question_no": 3,
     "options_th": [
       "logging console",
-      "มอนิเตอร์เทอร์มินัล",
+      "terminal monitor",
       "show logging",
       "logging monitor"
     ]
@@ -3313,10 +3313,10 @@
     "lesson_id": "lesson-ts002-03",
     "question_no": 1,
     "options_th": [
-      "logging 192.168.1.100",
-      "syslog เซิร์ฟเวอร์ 192.168.1.100",
+      "logging 192.168.1.100 (or logging host 192.168.1.100)",
+      "syslog-server 192.168.1.100",
       "ip logging server 192.168.1.100",
-      "ส่งการบันทึก 192.168.1.100"
+      "send logging 192.168.1.100"
     ]
   },
   {
@@ -3324,9 +3324,9 @@
     "question_no": 2,
     "options_th": [
       "logging trap warnings",
-      "logging trap 4",
+      "logging trap 4 (or logging trap warnings)",
       "logging level warnings",
-      "ตัวกรอง syslog ระดับ 4"
+      "syslog filter level 4"
     ]
   },
   {
@@ -3424,9 +3424,9 @@
     "question_no": 2,
     "options_th": [
       "ICMP Echo (ปิง)",
-      "รับ HTTP",
-      "UDP กระวนกระวายใจ",
-      "จากทั้งหมดที่กล่าวมา"
+      "HTTP GET",
+      "UDP Jitter",
+      "ถูกทุกข้อ"
     ]
   },
   {
@@ -3444,9 +3444,9 @@
     "question_no": 4,
     "options_th": [
       "ip sla schedule <operation-id> start-time now life forever",
-      "ip sla start <operation-id> start-time now life forever",
+      "ip sla start <operation-id>",
       "run ip sla <operation-id> start-time now life forever",
-      "service ip sla schedule <operation-id> start-time now life forever"
+      "service ip sla schedule <operation-id>"
     ]
   },
   {
@@ -3514,8 +3514,8 @@
     "question_no": 1,
     "options_th": [
       "WinPcap / Npcap",
-      "วินซ็อค",
-      "ปารามิโก",
+      "WinSock",
+      "Paramiko",
       "OpenSSL"
     ]
   },
@@ -3524,7 +3524,7 @@
     "question_no": 2,
     "options_th": [
       "โหมดฮาล์ฟดูเพล็กซ์",
-      "โหมดสำส่อน",
+      "Promiscuous Mode",
       "โหมดซิมเพล็กซ์",
       "โหมดออกอากาศเท่านั้น"
     ]
@@ -3593,10 +3593,10 @@
     "lesson_id": "lesson-wireshark-02",
     "question_no": 4,
     "options_th": [
-      "วิเคราะห์การจราจร",
-      "ติดตามกระแส TCP",
-      "ถอดรหัสเป็น",
-      "ข้อมูลผู้เชี่ยวชาญ"
+      "Analyze Traffic (วิเคราะห์ทราฟฟิก)",
+      "Follow TCP Stream (ติดตามสตรีม TCP)",
+      "Decode As (ถอดรหัสเป็น)",
+      "Expert Info (ข้อมูลผู้เชี่ยวชาญ)"
     ]
   },
   {
@@ -3623,7 +3623,7 @@
     "lesson_id": "lesson-wireshark-03",
     "question_no": 2,
     "options_th": [
-      "ที่อยู่ IP เป้าหมายที่ถูกร้องขอ",
+      "ที่อยู่ IP เป้าหมายที่กำลังค้นหา",
       "Domain, Query Type และ Class",
       "ข้อมูลรับรองเซิร์ฟเวอร์อีเมล",
       "MAC เกตเวย์เริ่มต้น"
@@ -3636,7 +3636,7 @@
       "แพ็กเก็ตการตอบสนอง DNS ใช้พอร์ต TCP 80",
       "QR=1 และมีส่วน Answers",
       "แพ็กเก็ตการตอบสนอง DNS ไม่มีส่วนหัว",
-      "แพ็กเก็ตการตอบสนอง DNS มีค่าใช้จ่าย OSPF"
+      "แพ็กเก็ตตอบกลับ DNS มีค่า Cost ของ OSPF"
     ]
   },
   {
@@ -3646,7 +3646,7 @@
       "แก้ไขโดเมนสำเร็จแล้ว",
       "ไม่มี Domain ที่ร้องขอ",
       "เซิร์ฟเวอร์ DNS ออฟไลน์อยู่",
-      "แบบสอบถามหมดเวลา"
+      "คำขอหมดเวลา"
     ]
   }
 ]

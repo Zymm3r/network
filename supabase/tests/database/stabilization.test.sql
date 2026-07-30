@@ -68,10 +68,22 @@ SELECT is(
        lesson.id AS lesson_id,
        question.ordinality AS question_no,
        (question.value ->> 'correct_index')::integer AS correct_index,
+       bool_and(option.value ~ '[ก-๙]') AS all_options_contain_thai,
+       bool_and((question.value -> 'options' ->> (option.ordinality - 1)::integer) !~ '\s')
+         AS all_source_options_are_single_tokens,
        array_agg(
          length(regexp_replace(option.value, '[^[:alnum:]ก-๙]', '', 'g'))
          ORDER BY option.ordinality
-       ) AS lengths
+       ) AS lengths,
+       array_agg(
+         length(regexp_replace(
+           question.value -> 'options' ->> (option.ordinality - 1)::integer,
+           '[^[:alnum:]]',
+           '',
+           'g'
+         ))
+         ORDER BY option.ordinality
+       ) AS source_lengths
      FROM public.lessons lesson
      CROSS JOIN LATERAL jsonb_array_elements(lesson.quiz_data -> 'questions')
        WITH ORDINALITY AS question(value, ordinality)
@@ -82,7 +94,21 @@ SELECT is(
    )
    SELECT count(*)::integer
    FROM question_lengths
-   WHERE lengths[correct_index + 1] - (
+   WHERE all_options_contain_thai
+     AND NOT all_source_options_are_single_tokens
+     AND NOT (
+       source_lengths[correct_index + 1] - (
+         SELECT max(length_value)
+         FROM unnest(source_lengths) WITH ORDINALITY AS distractor(length_value, option_no)
+         WHERE option_no <> correct_index + 1
+       ) > 6
+       AND source_lengths[correct_index + 1] > 1.2 * (
+         SELECT max(length_value)
+         FROM unnest(source_lengths) WITH ORDINALITY AS distractor(length_value, option_no)
+         WHERE option_no <> correct_index + 1
+       )
+     )
+     AND lengths[correct_index + 1] - (
        SELECT max(length_value)
        FROM unnest(lengths) WITH ORDINALITY AS distractor(length_value, option_no)
        WHERE option_no <> correct_index + 1
