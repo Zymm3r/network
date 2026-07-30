@@ -45,10 +45,10 @@ export function EquipmentDetailTabs({ data, isLoading = false, error = null }: E
     { id: 'overview',       label: t.equipmentCatalog.overviewTab,         icon: Info },
     { id: 'simulator',      label: t.equipmentCatalog.wiringTab, icon: CircuitBoard },
     { id: 'documents',      label: t.equipmentCatalog.documentsTab,        icon: FileText,    count: documents.length },
-    { id: 'faq',            label: t.equipmentCatalog.faqTab,              icon: HelpCircle,  count: faqs.length },
+    { id: 'manual',         label: t.equipmentCatalog.manualTab,           icon: FileText,    count: documents.length },
     { id: 'troubleshooting',label: t.equipmentCatalog.troubleTab,  icon: Wrench,      count: troubleshootingGuides.length },
     { id: 'training',       label: t.equipmentCatalog.trainingTab,         icon: GraduationCap, count: trainingCourses.length },
-  ].filter((tab) => tab.count === undefined || tab.count > 0)), [documents.length, faqs.length, troubleshootingGuides.length, trainingCourses.length, t]);
+  ].filter((tab) => tab.count === undefined || tab.count > 0)), [documents.length, troubleshootingGuides.length, trainingCourses.length, t]);
 
   useEffect(() => {
     if (!tabs.some((tab) => tab.id === activeTab)) setActiveTab('overview');
@@ -230,35 +230,65 @@ export function EquipmentDetailTabs({ data, isLoading = false, error = null }: E
           </div>
         )}
 
-        {activeTab === 'faq' && (
-          <div id="tab-panel-faq" role="tabpanel">
-            {data.faqs?.length > 0 ? (
-              <div className="space-y-4">
-                {data.faqs.map(faq => (
-                  <div key={faq.id} className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm hover:shadow-md hover:border-indigo-200 transition-all">
-                    <h4 className="font-bold text-slate-800 flex items-start gap-3">
-                      <span className="flex-shrink-0 w-7 h-7 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-sm">Q</span>
-                      <span className="mt-0.5 text-lg leading-snug">{faq.question}</span>
-                    </h4>
-                    <div className="mt-4 pl-10">
-                      <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 text-slate-600 leading-relaxed">
-                        {faq.answer}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-20 bg-slate-50 rounded-2xl border border-slate-100">
-                <div className="w-20 h-20 bg-white shadow-sm rounded-full flex items-center justify-center mx-auto mb-5">
-                  <HelpCircle className="text-slate-300" size={40} />
-                </div>
-                <h3 className="text-lg font-bold text-slate-800">{t.equipmentCatalog.noFaq}</h3>
-                <p className="mt-2 text-slate-500 max-w-sm mx-auto">{t.equipmentCatalog.noFaqDesc}</p>
-              </div>
-            )}
-          </div>
-        )}
+         {activeTab === 'manual' && (
+           <div id="tab-panel-manual" role="tabpanel">
+             {documents.length > 0 ? (
+               <div className="space-y-4">
+                 {documents.map(doc => (
+                   <div key={doc.id} className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md hover:border-indigo-200 transition-all">
+                     <div className="p-6">
+                       <div className="flex items-start gap-4">
+                         <div className="w-12 h-12 rounded-xl bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-600 flex-shrink-0">
+                           <FileText size={24} />
+                         </div>
+                         <div className="flex-1 min-w-0">
+                           <h4 className="font-bold text-slate-800 text-lg mb-2 break-words">{doc.title}</h4>
+                           <div className="text-xs text-slate-500 bg-slate-50 px-2 py-1 rounded-md inline-block uppercase tracking-wider font-bold">
+                             {doc.document_type}
+                           </div>
+                         </div>
+                       </div>
+                     </div>
+                     {doc.file_url && (
+                       <div className="px-6 pb-6">
+                         <div className="border border-slate-200 rounded-lg overflow-hidden bg-slate-50" style={{ height: '600px' }}>
+                           <iframe
+                             src={doc.file_url}
+                             className="w-full h-full"
+                             title={doc.title}
+                             allow="fullscreen"
+                           >
+                             <div className="flex items-center justify-center h-full p-6">
+                               <div className="text-center">
+                                 <p className="text-slate-600 mb-4">Unable to display PDF. Please download to view.</p>
+                                 <a
+                                   href={doc.file_url}
+                                   target="_blank"
+                                   rel="noopener noreferrer"
+                                   className="inline-block px-6 py-3 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition-colors"
+                                 >
+                                   Download PDF
+                                 </a>
+                               </div>
+                             </div>
+                           </iframe>
+                         </div>
+                       </div>
+                     )}
+                   </div>
+                 ))}
+               </div>
+             ) : (
+               <div className="text-center py-20 bg-slate-50 rounded-2xl border border-slate-100">
+                 <div className="w-20 h-20 bg-white shadow-sm rounded-full flex items-center justify-center mx-auto mb-5">
+                   <FileText className="text-slate-300" size={40} />
+                 </div>
+                 <h3 className="text-lg font-bold text-slate-800">{t.equipmentCatalog.noManual}</h3>
+                 <p className="mt-2 text-slate-500 max-w-sm mx-auto">{t.equipmentCatalog.noManualDesc}</p>
+               </div>
+             )}
+           </div>
+         )}
 
         {activeTab === 'troubleshooting' && (
           <div id="tab-panel-troubleshooting" role="tabpanel">
