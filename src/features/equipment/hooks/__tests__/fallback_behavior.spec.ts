@@ -237,7 +237,7 @@ describe('useProductDetail Fallback Behavior', () => {
     };
 
     mockDbDocuments = [
-      { id: 'doc-1', title: 'Default Title', title_th: 'เอกสารไทย', title_en: 'English Doc' }
+      { id: 'doc-1', title: 'Default Title', title_th: 'เอกสารไทย', title_en: 'English Doc', file_url: 'https://cdn.example.org/manual.pdf' }
     ];
     mockDbFaqs = [
       { id: 'faq-1', question: 'Q', answer: 'A', question_th: 'คำถามไทย', question_en: 'Question EN', answer_th: 'คำตอบไทย', answer_en: 'Answer EN' }
@@ -270,6 +270,7 @@ describe('useProductDetail Fallback Behavior', () => {
             id: 'lesson-1',
             title: 'L',
             markdown_content: 'M',
+            video_url: 'https://www.youtube.com/embed/tutorial',
             title_th: 'บทเรียนไทย',
             title_en: 'Lesson EN',
             content_th: 'เนื้อหาบทเรียนไทย',

@@ -1,5 +1,5 @@
 BEGIN;
-SELECT plan(25);
+SELECT plan(28);
 
 SELECT ok(has_table_privilege('anon', 'public.lessons', 'SELECT'), 'anon can read lessons');
 SELECT ok(NOT has_table_privilege('anon', 'public.lessons', 'UPDATE'), 'anon cannot update lessons');
@@ -130,6 +130,36 @@ SELECT ok(
       AND contype = 'c'
   ),
   'lesson quizzes enforce complete Thai choice arrays'
+);
+SELECT is(
+  (SELECT count(*)::integer
+   FROM public.documents
+   WHERE file_url IS NULL
+      OR btrim(file_url) = ''
+      OR file_url ~* '^https?://([^/]+\.)?example\.com(?:/|$)'),
+  0,
+  'equipment documents always link to a real file'
+);
+SELECT is(
+  (SELECT count(*)::integer
+   FROM public.troubleshooting_guides
+   WHERE btrim(issue) = 'เปิดไม่ติด / No Power'
+     AND btrim(symptoms) = 'ไฟสถานะไม่สว่าง เครื่องไม่ทำงาน'),
+  0,
+  'generated equipment troubleshooting placeholders are removed'
+);
+SELECT is(
+  (SELECT count(*)::integer
+   FROM public.training_courses AS course
+   WHERE (course.video_url IS NULL OR btrim(course.video_url) = '')
+     AND NOT EXISTS (
+       SELECT 1 FROM public.training_lessons AS lesson
+       WHERE lesson.course_id = course.id
+         AND lesson.video_url IS NOT NULL
+         AND btrim(lesson.video_url) <> ''
+     )),
+  0,
+  'equipment training courses always contain playable media'
 );
 SELECT throws_like(
   $$UPDATE public.lessons
