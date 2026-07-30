@@ -20,7 +20,11 @@ export function getLessonQuizQuestions(
       question: language === 'th'
         ? question.question_th || question.question_en
         : question.question_en || question.question_th,
-      choices: question.options,
+      choices: language === 'th'
+        && Array.isArray(question.options_th)
+        && question.options_th.length === question.options.length
+        ? question.options_th
+        : question.options,
       correctIndex: question.correct_index,
       explanation: language === 'th'
         ? question.explanation_th || question.explanation_en || ''

@@ -30,5 +30,6 @@ jobs:
           version: latest
       - run: supabase start
       - run: supabase db reset
+      - run: npm run validate:quizzes
       - run: supabase db lint --local --level error --fail-on error
       - run: supabase test db

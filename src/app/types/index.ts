@@ -51,6 +51,7 @@ export interface LessonQuizQuestion {
   question_th: string;
   question_en: string;
   options: string[];
+  options_th?: string[] | null;
   correct_index: number;
   explanation_th?: string | null;
   explanation_en?: string | null;

@@ -1,5 +1,5 @@
 BEGIN;
-SELECT plan(20);
+SELECT plan(25);
 
 SELECT ok(has_table_privilege('anon', 'public.lessons', 'SELECT'), 'anon can read lessons');
 SELECT ok(NOT has_table_privilege('anon', 'public.lessons', 'UPDATE'), 'anon cannot update lessons');
@@ -30,6 +30,91 @@ SELECT is(
      AND jsonb_array_length(quiz_data -> 'questions') <> 5),
   0,
   'every lesson quiz has five questions'
+);
+SELECT is(
+  (SELECT count(*)::integer
+   FROM public.lessons lesson
+   CROSS JOIN LATERAL jsonb_array_elements(lesson.quiz_data -> 'questions') AS question(value)
+   WHERE lesson.quiz_data IS NOT NULL
+     AND (
+       jsonb_typeof(question.value -> 'options_th') IS DISTINCT FROM 'array'
+       OR jsonb_array_length(question.value -> 'options_th')
+          <> jsonb_array_length(question.value -> 'options')
+     )),
+  0,
+  'every lesson quiz choice has a complete Thai localization'
+);
+SELECT is(
+  (SELECT count(*)::integer
+   FROM public.lessons lesson
+   CROSS JOIN LATERAL jsonb_array_elements(lesson.quiz_data -> 'questions') AS question(value)
+   WHERE lesson.quiz_data IS NOT NULL
+     AND (
+       EXISTS (
+         SELECT 1 FROM jsonb_array_elements_text(question.value -> 'options_th') AS option(value)
+         WHERE btrim(option.value) = ''
+       )
+       OR jsonb_array_length(question.value -> 'options_th') <> (
+         SELECT count(DISTINCT lower(btrim(option.value)))
+         FROM jsonb_array_elements_text(question.value -> 'options_th') AS option(value)
+       )
+     )),
+  0,
+  'Thai lesson quiz choices are non-empty and unique within each question'
+);
+SELECT is(
+  (WITH question_lengths AS (
+     SELECT
+       lesson.id AS lesson_id,
+       question.ordinality AS question_no,
+       (question.value ->> 'correct_index')::integer AS correct_index,
+       array_agg(
+         length(regexp_replace(option.value, '[^[:alnum:]ก-๙]', '', 'g'))
+         ORDER BY option.ordinality
+       ) AS lengths
+     FROM public.lessons lesson
+     CROSS JOIN LATERAL jsonb_array_elements(lesson.quiz_data -> 'questions')
+       WITH ORDINALITY AS question(value, ordinality)
+     CROSS JOIN LATERAL jsonb_array_elements_text(question.value -> 'options_th')
+       WITH ORDINALITY AS option(value, ordinality)
+     WHERE lesson.quiz_data IS NOT NULL
+     GROUP BY lesson.id, question.ordinality, question.value
+   )
+   SELECT count(*)::integer
+   FROM question_lengths
+   WHERE lengths[correct_index + 1] - (
+       SELECT max(length_value)
+       FROM unnest(lengths) WITH ORDINALITY AS distractor(length_value, option_no)
+       WHERE option_no <> correct_index + 1
+     ) > 6
+     AND lengths[correct_index + 1] > 1.2 * (
+       SELECT max(length_value)
+       FROM unnest(lengths) WITH ORDINALITY AS distractor(length_value, option_no)
+       WHERE option_no <> correct_index + 1
+     )),
+  0,
+  'correct Thai choices are not materially longer than their distractors'
+);
+SELECT ok(
+  EXISTS (
+    SELECT 1
+    FROM pg_constraint
+    WHERE conrelid = 'public.lessons'::regclass
+      AND conname = 'lessons_quiz_options_th_check'
+      AND contype = 'c'
+  ),
+  'lesson quizzes enforce complete Thai choice arrays'
+);
+SELECT throws_like(
+  $$UPDATE public.lessons
+    SET quiz_data = jsonb_set(
+      quiz_data,
+      '{questions,0}',
+      (quiz_data #> '{questions,0}') - 'options_th'
+    )
+    WHERE id = 'lesson-ccna001-01'$$,
+  '%violates check constraint "lessons_quiz_options_th_check"%',
+  'lesson quiz rejects a question without Thai choices'
 );
 
 INSERT INTO auth.users (id, instance_id, aud, role, email, created_at, updated_at)
